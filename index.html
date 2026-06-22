@@ -702,10 +702,18 @@ async function gerar(){
   document.getElementById('outputEnquete').textContent='—';
   document.getElementById('resultados').scrollIntoView({behavior:'smooth',block:'start'});
   document.getElementById('barraNova').style.display='flex';
-  const linkCurto=await encurtarLink(linkMateria);
-  const ok=linkCurto!==linkMateria;
-  document.getElementById('status-encurtador').className='status '+(ok?'ok':'err');
-  document.getElementById('status-encurtador').textContent=ok?'✓ Link encurtado com sucesso':'⚠ Não foi possível encurtar — usando link original';
+  let linkCurto,ok;
+  if(/\/r\/\d+\/?$/.test(linkMateria)){
+    // já é link curto do próprio domínio — usa direto, sem encurtador externo
+    linkCurto=linkMateria;ok=true;
+    document.getElementById('status-encurtador').className='status ok';
+    document.getElementById('status-encurtador').textContent='✓ Link curto do seu domínio (felipetommy.com.br)';
+  }else{
+    linkCurto=await encurtarLink(linkMateria);
+    ok=linkCurto!==linkMateria;
+    document.getElementById('status-encurtador').className='status '+(ok?'ok':'err');
+    document.getElementById('status-encurtador').textContent=ok?'✓ Link encurtado com sucesso':'⚠ Não foi possível encurtar — usando link original';
+  }
   document.getElementById('outputLinkCurto').textContent=linkCurto;
   const emojiInsta=tipoInsta==='video'?'📹':'📰';
   const labelInsta=tipoInsta==='video'?'*Veja o vídeo:*':'*Veja a matéria no insta:*';
@@ -788,7 +796,11 @@ async function publicar(){
     if(r.ok){
       const post=await r.json();
       const link=post.link||(c.url+'/?p='+post.id);
-      showSt('st-pub','ok','✅ Publicado com sucesso! Acesse: '+link);
+      // Link curto branded do próprio domínio (resolvido pelo snippet /r/{id} no WordPress)
+      const linkBranded=c.url+'/r/'+post.id;
+      const lm=document.getElementById('linkMateria');
+      if(lm&&!lm.value)lm.value=linkBranded;
+      showSt('st-pub','ok','✅ Publicado com sucesso! Acesse: '+link+'\n🔗 Link curto p/ WhatsApp: '+linkBranded);
     }else{
       const err=await r.json().catch(()=>({}));
       throw new Error(err.message||'Erro '+r.status);
