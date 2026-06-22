@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Portal Felipe Tommy — Painel Unificado</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#222536;--border:#2e3248;--accent:#25D366;--accent2:#128C7E;--accent-glow:rgba(37,211,102,0.15);--warn:#f59e0b;--danger:#ef4444;--text:#e8eaf0;--muted:#6b7280;--radius:12px;--azul:#2563a8;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;}
+  .logo{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  header h1{font-size:15px;font-weight:700;}
+  header p{font-size:11px;color:var(--muted);}
+  .sync-dot{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);white-space:nowrap;}
+  .sync-dot .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+  .sync-dot.online .dot{background:var(--accent);}
+  .sync-dot.error .dot{background:var(--danger);}
+  .sync-dot.syncing .dot{background:var(--warn);}
+
+  nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 8px;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;position:sticky;top:58px;z-index:19;}
+  nav::-webkit-scrollbar{display:none;}
+  .tab{padding:12px 14px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap;flex-shrink:0;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+  .page{display:none;padding:18px;max-width:860px;margin:0 auto;}
+  .page.active{display:block;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+  .card-title{font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;display:flex;align-items:center;gap:8px;justify-content:space-between;}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+  input[type=text],input[type=url],input[type=password],textarea,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:11px 14px;outline:none;transition:border-color .2s;margin-bottom:14px;}
+  input:focus,textarea:focus{border-color:var(--accent);}
+  textarea{resize:vertical;min-height:90px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:600px){.row{grid-template-columns:1fr;}}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+  .btn-primary{background:var(--accent);color:#000;width:100%;justify-content:center;padding:13px;font-size:14px;}
+  .btn-primary:hover{background:#1ebe58;}
+  .btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text);width:100%;justify-content:center;padding:13px;font-size:14px;}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-copy{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:7px 14px;flex-shrink:0;}
+  .btn-copy:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-copy.copied{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
+  .btn-sm{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:7px 12px;border-radius:6px;cursor:pointer;}
+  .btn-sm:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger-sm{background:transparent;border:1px solid var(--border);color:var(--danger);font-size:12px;padding:7px 12px;border-radius:6px;cursor:pointer;}
+  .btn-warn{background:rgba(245,158,11,.15);border:1px solid var(--warn);color:var(--warn);font-size:13px;font-weight:600;padding:10px 16px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn-warn:hover{background:rgba(245,158,11,.25);}
+  .output-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;color:var(--text);min-height:50px;margin-bottom:8px;max-height:220px;overflow-y:auto;}
+  .output-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;}
+  .output-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .status{font-size:12px;padding:8px 14px;border-radius:6px;font-weight:600;}
+  .status.loading{background:rgba(245,158,11,.15);color:var(--warn);}
+  .status.ok{background:var(--accent-glow);color:var(--accent);}
+  .status.err{background:rgba(239,68,68,.15);color:var(--danger);}
+  .toggle-group{display:flex;gap:8px;margin-bottom:14px;}
+  .toggle-btn{flex:1;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s;}
+  .toggle-btn.active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
+  .enquete-options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .enquete-option{display:flex;gap:8px;align-items:center;}
+  .enquete-option input{flex:1;margin-bottom:0;}
+  .enquete-option button{background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;}
+  .add-option-btn{background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;padding:8px;width:100%;cursor:pointer;margin-bottom:14px;}
+  .step-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--accent);color:#000;border-radius:50%;font-size:11px;font-weight:800;flex-shrink:0;}
+  .hint{font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:14px;line-height:1.5;}
+  .group-list{display:flex;flex-direction:column;gap:6px;max-height:380px;overflow-y:auto;padding-right:4px;}
+  .group-item{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;}
+  .group-item span{flex:1;font-size:13px;word-break:break-word;}
+  .group-num{width:24px;height:24px;background:var(--surface2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0;}
+  .search-box{display:flex;gap:8px;margin-bottom:16px;}
+  .search-box input{flex:1;margin-bottom:0;}
+  .kgroup-item{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;}
+  .kgroup-item.done-item{border-color:var(--accent);background:var(--accent-glow);opacity:.65;}
+  .kgroup-item span.name{flex:1;font-size:13px;word-break:break-word;}
+  .progress-bar-wrap{background:var(--bg);border:1px solid var(--border);border-radius:20px;height:8px;overflow:hidden;margin-bottom:8px;}
+  .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:20px;transition:width .4s;}
+  .progress-info{font-size:12px;color:var(--muted);margin-bottom:16px;}
+  .empty-state{text-align:center;padding:32px 12px;color:var(--muted);font-size:13px;}
+  .done-tag{font-size:11px;background:var(--accent-glow);border:1px solid var(--accent);color:var(--accent);padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap;}
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  .nova-materia-bar{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;}
+  .nova-materia-bar p{font-size:13px;color:var(--warn);}
+  .ob{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
+  .ob-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+  .ob-text{font-size:13px;line-height:1.6;white-space:pre-wrap;color:var(--text);max-height:160px;overflow-y:auto;word-break:break-word;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media(max-width:600px){.g2{grid-template-columns:1fr;}}
+  .acc-btn{width:100%;text-align:left;background:transparent;border:none;cursor:pointer;padding:10px 0;font-size:13px;font-weight:600;color:var(--accent);display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);margin-top:6px;}
+  .acc-body{overflow:hidden;transition:max-height .3s ease;}
+  .cat-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .cat-grid label{display:flex;align-items:center;gap:5px;margin:0;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;cursor:pointer;font-weight:400;text-transform:none;}
+  .cat-grid input[type=checkbox]{accent-color:var(--accent);}
+  .passo{display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;}
+  .passo-texto{font-size:13px;line-height:1.6;}
+  .passo-texto strong{color:var(--accent);}
+  code{background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:12px;}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .6s linear infinite;vertical-align:middle;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  #setupScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .setup-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;}
+  .setup-box h2{font-size:17px;margin-bottom:8px;}
+  .setup-box p{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div id="setupScreen">
+  <div class="setup-box">
+    <h2>☁️ Conectar ao Supabase</h2>
+    <p>Cole a URL e a chave anônima (anon key) do seu projeto Supabase para sincronizar grupos e progresso entre iPhone, tablet e PC.</p>
+    <label>URL do projeto</label>
+    <input type="text" id="sbUrl" placeholder="https://xxxxx.supabase.co">
+    <label>Anon key</label>
+    <input type="text" id="sbKey" placeholder="eyJhbGciOi...">
+    <button class="btn btn-primary" onclick="connectSupabase()">Conectar e sincronizar</button>
+    <p id="setupMsg" style="margin-top:10px;color:var(--danger)"></p>
+  </div>
+</div>
+
+<header>
+  <div class="logo">📰</div>
+  <div><h1>Portal Felipe Tommy</h1><p>Painel Unificado — Publicação &amp; Distribuição</p></div>
+  <div class="sync-dot" id="syncDot"><span class="dot"></span><span id="syncTxt">—</span></div>
+</header>
+
+<nav>
+  <button class="tab active" onclick="showTab('comousar',this)">📖 Como usar</button>
+  <button class="tab" onclick="showTab('publicar',this)">🌐 Publicar</button>
+  <button class="tab" onclick="showTab('whatsapp',this)">📤 WhatsApp</button>
+  <button class="tab" onclick="showTab('grupos',this)">👥 Grupos</button>
+  <button class="tab" onclick="showTab('encaminhar',this)">🚀 Encaminhar</button>
+  <button class="tab" onclick="showTab('config',this)">⚙️ Config</button>
+</nav>
+
+<!-- COMO USAR -->
+<div class="page active" id="tab-comousar">
+  <div class="card">
+    <div class="card-title">📖 Fluxo de publicação</div>
+    <div class="passo"><div class="step-badge">1</div><div class="passo-texto"><strong>Gere o JSON no Claude</strong><br>Copie o prompt abaixo, cole no Claude.ai com o texto da matéria e copie o JSON que ele devolver.</div></div>
+    <div class="passo"><div class="step-badge">2</div><div class="passo-texto"><strong>Cole o JSON na aba "Publicar"</strong><br>Carregue os dados, preencha os links e publique no WordPress como rascunho.</div></div>
+    <div class="passo"><div class="step-badge">3</div><div class="passo-texto"><strong>Adicione a imagem e publique</strong><br>No WordPress, defina a imagem de capa e publique o post.</div></div>
+    <div class="passo"><div class="step-badge">4</div><div class="passo-texto"><strong>Vá para a aba "WhatsApp"</strong><br>O título e a enquete já vêm preenchidos automaticamente do mesmo JSON. Cole o link da matéria publicada e do Instagram, gere o texto do canal.</div></div>
+    <div class="passo"><div class="step-badge">5</div><div class="passo-texto"><strong>Publique no canal e use a aba "Encaminhar"</strong><br>Busque por palavra-chave e marque os grupos conforme for encaminhando — o progresso fica salvo na nuvem.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="justify-content:flex-start">💬 Prompt para usar no Claude</div>
+    <p class="hint" style="margin-top:0">Copie este prompt, cole no Claude.ai e substitua o texto da matéria no final.</p>
+    <div class="ob">
+      <div class="ob-label">Prompt completo</div>
+      <div class="ob-text" id="prompt-modelo" style="max-height:300px">Atue como um jornalista investigativo sênior, especialista em redação jornalística e otimização avançada de SEO para WordPress.
+
+Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (sem texto fora do JSON):
+
+{
+  "frase_chave": "exatamente 4 palavras",
+  "titulo_seo": "máx 85 chars, contendo a frase-chave, primeira letra maiúscula resto minúsculas",
+  "subtitulo": "subtítulo chamativo até 115 chars",
+  "slug": "slug curto com 3 a 5 palavras baseado na frase-chave",
+  "meta_descricao": "meta descrição chamativa com frase-chave",
+  "resumo": "resumo em 2-3 frases para WordPress",
+  "tags": "tag1, tag2, ..., tag10 — sem o caractere #",
+  "corpo_html": "texto em HTML, começa direto com <p>, usa <h3> para subtítulos, mais de 600 palavras, insere LEIA_TAMBEM_AQUI e LINK_WHATSAPP_AQUI no meio do texto",
+  "email_ascom": "e-mail formal para ASCOM solicitando contraditório",
+  "roteiro_video": "roteiro para Reels/TikTok de 1 minuto",
+  "legenda_social": "legenda para Instagram/Facebook/X, mínimo 8 linhas, com CTA e hashtags terminando em #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "enquete_stories": "enquete para Stories",
+  "wa_canal": "📹 *Veja o vídeo:* [link]\n🔥 *[título até 67 chars]*\n👉 *Leia mais:* [link]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
+  "wa_grupo": "enquete rápida para grupos de WhatsApp"
+}
+
+Responda APENAS com o JSON. Use português correto com todos os acentos. Nunca use travessão (—). Nunca use # nas tags.
+
+TEXTO DA MATÉRIA:
+"Cole aqui o texto da matéria"</div>
+      <button class="btn btn-copy" style="margin-top:8px" onclick="cp('prompt-modelo')">📋 Copiar prompt</button>
+    </div>
+  </div>
+</div>
+
+<!-- PUBLICAR (WORDPRESS) -->
+<div class="page" id="tab-publicar">
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span> Colar JSON gerado pelo Claude</div>
+    <label>Cole aqui o JSON completo</label>
+    <textarea id="json-input" rows="6" placeholder='{"frase_chave":"...","titulo_seo":"...",...}'></textarea>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="carregarJSON()" style="flex:2">⚡ Carregar dados</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('json-input').value=''" style="flex:1">Limpar</button>
+    </div>
+    <div id="st-json" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div id="area-dados" style="display:none">
+    <div class="card">
+      <div class="card-title">✓ Dados carregados — revisão rápida</div>
+      <div class="g2">
+        <div class="ob"><div class="ob-label">Frase-chave</div><div class="ob-text" id="r-frase"></div></div>
+        <div class="ob"><div class="ob-label">Slug</div><div class="ob-text" id="r-slug"></div></div>
+      </div>
+      <div class="ob"><div class="ob-label">Título SEO</div><div class="ob-text" id="r-titulo"></div></div>
+      <div class="ob"><div class="ob-label">Resumo</div><div class="ob-text" id="r-resumo"></div></div>
+      <div class="ob"><div class="ob-label">Tags</div><div class="ob-text" id="r-tags"></div></div>
+      <button class="acc-btn" onclick="toggleAcc('acc-corpo','ic-corpo')">📄 Corpo HTML completo <span id="ic-corpo">▼</span></button>
+      <div class="acc-body" id="acc-corpo" style="max-height:0">
+        <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-corpo" style="max-height:220px"></div></div>
+      </div>
+      <button class="acc-btn" onclick="toggleAcc('acc-email','ic-email')">📧 E-mail ASCOM <span id="ic-email">▼</span></button>
+      <div class="acc-body" id="acc-email" style="max-height:0">
+        <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-email" style="max-height:200px"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="step-badge">2</span> Finalizar e publicar</div>
+      <label>Link "Leia também" — matéria relacionada</label>
+      <input type="url" id="wp-leia" placeholder="https://felipetommy.com.br/...">
+      <label>Link do post do Instagram</label>
+      <input type="url" id="wp-ig" placeholder="https://www.instagram.com/p/...">
+      <label>Categorias</label>
+      <div class="cat-grid">
+        <label><input type="checkbox" value="política" onchange="togCat(this)"> Política</label>
+        <label><input type="checkbox" value="regional" onchange="togCat(this)"> Regional</label>
+        <label><input type="checkbox" value="polícia" onchange="togCat(this)"> Polícia</label>
+        <label><input type="checkbox" value="economia" onchange="togCat(this)"> Economia</label>
+        <label><input type="checkbox" value="nacional" onchange="togCat(this)"> Nacional</label>
+        <label><input type="checkbox" value="mineração" onchange="togCat(this)"> Mineração</label>
+        <label><input type="checkbox" value="esporte" onchange="togCat(this)"> Esporte</label>
+        <label><input type="checkbox" value="entretenimento" onchange="togCat(this)"> Entretenimento</label>
+        <label><input type="checkbox" value="tecnologia" onchange="togCat(this)"> Tecnologia</label>
+        <label><input type="checkbox" value="editorial" onchange="togCat(this)"> Editorial</label>
+        <label><input type="checkbox" value="internacional" onchange="togCat(this)"> Internacional</label>
+      </div>
+      <label>Tags (preenchido automaticamente)</label>
+      <textarea id="wp-tags" rows="2"></textarea>
+      <label>Status de publicação</label>
+      <select id="wp-status">
+        <option value="draft">Rascunho — revisar antes de publicar</option>
+        <option value="publish">Publicar imediatamente</option>
+      </select>
+      <div id="st-pub" class="status" style="display:none"></div>
+      <button class="btn btn-primary" onclick="publicar()"><span class="spin" id="sp-pub" style="display:none"></span>🌐 Publicar no WordPress</button>
+      <p class="hint" style="margin-top:10px;margin-bottom:0">📷 Após publicar, defina a imagem de capa manualmente no WordPress.</p>
+    </div>
+  </div>
+</div>
+
+<!-- WHATSAPP - PUBLICAR -->
+<div class="page" id="tab-whatsapp">
+  <div class="nova-materia-bar" id="barraNova" style="display:none">
+    <p>⚠️ Há dados de uma matéria carregada.</p>
+    <button class="btn-warn" onclick="novaMateria()">🗑 Nova matéria — limpar campos</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚡ Dados importados da aba Publicar</div>
+    <p class="hint" style="margin-top:0;margin-bottom:0" id="statusImportTxt">Carregue o JSON na aba "Publicar" primeiro — título e enquete preenchem aqui automaticamente.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span> Dados complementares</div>
+    <label>Link da matéria no portal (já publicada)</label>
+    <input type="url" id="linkMateria" placeholder="https://felipetommy.com.br/nome-da-materia/" oninput="verificarBarraNova()"/>
+    <label>Título curto para o canal (manchete)</label>
+    <input type="text" id="tituloCurto" placeholder="Ex: Portugal tem geração de ouro além de Cristiano Ronaldo na Copa" oninput="verificarBarraNova()"/>
+    <label>Tipo de publicação no Instagram</label>
+    <div class="toggle-group">
+      <div class="toggle-btn active" id="tipo-video" onclick="setTipo('video')">📹 Vídeo</div>
+      <div class="toggle-btn" id="tipo-post" onclick="setTipo('post')">📸 Matéria no Insta</div>
+    </div>
+    <label id="label-insta">Link do vídeo no Instagram</label>
+    <input type="url" id="linkInsta" placeholder="https://www.instagram.com/p/..." oninput="verificarBarraNova()"/>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">2</span> Enquete para o canal</div>
+    <label>Título da enquete</label>
+    <input type="text" id="enqueteTitulo" placeholder="Ex: 🇧🇷 ENQUETE: Qual sua opinião sobre..."/>
+    <label>Opções (mínimo 2, máximo 4)</label>
+    <div class="enquete-options" id="enqueteOpcoes">
+      <div class="enquete-option"><span style="font-size:13px;min-width:20px">1️⃣</span><input type="text" placeholder="Opção 1"/><button onclick="removeOpcao(this)">✕</button></div>
+      <div class="enquete-option"><span style="font-size:13px;min-width:20px">2️⃣</span><input type="text" placeholder="Opção 2"/><button onclick="removeOpcao(this)">✕</button></div>
+    </div>
+    <button class="add-option-btn" onclick="addOpcao()">+ Adicionar opção</button>
+  </div>
+
+  <button class="btn btn-primary" onclick="gerar()">⚡ Gerar conteúdo para o canal</button>
+
+  <div id="resultados" style="display:none;margin-top:20px;">
+    <div class="card">
+      <div class="card-title">📎 Link encurtado</div>
+      <div id="status-encurtador" class="status loading" style="margin-bottom:12px">Encurtando link…</div>
+      <div class="output-header"><span class="output-label">Link curto</span><button class="btn-copy" onclick="copiar('outputLinkCurto',this)">Copiar</button></div>
+      <div class="output-box" id="outputLinkCurto">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">💬 Texto para o canal WhatsApp</div>
+      <div class="output-header"><span class="output-label">Mensagem do canal</span><button class="btn-copy" onclick="copiar('outputCanal',this)">Copiar</button></div>
+      <div class="output-box" id="outputCanal">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Enquete para o canal</div>
+      <div class="output-header"><span class="output-label">Enquete</span><button class="btn-copy" onclick="copiar('outputEnquete',this)">Copiar</button></div>
+      <div class="output-box" id="outputEnquete">—</div>
+    </div>
+    <button class="btn btn-primary" onclick="irParaEncaminhar()">🚀 Ir para encaminhar nos grupos</button>
+  </div>
+</div>
+
+<!-- GRUPOS -->
+<div class="page" id="tab-grupos">
+  <div class="card">
+    <div class="card-title">➕ Adicionar grupo</div>
+    <div class="row">
+      <div><label>Nome do grupo</label><input type="text" id="novoGrupo" placeholder="Ex: PEBAS NOTÍCIAS 🔴"/></div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:14px"><button class="btn btn-primary" onclick="adicionarGrupo()" style="height:44px">Adicionar</button></div>
+    </div>
+    <p class="hint">Os grupos ficam salvos na nuvem (Supabase) e sincronizam entre todos os seus dispositivos.</p>
+  </div>
+  <div class="card" id="migrarCard" style="display:none">
+    <div class="card-title">📥 Migrar grupos do navegador antigo</div>
+    <p class="hint" style="margin-top:0">Encontramos <span id="qtdMigrar"></span> grupos salvos neste navegador (versão antiga, local). Quer enviá-los para a nuvem agora?</p>
+    <button class="btn btn-primary" onclick="migrarGruposAntigos()">☁️ Migrar para o Supabase</button>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      <span>👥 Lista de grupos (<span id="totalGrupos">0</span>)</span>
+      <button class="btn-danger-sm" onclick="limparGrupos()">Limpar tudo</button>
+    </div>
+    <div class="group-list" id="listaGrupos"><div class="empty-state">Carregando grupos…</div></div>
+  </div>
+</div>
+
+<!-- ENCAMINHAR -->
+<div class="page" id="tab-encaminhar">
+  <div class="card">
+    <div class="card-title">🚀 Progresso do encaminhamento — <span id="slugAtual" style="color:var(--muted);font-weight:400;text-transform:none"></span></div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+    <p class="progress-info" id="progressInfo">0 de 0 grupos concluídos</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-sm" onclick="resetarEncaminhamento()">🔄 Reiniciar progresso desta matéria</button>
+      <button class="btn-sm" onclick="marcarTodos()">✅ Marcar todos como feito</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="justify-content:flex-start">🔍 Buscar grupos por palavra-chave</div>
+    <p class="hint" style="margin-top:0;margin-bottom:12px">Digite "amigos", "noticias", "carajas" etc. para ver todos os grupos com essa palavra de uma vez.</p>
+    <div class="search-box">
+      <input type="text" id="buscaGrupo" placeholder="Ex: amigos, noticias, parauapebas, carajas..." onkeyup="buscarGrupos()"/>
+      <button class="btn-sm" onclick="limparBusca()">Limpar</button>
+    </div>
+    <div id="resultadoBusca"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span>📋 Todos os grupos</span>
+      <span id="contagemGeral" style="font-size:12px;color:var(--muted);text-transform:none;font-weight:400"></span>
+    </div>
+    <div class="group-list" id="listaEncaminhar"><div class="empty-state">Cadastre grupos na aba Grupos.</div></div>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div class="page" id="tab-config">
+  <div class="card">
+    <div class="card-title">🌐 WordPress — Credenciais</div>
+    <p class="hint" style="margin-top:0">Crie uma <strong>Senha de Aplicativo</strong> em: WordPress → Usuários → Seu Perfil → Senhas de aplicativo. Fica salva só neste navegador/dispositivo.</p>
+    <label>URL do site</label><input type="url" id="cfg-url" value="https://felipetommy.com.br">
+    <label>Usuário WordPress</label><input type="text" id="cfg-user" placeholder="felipetommyreal">
+    <label>Senha de aplicativo</label><input type="password" id="cfg-pass" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx">
+    <label>URL do banner WhatsApp (GIF, opcional)</label><input type="url" id="cfg-banner" placeholder="https://...banner.gif">
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm" onclick="testarWP()"><span class="spin" id="sp-test" style="display:none"></span>🔌 Testar conexão</button>
+      <button class="btn btn-primary" onclick="salvarCfgWP()" style="flex:1">💾 Salvar credenciais WordPress</button>
+    </div>
+    <div id="st-cfg" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">☁️ Conexão com a nuvem (Supabase)</div>
+    <p class="hint" style="margin-top:0" id="sbInfo">—</p>
+    <button class="btn-secondary" onclick="document.getElementById('setupScreen').style.display='flex'">Reconectar / trocar projeto Supabase</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">❓ Como criar a senha de aplicativo WordPress</div>
+    <ol style="padding-left:18px;font-size:13px;line-height:1.7">
+      <li>Acesse <strong>felipetommy.com.br/wp-admin</strong></li>
+      <li>Vá em <strong>Usuários → Seu Perfil</strong></li>
+      <li>Role até <strong>Senhas de aplicativo</strong></li>
+      <li>Digite "Painel Unificado" e clique em <strong>Adicionar nova senha</strong></li>
+      <li>Copie a senha gerada (aparece só uma vez!) e cole acima</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+// ───────────────────────── SUPABASE ─────────────────────────
+const LS_SB='ft_sb_cfg';
+let SB=null;
+
+async function sbFetch(path,method='GET',body=null,extraHeaders={}){
+  const h={'apikey':SB.key,'Authorization':'Bearer '+SB.key,'Content-Type':'application/json',...extraHeaders};
+  const opts={method,headers:h};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(SB.url+'/rest/v1/'+path,opts);
+  if(!r.ok){const t=await r.text();throw new Error(t);}
+  const ct=r.headers.get('content-type')||'';
+  if(ct.includes('application/json'))return r.json();
+  return null;
+}
+
+function setSync(state,txt){
+  const el=document.getElementById('syncDot');
+  el.className='sync-dot '+state;
+  document.getElementById('syncTxt').textContent=txt;
+}
+
+async function connectSupabase(){
+  const url=document.getElementById('sbUrl').value.trim().replace(/\/$/,'');
+  const key=document.getElementById('sbKey').value.trim();
+  if(!url||!key){document.getElementById('setupMsg').textContent='Preencha URL e chave.';return;}
+  document.getElementById('setupMsg').textContent='Conectando...';
+  SB={url,key};
+  try{
+    await sbFetch('grupos?select=id&limit=1');
+    localStorage.setItem(LS_SB,JSON.stringify(SB));
+    document.getElementById('setupScreen').style.display='none';
+    setSync('online','Sincronizado');
+    document.getElementById('sbInfo').textContent='Conectado a: '+SB.url;
+    await boot();
+  }catch(e){
+    document.getElementById('setupMsg').textContent='Erro ao conectar. Verifique URL, chave, e se as tabelas foram criadas (veja o schema.sql).';
+    SB=null;
+  }
+}
+
+// ───────────────────────── ESTADO ─────────────────────────
+let grupos=[];          // [{id,nome,ativo}]
+let doneIds=new Set();  // grupo_id feitos para a matéria atual
+let dados={};
+let catsSel=[];
+let tipoInsta='video';
+const emojisNum=['1️⃣','2️⃣','3️⃣','4️⃣'];
+const WA_CANAL_URL='https://www.whatsapp.com/channel/0029VaaklDWHAdNcph078N2a';
+
+function showTab(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='grupos')renderGrupos();
+  if(id==='encaminhar'){renderEncaminhar();buscarGrupos();}
+}
+
+function cp(id){
+  const el=document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent||'').then(()=>{
+    const btn=el.parentElement.querySelector('.btn-copy');
+    if(!btn)return;
+    const orig=btn.textContent;
+    btn.textContent='✅ Copiado!';
+    setTimeout(()=>{btn.textContent=orig;},1500);
+  });
+}
+function copiar(id,btn){
+  const txt=document.getElementById(id).textContent;
+  if(!txt||txt==='—')return;
+  navigator.clipboard.writeText(txt).then(()=>{
+    btn.textContent='✓ Copiado!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copiar';btn.classList.remove('copied');},2000);
+  });
+}
+function toggleAcc(id,iconId){
+  const el=document.getElementById(id),ic=document.getElementById(iconId);
+  if(!el.style.maxHeight||el.style.maxHeight==='0px'){el.style.maxHeight=(el.scrollHeight+40)+'px';ic.textContent='▲';}
+  else{el.style.maxHeight='0';ic.textContent='▼';}
+}
+function showSt(id,cls,msg){
+  const el=document.getElementById(id);
+  el.className='status '+cls;el.textContent=msg;el.style.display='block';
+}
+
+// ───────────────────────── WORDPRESS CONFIG (local ao dispositivo) ─────────────────────────
+function getCfg(){try{return JSON.parse(localStorage.getItem('ft_cfg')||'{}');}catch(e){return{};}}
+function salvarCfgWP(){
+  localStorage.setItem('ft_cfg',JSON.stringify({
+    url:document.getElementById('cfg-url').value.trim().replace(/\/$/,''),
+    user:document.getElementById('cfg-user').value.trim(),
+    pass:document.getElementById('cfg-pass').value.trim(),
+    banner:document.getElementById('cfg-banner').value.trim()
+  }));
+  showSt('st-cfg','ok','✅ Configurações salvas neste dispositivo.');
+}
+function carregarCfgWP(){
+  const c=getCfg();
+  if(c.url)document.getElementById('cfg-url').value=c.url;
+  if(c.user)document.getElementById('cfg-user').value=c.user;
+  if(c.pass)document.getElementById('cfg-pass').value=c.pass;
+  if(c.banner)document.getElementById('cfg-banner').value=c.banner;
+}
+async function testarWP(){
+  salvarCfgWP();
+  const c=getCfg();
+  if(!c.url||!c.user||!c.pass){showSt('st-cfg','err','⚠️ Preencha URL, usuário e senha antes de testar.');return;}
+  document.getElementById('sp-test').style.display='inline-block';
+  document.getElementById('st-cfg').style.display='none';
+  try{
+    const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
+    const r=await fetch(c.url+'/wp-json/wp/v2/users/me',{headers:{'Authorization':'Basic '+creds}});
+    document.getElementById('sp-test').style.display='none';
+    if(r.ok){const d=await r.json();showSt('st-cfg','ok','✅ Conectado! Usuário: '+(d.name||c.user));}
+    else showSt('st-cfg','err','❌ Erro '+r.status+'. Verifique usuário e senha.');
+  }catch(e){
+    document.getElementById('sp-test').style.display='none';
+    showSt('st-cfg','err','❌ Erro: '+e.message);
+  }
+}
+
+// ───────────────────────── CORREÇÃO DE ACENTOS / TAGS ─────────────────────────
+function corrigirAcentos(t){
+  if(!t)return t;
+  const mapa=[[/Ã£/g,'ã'],[/Ã¢/g,'â'],[/Ã¡/g,'á'],[/Ã /g,'à'],[/Ã¤/g,'ä'],[/Ã‚/g,'Â'],[/Ã€/g,'À'],
+    [/Ã©/g,'é'],[/Ãª/g,'ê'],[/Ã¨/g,'è'],[/Ã«/g,'ë'],[/Ã‰/g,'É'],[/ÃŠ/g,'Ê'],[/Ãˆ/g,'È'],
+    [/Ã­/g,'í'],[/Ã®/g,'î'],[/Ã¬/g,'ì'],[/Ã¯/g,'ï'],[/ÃŽ/g,'Î'],[/ÃŒ/g,'Ì'],
+    [/Ã³/g,'ó'],[/Ã´/g,'ô'],[/Ã²/g,'ò'],[/Ãµ/g,'õ'],[/Ã¶/g,'ö'],[/Ã•/g,'Õ'],
+    [/Ãº/g,'ú'],[/Ã»/g,'û'],[/Ã¹/g,'ù'],[/Ã¼/g,'ü'],[/Ãš/g,'Ú'],[/Ã›/g,'Û'],[/Ã™/g,'Ù'],
+    [/Ã§/g,'ç'],[/Ã‡/g,'Ç'],[/Ã±/g,'ñ'],
+    [/â€œ/g,'"'],[/â€/g,'"'],[/â€™/g,"'"],[/â€˜/g,"'"],[/â€"/g,'–'],[/â€"/g,'—'],
+    [/Â°/g,'°'],[/Â·/g,'·'],[/Â©/g,'©'],[/Â®/g,'®']];
+  let r=t;mapa.forEach(p=>{r=r.replace(p[0],p[1]);});return r;
+}
+function corrigirObjeto(obj){
+  if(typeof obj==='string')return corrigirAcentos(obj);
+  if(typeof obj==='object'&&obj!==null)Object.keys(obj).forEach(k=>{obj[k]=corrigirObjeto(obj[k]);});
+  return obj;
+}
+function limparTags(s){return(s||'').split(',').map(t=>t.replace(/#/g,'').trim()).filter(Boolean).join(', ');}
+function horaBrasilia(){
+  const agora=new Date();
+  const utc=agora.getTime()+(agora.getTimezoneOffset()*60000);
+  const b=new Date(utc+(-3*3600000));
+  const d=String(b.getDate()).padStart(2,'0'),m=String(b.getMonth()+1).padStart(2,'0'),y=b.getFullYear();
+  const h=String(b.getHours()).padStart(2,'0'),min=String(b.getMinutes()).padStart(2,'0');
+  return d+'/'+m+'/'+y+' às '+h+':'+min;
+}
+function togCat(cb){
+  if(cb.checked){if(!catsSel.includes(cb.value))catsSel.push(cb.value);}
+  else catsSel=catsSel.filter(c=>c!==cb.value);
+}
+
+// ───────────────────────── CARREGAR JSON (Publicar) ─────────────────────────
+function carregarJSON(){
+  const raw=document.getElementById('json-input').value.trim();
+  if(!raw){showSt('st-json','err','⚠️ Cole o JSON gerado pelo Claude antes de carregar.');return;}
+  try{
+    const cleaned=raw.replace(/```json|```/g,'').trim();
+    let j=JSON.parse(cleaned);
+    j=corrigirObjeto(j);
+    j.tags=limparTags(j.tags);
+    dados=j;
+    function s(id,v){const el=document.getElementById(id);if(el)el.textContent=v||'';}
+    s('r-frase',j.frase_chave);s('r-slug',j.slug);s('r-titulo',j.titulo_seo);
+    s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
+    document.getElementById('wp-tags').value=j.tags||'';
+    document.getElementById('area-dados').style.display='block';
+    showSt('st-json','ok','✅ Dados carregados! Revise abaixo, preencha os links e publique.');
+    document.getElementById('area-dados').scrollIntoView({behavior:'smooth'});
+    preencherWhatsapp(j);
+  }catch(e){
+    showSt('st-json','err','❌ JSON inválido. Copie o bloco completo. Erro: '+e.message);
+  }
+}
+
+function preencherWhatsapp(data){
+  let titulo='';
+  if(data.wa_canal){
+    const linhas=data.wa_canal.split('\n');
+    const lTitulo=linhas.find(l=>l.includes('🔥'));
+    if(lTitulo)titulo=lTitulo.replace(/🔥/g,'').replace(/\*/g,'').trim();
+  }
+  if(!titulo&&data.subtitulo)titulo=data.subtitulo;
+  if(!titulo&&data.titulo_seo)titulo=data.titulo_seo;
+  if(titulo)document.getElementById('tituloCurto').value=titulo;
+
+  if(data.wa_grupo){
+    const linhas=data.wa_grupo.split('\n').map(l=>l.trim());
+    const linhaTitulo=linhas[0]||'';
+    const linhaPergunta=linhas.find((l,i)=>i>0&&l&&!l.match(/^[1-4]|1️⃣|2️⃣|3️⃣|4️⃣/)&&!l.toLowerCase().includes('responda'))||'';
+    const tituloEnquete=linhaTitulo&&linhaPergunta?linhaTitulo+': '+linhaPergunta:(linhaTitulo||linhaPergunta);
+    document.getElementById('enqueteTitulo').value=tituloEnquete;
+    const opcoes=[];
+    linhas.forEach(l=>{
+      if(!l)return;
+      const m=l.match(/^(?:1️⃣|2️⃣|3️⃣|4️⃣|[1-4][.)\s])\s*(.+)/u);
+      if(m&&opcoes.length<4)opcoes.push(m[1].trim());
+    });
+    if(opcoes.length>=2){
+      const div=document.getElementById('enqueteOpcoes');
+      div.innerHTML='';
+      opcoes.forEach((op,i)=>{
+        const el=document.createElement('div');
+        el.className='enquete-option';
+        el.innerHTML='<span style="font-size:13px;min-width:20px">'+emojisNum[i]+'</span><input type="text" value="'+op.replace(/"/g,'&quot;')+'"/><button onclick="removeOpcao(this)">✕</button>';
+        div.appendChild(el);
+      });
+    }
+  }
+  document.getElementById('statusImportTxt').textContent='✓ Importado da aba Publicar: "'+(titulo||'—')+'". Preencha os links abaixo.';
+  verificarBarraNova();
+}
+
+function novaMateria(){
+  if(!confirm('Limpar todos os campos da matéria atual?\n\nOs grupos cadastrados NÃO serão apagados.'))return;
+  document.getElementById('json-input').value='';
+  document.getElementById('area-dados').style.display='none';
+  document.getElementById('linkMateria').value='';
+  document.getElementById('tituloCurto').value='';
+  document.getElementById('linkInsta').value='';
+  document.getElementById('enqueteTitulo').value='';
+  document.getElementById('enqueteOpcoes').innerHTML='<div class="enquete-option"><span style="font-size:13px;min-width:20px">1️⃣</span><input type="text" placeholder="Opção 1"/><button onclick="removeOpcao(this)">✕</button></div><div class="enquete-option"><span style="font-size:13px;min-width:20px">2️⃣</span><input type="text" placeholder="Opção 2"/><button onclick="removeOpcao(this)">✕</button></div>';
+  document.getElementById('resultados').style.display='none';
+  document.getElementById('statusImportTxt').textContent='Carregue o JSON na aba "Publicar" primeiro — título e enquete preenchem aqui automaticamente.';
+  document.getElementById('barraNova').style.display='none';
+  dados={};
+  setTipo('video');
+  doneIds=new Set();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function verificarBarraNova(){
+  const tem=document.getElementById('linkMateria').value||document.getElementById('tituloCurto').value||document.getElementById('linkInsta').value;
+  document.getElementById('barraNova').style.display=tem?'flex':'none';
+}
+function setTipo(t){
+  tipoInsta=t;
+  document.getElementById('tipo-video').classList.toggle('active',t==='video');
+  document.getElementById('tipo-post').classList.toggle('active',t==='post');
+  document.getElementById('label-insta').textContent=t==='video'?'Link do vídeo no Instagram':'Link da matéria no Instagram';
+}
+function addOpcao(){
+  const div=document.getElementById('enqueteOpcoes');
+  const n=div.children.length;
+  if(n>=4){alert('Máximo de 4 opções.');return;}
+  const el=document.createElement('div');
+  el.className='enquete-option';
+  el.innerHTML='<span style="font-size:13px;min-width:20px">'+emojisNum[n]+'</span><input type="text" placeholder="Opção '+(n+1)+'"/><button onclick="removeOpcao(this)">✕</button>';
+  div.appendChild(el);
+}
+function removeOpcao(btn){
+  const div=document.getElementById('enqueteOpcoes');
+  if(div.children.length<=2){alert('Mínimo de 2 opções.');return;}
+  btn.closest('.enquete-option').remove();
+  [...div.children].forEach((el,i)=>{el.querySelector('span').textContent=emojisNum[i];el.querySelector('input').placeholder='Opção '+(i+1);});
+}
+
+async function encurtarLink(url){
+  try{
+    const r=await fetch('https://tinyurl.com/api-create.php?url='+encodeURIComponent(url));
+    if(!r.ok)throw new Error();
+    return(await r.text()).trim();
+  }catch{return url;}
+}
+
+async function gerar(){
+  const linkMateria=document.getElementById('linkMateria').value.trim();
+  const tituloCurto=document.getElementById('tituloCurto').value.trim();
+  const linkInsta=document.getElementById('linkInsta').value.trim();
+  const enqueteTitulo=document.getElementById('enqueteTitulo').value.trim();
+  if(!linkMateria||!tituloCurto||!linkInsta){alert('Preencha o link da matéria, o título curto e o link do Instagram.');return;}
+  const opcoes=[...document.querySelectorAll('#enqueteOpcoes .enquete-option input')].map(i=>i.value.trim()).filter(Boolean);
+  if(opcoes.length<2){alert('Preencha pelo menos 2 opções na enquete.');return;}
+  document.getElementById('resultados').style.display='block';
+  document.getElementById('status-encurtador').className='status loading';
+  document.getElementById('status-encurtador').textContent='Encurtando link…';
+  document.getElementById('outputLinkCurto').textContent='—';
+  document.getElementById('outputCanal').textContent='—';
+  document.getElementById('outputEnquete').textContent='—';
+  document.getElementById('resultados').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('barraNova').style.display='flex';
+  const linkCurto=await encurtarLink(linkMateria);
+  const ok=linkCurto!==linkMateria;
+  document.getElementById('status-encurtador').className='status '+(ok?'ok':'err');
+  document.getElementById('status-encurtador').textContent=ok?'✓ Link encurtado com sucesso':'⚠ Não foi possível encurtar — usando link original';
+  document.getElementById('outputLinkCurto').textContent=linkCurto;
+  const emojiInsta=tipoInsta==='video'?'📹':'📰';
+  const labelInsta=tipoInsta==='video'?'*Veja o vídeo:*':'*Veja a matéria no insta:*';
+  document.getElementById('outputCanal').textContent=emojiInsta+' '+labelInsta+' '+linkInsta+'\n🔥 *'+tituloCurto+'*\n👉 *Leia mais:* '+linkCurto+'\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_';
+  let eq=enqueteTitulo?enqueteTitulo+'\n':'';
+  opcoes.forEach((op,i)=>{eq+=emojisNum[i]+' '+op+'\n';});
+  document.getElementById('outputEnquete').textContent=(eq+'\nResponda com o número! 👇').trim();
+}
+
+function montarConteudo(dados,dataStr,leiaLink,igLink,banner){
+  let corpo=dados.corpo_html||'';
+  const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
+  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',blocoWA);
+  const blocoLeia=leiaLink?'\n<p><strong>Leia também abaixo.</strong></p>\n<p>'+leiaLink+'</p>\n':'';
+  if(leiaLink&&corpo.indexOf('LEIA_TAMBEM_AQUI')!==-1)corpo=corpo.replace('LEIA_TAMBEM_AQUI',blocoLeia);
+  else if(leiaLink){
+    let count=0;
+    corpo=corpo.replace(/<h3/gi,m=>{count++;return count===3?blocoLeia+'<h3':m;});
+  }
+  let conteudo='<p><em>Publicado em '+dataStr+' | Atualizado '+dataStr+' por <a href="https://www.instagram.com/felipetommyreal/" target="_blank" rel="noopener">felipetommyreal</a></em></p>\n<hr/>\n<h3>'+(dados.subtitulo||'')+'</h3>\n'+corpo;
+  if(banner)conteudo+='\n\n<p><a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><img src="'+banner+'" alt="Canal WhatsApp Felipe Tommy" /></a></p>';
+  if(igLink)conteudo+='\n\n<p>'+igLink+'</p>';
+  return conteudo;
+}
+async function resolverTags(nomes,c,creds){
+  const ids=[];
+  for(const raw of nomes){
+    const nome=raw.replace(/#/g,'').trim();
+    if(!nome)continue;
+    try{
+      const r=await fetch(c.url+'/wp-json/wp/v2/tags?search='+encodeURIComponent(nome),{headers:{'Authorization':'Basic '+creds}});
+      const lista=await r.json();
+      if(lista.length>0)ids.push(lista[0].id);
+      else{
+        const cr=await fetch(c.url+'/wp-json/wp/v2/tags',{method:'POST',headers:{'Authorization':'Basic '+creds,'Content-Type':'application/json'},body:JSON.stringify({name:nome})});
+        const nova=await cr.json();
+        if(nova.id)ids.push(nova.id);
+      }
+    }catch(e){}
+  }
+  return ids;
+}
+async function resolverCats(nomes,c,creds){
+  const ids=[];
+  try{
+    const r=await fetch(c.url+'/wp-json/wp/v2/categories?per_page=100',{headers:{'Authorization':'Basic '+creds}});
+    const todasCats=await r.json();
+    for(const raw of nomes){
+      const nome=raw.trim().toLowerCase();
+      if(!nome)continue;
+      const encontrada=todasCats.find(cat=>cat.name.toLowerCase()===nome);
+      if(encontrada)ids.push(encontrada.id);
+    }
+  }catch(e){}
+  return ids;
+}
+async function publicar(){
+  const c=getCfg();
+  if(!c.url||!c.user||!c.pass){showSt('st-pub','err','⚠️ Configure as credenciais na aba Config.');return;}
+  if(!dados.corpo_html){showSt('st-pub','err','⚠️ Carregue o JSON gerado pelo Claude primeiro.');return;}
+  document.getElementById('sp-pub').style.display='inline-block';
+  showSt('st-pub','loading','⏳ Publicando no WordPress...');
+  const dataStr=horaBrasilia();
+  const leiaLink=document.getElementById('wp-leia').value.trim();
+  const igLink=document.getElementById('wp-ig').value.trim();
+  const conteudo=montarConteudo(dados,dataStr,leiaLink,igLink,c.banner);
+  const tagNomes=(document.getElementById('wp-tags').value||'').split(',');
+  const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
+  try{
+    const tagIds=await resolverTags(tagNomes,c,creds);
+    const catIds=await resolverCats(catsSel,c,creds);
+    const payload={
+      title:dados.titulo_seo||'',content:conteudo,status:document.getElementById('wp-status').value,
+      excerpt:dados.resumo||'',tags:tagIds,categories:catIds,slug:dados.slug||'',
+      comment_status:'closed',ping_status:'closed',
+      meta:{_yoast_wpseo_focuskw:dados.frase_chave||'',_yoast_wpseo_metadesc:dados.meta_descricao||''}
+    };
+    const r=await fetch(c.url+'/wp-json/wp/v2/posts',{method:'POST',headers:{'Authorization':'Basic '+creds,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    document.getElementById('sp-pub').style.display='none';
+    if(r.ok){
+      const post=await r.json();
+      const link=post.link||(c.url+'/?p='+post.id);
+      showSt('st-pub','ok','✅ Publicado com sucesso! Acesse: '+link);
+    }else{
+      const err=await r.json().catch(()=>({}));
+      throw new Error(err.message||'Erro '+r.status);
+    }
+  }catch(e){
+    document.getElementById('sp-pub').style.display='none';
+    showSt('st-pub','err','❌ Erro ao publicar: '+e.message);
+  }
+}
+
+// ───────────────────────── GRUPOS (Supabase) ─────────────────────────
+async function carregarGrupos(){
+  setSync('syncing','Sincronizando...');
+  try{
+    grupos=await sbFetch('grupos?select=*&order=created_at.asc');
+    setSync('online','Sincronizado');
+  }catch(e){
+    setSync('error','Erro ao buscar grupos');
+  }
+  renderGrupos();
+  checarMigracaoAntiga();
+}
+async function adicionarGrupo(){
+  const input=document.getElementById('novoGrupo');
+  const nome=input.value.trim();
+  if(!nome)return;
+  try{
+    const novo=await sbFetch('grupos','POST',{nome,ativo:true},{'Prefer':'return=representation'});
+    grupos.push(Array.isArray(novo)?novo[0]:novo);
+    input.value='';
+    renderGrupos();
+  }catch(e){alert('Erro ao salvar grupo na nuvem: '+e.message);}
+}
+document.getElementById('novoGrupo').addEventListener('keydown',e=>{if(e.key==='Enter')adicionarGrupo();});
+async function removerGrupo(id){
+  try{
+    await sbFetch('grupos?id=eq.'+id,'DELETE');
+    grupos=grupos.filter(g=>g.id!==id);
+    renderGrupos();
+  }catch(e){alert('Erro ao remover: '+e.message);}
+}
+async function limparGrupos(){
+  if(!confirm('Remover TODOS os grupos da nuvem? Isso não pode ser desfeito.'))return;
+  try{
+    await sbFetch('grupos?id=neq.00000000-0000-0000-0000-000000000000','DELETE');
+    grupos=[];
+    renderGrupos();
+  }catch(e){alert('Erro ao limpar: '+e.message);}
+}
+function renderGrupos(){
+  document.getElementById('totalGrupos').textContent=grupos.length;
+  const div=document.getElementById('listaGrupos');
+  if(!grupos.length){div.innerHTML='<div class="empty-state">Nenhum grupo cadastrado ainda.</div>';return;}
+  div.innerHTML=grupos.map((g,i)=>'<div class="group-item"><div class="group-num">'+(i+1)+'</div><span>'+g.nome+'</span><button class="btn-danger-sm" onclick="removerGrupo(\''+g.id+'\')">✕</button></div>').join('');
+}
+
+function checarMigracaoAntiga(){
+  const antigos=JSON.parse(localStorage.getItem('ft_grupos')||'[]');
+  if(antigos.length>0&&grupos.length===0){
+    document.getElementById('qtdMigrar').textContent=antigos.length;
+    document.getElementById('migrarCard').style.display='block';
+  }
+}
+async function migrarGruposAntigos(){
+  const antigos=JSON.parse(localStorage.getItem('ft_grupos')||'[]');
+  if(!antigos.length)return;
+  document.getElementById('migrarCard').innerHTML='<div class="card-title">📥 Migrando...</div><p class="hint">Enviando '+antigos.length+' grupos para o Supabase, aguarde.</p>';
+  for(const nome of antigos){
+    try{await sbFetch('grupos','POST',{nome,ativo:true});}catch(e){}
+  }
+  localStorage.removeItem('ft_grupos');
+  document.getElementById('migrarCard').style.display='none';
+  await carregarGrupos();
+  alert('Migração concluída!');
+}
+
+// ───────────────────────── ENCAMINHAR (Supabase) ─────────────────────────
+function slugAtual(){return (dados.slug||document.getElementById('tituloCurto').value||'sem-slug').toLowerCase().replace(/\s+/g,'-');}
+
+async function carregarDone(){
+  const slug=slugAtual();
+  document.getElementById('slugAtual').textContent=slug;
+  try{
+    const rows=await sbFetch('encaminhamentos?select=grupo_id&materia_slug=eq.'+encodeURIComponent(slug)+'&feito=eq.true');
+    doneIds=new Set(rows.map(r=>r.grupo_id));
+  }catch(e){doneIds=new Set();}
+}
+async function toggleDone(grupoId){
+  const slug=slugAtual();
+  if(doneIds.has(grupoId)){
+    doneIds.delete(grupoId);
+    try{await sbFetch('encaminhamentos?materia_slug=eq.'+encodeURIComponent(slug)+'&grupo_id=eq.'+grupoId,'DELETE');}catch(e){}
+  }else{
+    doneIds.add(grupoId);
+    try{await sbFetch('encaminhamentos','POST',{materia_slug:slug,grupo_id:grupoId,feito:true});}catch(e){}
+  }
+  renderEncaminhar();buscarGrupos();
+}
+async function renderEncaminhar(){
+  await carregarDone();
+  const div=document.getElementById('listaEncaminhar');
+  document.getElementById('contagemGeral').textContent=doneIds.size+'/'+grupos.length+' feitos';
+  if(!grupos.length){div.innerHTML='<div class="empty-state">Cadastre grupos na aba Grupos.</div>';updateProgress();return;}
+  div.innerHTML=grupos.map((g,i)=>{
+    const f=doneIds.has(g.id);
+    return '<div class="kgroup-item '+(f?'done-item':'')+'"><div class="group-num">'+(i+1)+'</div><span class="name">'+g.nome+'</span>'+(f?'<span class="done-tag">✓ Feito</span>':'')+'<button class="btn-sm" onclick="toggleDone(\''+g.id+'\')">'+(f?'Desfazer':'Marcar feito')+'</button></div>';
+  }).join('');
+  updateProgress();
+}
+function buscarGrupos(){
+  const termo=(document.getElementById('buscaGrupo').value||'').trim().toLowerCase();
+  const div=document.getElementById('resultadoBusca');
+  if(!termo){div.innerHTML='';return;}
+  const enc=grupos.filter(g=>g.nome.toLowerCase().includes(termo));
+  if(!enc.length){div.innerHTML='<p style="font-size:13px;color:var(--muted);padding:8px 0">Nenhum grupo encontrado com "'+termo+'".</p>';return;}
+  const faltam=enc.filter(g=>!doneIds.has(g.id));
+  const feitos=enc.filter(g=>doneIds.has(g.id));
+  let html='';
+  if(faltam.length){
+    html+='<div style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:8px;text-transform:uppercase">⏳ Faltam encaminhar ('+faltam.length+')</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:6px">';
+    html+=faltam.map(g=>'<div class="kgroup-item"><span class="name">'+g.nome+'</span><button class="btn-sm" onclick="toggleDone(\''+g.id+'\').then(()=>buscarGrupos())">Marcar feito</button></div>').join('');
+    html+='</div><button class="btn-sm" style="margin-top:10px;margin-bottom:16px" onclick="marcarTodosBusca(\''+termo.replace(/'/g,"\\'")+'\')">✅ Marcar todos como feito</button>';
+  }else{
+    html+='<div style="background:var(--accent-glow);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px">✓ Todos os grupos com "'+termo+'" já foram encaminhados!</div>';
+  }
+  if(feitos.length){
+    html+='<details><summary style="font-size:12px;color:var(--muted);cursor:pointer;padding:4px 0;list-style:none">▶ Ver já feitos ('+feitos.length+')</summary>';
+    html+='<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">';
+    html+=feitos.map(g=>'<div class="kgroup-item done-item"><span class="name">'+g.nome+'</span><span class="done-tag">✓ Feito</span><button class="btn-sm" onclick="toggleDone(\''+g.id+'\').then(()=>buscarGrupos())">Desfazer</button></div>').join('');
+    html+='</div></details>';
+  }
+  div.innerHTML=html;
+}
+async function marcarTodosBusca(termo){
+  const alvos=grupos.filter(g=>g.nome.toLowerCase().includes(termo)&&!doneIds.has(g.id));
+  for(const g of alvos){await toggleDone(g.id);}
+  buscarGrupos();
+}
+function limparBusca(){document.getElementById('buscaGrupo').value='';document.getElementById('resultadoBusca').innerHTML='';}
+function updateProgress(){
+  const total=grupos.length,done=doneIds.size;
+  const pct=total?Math.round((done/total)*100):0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressInfo').textContent=done+' de '+total+' grupos concluídos ('+pct+'%)';
+}
+async function resetarEncaminhamento(){
+  if(!confirm('Reiniciar o progresso desta matéria? Os grupos não serão apagados, só o status de "feito".'))return;
+  const slug=slugAtual();
+  try{await sbFetch('encaminhamentos?materia_slug=eq.'+encodeURIComponent(slug),'DELETE');}catch(e){}
+  doneIds=new Set();
+  renderEncaminhar();buscarGrupos();
+}
+async function marcarTodos(){
+  const pendentes=grupos.filter(g=>!doneIds.has(g.id));
+  for(const g of pendentes){await toggleDone(g.id);}
+}
+function irParaEncaminhar(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-encaminhar').classList.add('active');
+  document.querySelectorAll('.tab')[3].classList.add('active');
+  renderEncaminhar();window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ───────────────────────── BOOT ─────────────────────────
+async function boot(){
+  carregarCfgWP();
+  await carregarGrupos();
+  renderEncaminhar();
+}
+(function init(){
+  const raw=localStorage.getItem(LS_SB);
+  if(raw){
+    SB=JSON.parse(raw);
+    document.getElementById('setupScreen').style.display='none';
+    document.getElementById('sbInfo').textContent='Conectado a: '+SB.url;
+    boot();
+  }
+})();
+</script>
+</body>
+</html>
