@@ -200,19 +200,21 @@ TEXTO DA MATÉRIA:
     <div class="card">
       <div class="card-title">✓ Dados carregados — revisão rápida</div>
       <div class="g2">
-        <div class="ob"><div class="ob-label">Frase-chave</div><div class="ob-text" id="r-frase"></div></div>
-        <div class="ob"><div class="ob-label">Slug</div><div class="ob-text" id="r-slug"></div></div>
+        <div class="ob"><div class="ob-label">Frase-chave</div><div class="ob-text" id="r-frase"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-frase')">📋 Copiar</button></div>
+        <div class="ob"><div class="ob-label">Slug</div><div class="ob-text" id="r-slug"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-slug')">📋 Copiar</button></div>
       </div>
-      <div class="ob"><div class="ob-label">Título SEO</div><div class="ob-text" id="r-titulo"></div></div>
-      <div class="ob"><div class="ob-label">Resumo</div><div class="ob-text" id="r-resumo"></div></div>
-      <div class="ob"><div class="ob-label">Tags</div><div class="ob-text" id="r-tags"></div></div>
+      <div class="ob"><div class="ob-label">Título SEO</div><div class="ob-text" id="r-titulo"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-titulo')">📋 Copiar</button></div>
+      <div class="ob"><div class="ob-label">Subtítulo</div><div class="ob-text" id="r-sub"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-sub')">📋 Copiar</button></div>
+      <div class="ob"><div class="ob-label">Meta descrição (Yoast)</div><div class="ob-text" id="r-meta"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-meta')">📋 Copiar</button></div>
+      <div class="ob"><div class="ob-label">Resumo</div><div class="ob-text" id="r-resumo"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-resumo')">📋 Copiar</button></div>
+      <div class="ob"><div class="ob-label">Tags</div><div class="ob-text" id="r-tags"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-tags')">📋 Copiar</button></div>
       <button class="acc-btn" onclick="toggleAcc('acc-corpo','ic-corpo')">📄 Corpo HTML completo <span id="ic-corpo">▼</span></button>
       <div class="acc-body" id="acc-corpo" style="max-height:0">
-        <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-corpo" style="max-height:220px"></div></div>
+        <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-corpo" style="max-height:220px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-corpo')">📋 Copiar</button></div>
       </div>
       <button class="acc-btn" onclick="toggleAcc('acc-email','ic-email')">📧 E-mail ASCOM <span id="ic-email">▼</span></button>
       <div class="acc-body" id="acc-email" style="max-height:0">
-        <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-email" style="max-height:200px"></div></div>
+        <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-email" style="max-height:200px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-email')">📋 Copiar</button></div>
       </div>
     </div>
 
@@ -579,6 +581,7 @@ function carregarJSON(){
     dados=j;
     function s(id,v){const el=document.getElementById(id);if(el)el.textContent=v||'';}
     s('r-frase',j.frase_chave);s('r-slug',j.slug);s('r-titulo',j.titulo_seo);
+    s('r-sub',j.subtitulo);s('r-meta',j.meta_descricao);
     s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
     s('r-video',j.roteiro_video);s('r-legenda',j.legenda_social);s('r-stories',j.enquete_stories);
     document.getElementById('wp-tags').value=j.tags||'';
