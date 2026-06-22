@@ -676,10 +676,13 @@ function removeOpcao(btn){
 }
 
 async function encurtarLink(url){
+  // is.gd: link limpo, sem página de preview/intermediária, vai direto ao destino.
   try{
-    const r=await fetch('https://tinyurl.com/api-create.php?url='+encodeURIComponent(url));
+    const r=await fetch('https://is.gd/create.php?format=simple&url='+encodeURIComponent(url));
     if(!r.ok)throw new Error();
-    return(await r.text()).trim();
+    const curto=(await r.text()).trim();
+    if(curto&&/^https?:\/\//.test(curto))return curto;
+    throw new Error();
   }catch{return url;}
 }
 
