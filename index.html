@@ -318,8 +318,8 @@ TEXTO DA MATÉRIA:
     </div>
     <div class="card">
       <div class="card-title">📊 Enquete para o canal</div>
-      <div class="output-header"><span class="output-label">Enquete</span><button class="btn-copy" onclick="copiar('outputEnquete',this)">Copiar</button></div>
-      <div class="output-box" id="outputEnquete">—</div>
+      <p class="hint" style="margin-top:0">Copie campo por campo direto na enquete nativa do WhatsApp: a pergunta em cima, cada opção no seu campo.</p>
+      <div id="enqueteSaida"></div>
     </div>
     <button class="btn btn-primary" onclick="irParaEncaminhar()">🚀 Ir para encaminhar nos grupos</button>
   </div>
@@ -686,6 +686,18 @@ async function encurtarLink(url){
   }catch{return url;}
 }
 
+// Enquete em campos separados (pergunta + cada opção), com botão Copiar individual.
+function renderEnqueteSep(pergunta,opcoes){
+  const c=document.getElementById('enqueteSaida');
+  let html='<div class="ob"><div class="ob-label">Pergunta</div><div class="ob-text" id="enq-perg"></div><button class="btn-copy" style="margin-top:6px" onclick="cp(\'enq-perg\')">📋 Copiar</button></div>';
+  opcoes.forEach((op,i)=>{
+    html+='<div class="ob"><div class="ob-label">Opção '+(i+1)+'</div><div class="ob-text" id="enq-op-'+i+'"></div><button class="btn-copy" style="margin-top:6px" onclick="cp(\'enq-op-'+i+'\')">📋 Copiar</button></div>';
+  });
+  c.innerHTML=html;
+  document.getElementById('enq-perg').textContent=pergunta||'';
+  opcoes.forEach((op,i)=>{document.getElementById('enq-op-'+i).textContent=op;});
+}
+
 async function gerar(){
   const linkMateria=document.getElementById('linkMateria').value.trim();
   const tituloCurto=document.getElementById('tituloCurto').value.trim();
@@ -699,7 +711,7 @@ async function gerar(){
   document.getElementById('status-encurtador').textContent='Encurtando link…';
   document.getElementById('outputLinkCurto').textContent='—';
   document.getElementById('outputCanal').textContent='—';
-  document.getElementById('outputEnquete').textContent='—';
+  document.getElementById('enqueteSaida').innerHTML='';
   document.getElementById('resultados').scrollIntoView({behavior:'smooth',block:'start'});
   document.getElementById('barraNova').style.display='flex';
   let linkCurto,ok;
@@ -718,9 +730,7 @@ async function gerar(){
   const emojiInsta=tipoInsta==='video'?'📹':'📰';
   const labelInsta=tipoInsta==='video'?'*Veja o vídeo:*':'*Veja a matéria no insta:*';
   document.getElementById('outputCanal').textContent=emojiInsta+' '+labelInsta+' '+linkInsta+'\n🔥 *'+tituloCurto+'*\n👉 *Leia mais:* '+linkCurto+'\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_';
-  let eq=enqueteTitulo?enqueteTitulo+'\n':'';
-  opcoes.forEach((op,i)=>{eq+=emojisNum[i]+' '+op+'\n';});
-  document.getElementById('outputEnquete').textContent=(eq+'\nResponda com o número! 👇').trim();
+  renderEnqueteSep(enqueteTitulo,opcoes);
 }
 
 function montarConteudo(dados,dataStr,leiaLink,igLink,banner){
