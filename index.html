@@ -695,7 +695,7 @@ function renderEnqueteSep(pergunta,opcoes){
   });
   c.innerHTML=html;
   document.getElementById('enq-perg').textContent=pergunta||'';
-  opcoes.forEach((op,i)=>{document.getElementById('enq-op-'+i).textContent=op;});
+  opcoes.forEach((op,i)=>{document.getElementById('enq-op-'+i).textContent=emojisNum[i]+' '+op;});
 }
 
 async function gerar(){
