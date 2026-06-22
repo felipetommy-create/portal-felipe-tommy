@@ -131,6 +131,7 @@
 <nav>
   <button class="tab active" onclick="showTab('comousar',this)">📖 Como usar</button>
   <button class="tab" onclick="showTab('publicar',this)">🌐 Publicar</button>
+  <button class="tab" onclick="showTab('redes',this)">🎬 Redes Sociais</button>
   <button class="tab" onclick="showTab('whatsapp',this)">📤 WhatsApp</button>
   <button class="tab" onclick="showTab('grupos',this)">👥 Grupos</button>
   <button class="tab" onclick="showTab('encaminhar',this)">🚀 Encaminhar</button>
@@ -246,6 +247,17 @@ TEXTO DA MATÉRIA:
       <button class="btn btn-primary" onclick="publicar()"><span class="spin" id="sp-pub" style="display:none"></span>🌐 Publicar no WordPress</button>
       <p class="hint" style="margin-top:10px;margin-bottom:0">📷 Após publicar, defina a imagem de capa manualmente no WordPress.</p>
     </div>
+  </div>
+</div>
+
+<!-- REDES SOCIAIS (vídeo + legenda) -->
+<div class="page" id="tab-redes">
+  <div class="card">
+    <div class="card-title" style="justify-content:flex-start">🎬 Redes Sociais &amp; WhatsApp</div>
+    <p class="hint" style="margin-top:0">Carregue o JSON na aba "Publicar" primeiro. Use o roteiro para narrar o vídeo, publique nas redes com a legenda abaixo e depois volte na aba "Publicar" para colar o link do Instagram no WordPress.</p>
+    <div class="ob"><div class="ob-label">Roteiro vídeo 1 min (Reels/TikTok/Shorts)</div><div class="ob-text" id="r-video" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-video')">📋 Copiar</button></div>
+    <div class="ob"><div class="ob-label">Legenda Instagram / Facebook / X / TikTok / Shorts</div><div class="ob-text" id="r-legenda" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda')">📋 Copiar</button></div>
+    <div class="ob"><div class="ob-label">Enquete Stories</div><div class="ob-text" id="r-stories"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-stories')">📋 Copiar</button></div>
   </div>
 </div>
 
@@ -568,6 +580,7 @@ function carregarJSON(){
     function s(id,v){const el=document.getElementById(id);if(el)el.textContent=v||'';}
     s('r-frase',j.frase_chave);s('r-slug',j.slug);s('r-titulo',j.titulo_seo);
     s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
+    s('r-video',j.roteiro_video);s('r-legenda',j.legenda_social);s('r-stories',j.enquete_stories);
     document.getElementById('wp-tags').value=j.tags||'';
     document.getElementById('area-dados').style.display='block';
     showSt('st-json','ok','✅ Dados carregados! Revise abaixo, preencha os links e publique.');
@@ -931,7 +944,7 @@ function irParaEncaminhar(){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-encaminhar').classList.add('active');
-  document.querySelectorAll('.tab')[3].classList.add('active');
+  document.querySelectorAll('.tab')[5].classList.add('active');
   renderEncaminhar();window.scrollTo({top:0,behavior:'smooth'});
 }
 
