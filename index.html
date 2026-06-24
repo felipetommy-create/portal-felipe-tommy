@@ -184,7 +184,7 @@ REGRAS DE LEGIBILIDADE (Yoast) — siga à risca para o texto ficar VERDE:
 
 4. PARÁGRAFOS CURTOS: no máximo 3 a 4 frases por parágrafo.
 
-5. SUBTÍTULOS: use &lt;h3&gt; para os subtítulos internos (nunca &lt;h2&gt;), a cada 2-3 parágrafos. O corpo começa DIRETAMENTE com um &lt;p&gt; de texto, SEM &lt;h3&gt; no início. O primeiro &lt;h3&gt; só aparece depois de pelo menos 2 parágrafos.
+5. SUBTÍTULOS: use &lt;h2&gt; para os subtítulos internos (nunca &lt;h3&gt;), a cada 2-3 parágrafos. O corpo começa DIRETAMENTE com um &lt;p&gt; de texto, SEM &lt;h2&gt; no início. O primeiro &lt;h2&gt; só aparece depois de pelo menos 2 parágrafos.
 
 6. VARIE os inícios de frase — não comece frases seguidas com a mesma palavra.
 
@@ -765,9 +765,9 @@ function montarConteudo(dados,dataStr,leiaLink,igLink,banner){
   if(leiaLink&&corpo.indexOf('LEIA_TAMBEM_AQUI')!==-1)corpo=corpo.replace('LEIA_TAMBEM_AQUI',blocoLeia);
   else if(leiaLink){
     let count=0;
-    corpo=corpo.replace(/<h3/gi,m=>{count++;return count===3?blocoLeia+'<h3':m;});
+    corpo=corpo.replace(/<h2/gi,m=>{count++;return count===3?blocoLeia+'<h2':m;});
   }
-  let conteudo='<p><em>Publicado em '+dataStr+' | Atualizado '+dataStr+' por <a href="https://www.instagram.com/felipetommyreal/" target="_blank" rel="noopener">felipetommyreal</a></em></p>\n<hr/>\n<h3>'+(dados.subtitulo||'')+'</h3>\n'+corpo;
+  let conteudo='<p><em>Publicado em '+dataStr+' | Atualizado '+dataStr+' por <a href="https://www.instagram.com/felipetommyreal/" target="_blank" rel="noopener">felipetommyreal</a></em></p>\n<hr/>\n<h2>'+(dados.subtitulo||'')+'</h2>\n'+corpo;
   if(banner)conteudo+='\n\n<p><a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><img src="'+banner+'" alt="Canal WhatsApp Felipe Tommy" /></a></p>';
   if(igLink)conteudo+='\n\n<p>'+igLink+'</p>';
   return conteudo;
