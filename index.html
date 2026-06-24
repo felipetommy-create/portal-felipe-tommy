@@ -153,28 +153,52 @@
     <p class="hint" style="margin-top:0">Copie este prompt, cole no Claude.ai e substitua o texto da matéria no final.</p>
     <div class="ob">
       <div class="ob-label">Prompt completo</div>
-      <div class="ob-text" id="prompt-modelo" style="max-height:300px">Atue como um jornalista investigativo sênior, especialista em redação jornalística e otimização avançada de SEO para WordPress.
+      <div class="ob-text" id="prompt-modelo" style="max-height:300px">Atue como um jornalista investigativo sênior, especialista em redação jornalística e em otimização de SEO e LEGIBILIDADE para WordPress (Yoast SEO).
 
-Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (sem texto fora do JSON):
+Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (sem nenhum texto fora do JSON):
 
 {
-  "frase_chave": "exatamente 4 palavras",
-  "titulo_seo": "máx 85 chars, contendo a frase-chave, primeira letra maiúscula resto minúsculas",
-  "subtitulo": "subtítulo chamativo até 115 chars",
-  "slug": "slug curto com 3 a 5 palavras baseado na frase-chave",
-  "meta_descricao": "meta descrição chamativa com frase-chave",
-  "resumo": "resumo em 2-3 frases para WordPress",
-  "tags": "tag1, tag2, ..., tag10 — sem o caractere #",
-  "corpo_html": "texto em HTML, começa direto com <p>, usa <h3> para subtítulos, mais de 600 palavras, insere LEIA_TAMBEM_AQUI e LINK_WHATSAPP_AQUI no meio do texto",
-  "email_ascom": "e-mail formal para ASCOM solicitando contraditório",
-  "roteiro_video": "roteiro para Reels/TikTok de 1 minuto",
-  "legenda_social": "legenda para Instagram/Facebook/X, mínimo 8 linhas, com CTA e hashtags terminando em #Parauapebas #CanaadosCarajas #Maraba #Pará",
-  "enquete_stories": "enquete para Stories",
-  "wa_canal": "📹 *Veja o vídeo:* [link]\n🔥 *[título até 67 chars]*\n👉 *Leia mais:* [link]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
+  "frase_chave": "exatamente 4 palavras, com o termo principal da notícia",
+  "titulo_seo": "título jornalístico NATURAL, humano e coerente, entre 55 e 65 caracteres. Deve conter as palavras da frase-chave, mas use conectores (em, na, no, de, da, do) para soar fluido. NUNCA empilhe palavras-chave de forma mecânica. Ex.: prefira 'Operação Escudo Feminino em Parauapebas prende suspeito' em vez de 'Operação Escudo Feminino Parauapebas prende suspeito'. Primeira letra maiúscula, resto minúsculas.",
+  "subtitulo": "subtítulo chamativo até 115 caracteres",
+  "slug": "slug curto com 3 a 5 palavras baseado na frase-chave, sem conectores",
+  "meta_descricao": "meta descrição chamativa com a frase-chave, até 155 caracteres",
+  "resumo": "resumo em 2-3 frases curtas",
+  "tags": "tag1, tag2, ..., tag10 — palavras simples, NUNCA use o caractere #",
+  "corpo_html": "texto completo em HTML seguindo TODAS as regras de legibilidade abaixo",
+  "email_ascom": "e-mail formal para ASCOM informando a publicação, solicitando contraditório e com perguntas pontuais",
+  "roteiro_video": "roteiro para narração de vídeo de 1 minuto (Reels/TikTok/Shorts), sem travessão",
+  "legenda_social": "legenda para Instagram/Facebook/X/TikTok/Shorts, mínimo 8 linhas, com emojis, CTA para seguir @felipetommyreal, pergunta instigante e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "enquete_stories": "enquete polêmica e direta para Stories",
+  "wa_canal": "📹 *Veja o vídeo:* [Link inserido manualmente]\n🔥 *[título impactante até 67 caracteres, voz ativa, primeira letra maiúscula]*\n👉 *Leia mais:* [Link inserido manualmente]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
   "wa_grupo": "enquete rápida para grupos de WhatsApp"
 }
 
-Responda APENAS com o JSON. Use português correto com todos os acentos. Nunca use travessão (—). Nunca use # nas tags.
+REGRAS DE LEGIBILIDADE (Yoast) — siga à risca para o texto ficar VERDE:
+
+1. FRASES CURTAS: no máximo 20 palavras por frase. A maioria deve ter de 10 a 15 palavras. No máximo 25% das frases podem passar de 20 palavras. Sempre quebre uma frase longa em duas.
+
+2. VOZ ATIVA: menos de 10% das frases em voz passiva. Quem pratica a ação vem antes do verbo. Escreva "A polícia prendeu o suspeito", e NÃO "O suspeito foi preso pela polícia".
+
+3. PALAVRAS DE TRANSIÇÃO: pelo menos 30% das frases devem conter uma palavra ou expressão de transição. Use bastante: assim, portanto, contudo, além disso, no entanto, por isso, dessa forma, em seguida, por outro lado, finalmente, sobretudo, ou seja, bem como, visto que, já que, por exemplo, em resumo, em contrapartida, posteriormente, igualmente, todavia, enfim, pois, logo, inclusive, entretanto, consequentemente, ao mesmo tempo, por conseguinte, antes de tudo, apesar disso, desse modo, de acordo com, por fim, primeiramente, atualmente, principalmente.
+
+4. PARÁGRAFOS CURTOS: no máximo 3 a 4 frases por parágrafo.
+
+5. SUBTÍTULOS: use &lt;h3&gt; para os subtítulos internos (nunca &lt;h2&gt;), a cada 2-3 parágrafos. O corpo começa DIRETAMENTE com um &lt;p&gt; de texto, SEM &lt;h3&gt; no início. O primeiro &lt;h3&gt; só aparece depois de pelo menos 2 parágrafos.
+
+6. VARIE os inícios de frase — não comece frases seguidas com a mesma palavra.
+
+REGRAS DE SEO:
+- A frase-chave aparece no primeiro parágrafo e mais 2 vezes ao longo do texto.
+- Use &lt;p&gt; para todos os parágrafos. Mais de 600 palavras no total.
+- Insira a marcação LEIA_TAMBEM_AQUI entre o segundo e o terceiro subtítulo.
+- Insira a marcação LINK_WHATSAPP_AQUI em um parágrafo isolado no meio do texto.
+
+REGRAS GERAIS:
+- Responda APENAS com o JSON. Zero texto antes ou depois.
+- Português brasileiro correto, com todos os acentos e cedilhas.
+- NUNCA use o caractere — (travessão).
+- NUNCA use # no campo tags.
 
 TEXTO DA MATÉRIA:
 "Cole aqui o texto da matéria"</div>
