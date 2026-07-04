@@ -131,6 +131,7 @@
 <nav>
   <button class="tab active" onclick="showTab('comousar',this)">📖 Como usar</button>
   <button class="tab" onclick="showTab('publicar',this)">🌐 Publicar</button>
+  <button class="tab" onclick="showTab('colunistas',this)">✍️ Colunistas</button>
   <button class="tab" onclick="showTab('redes',this)">🎬 Redes Sociais</button>
   <button class="tab" onclick="showTab('whatsapp',this)">📤 WhatsApp</button>
   <button class="tab" onclick="showTab('grupos',this)">👥 Grupos</button>
@@ -210,7 +211,15 @@ TEXTO DA MATÉRIA:
 <!-- PUBLICAR (WORDPRESS) -->
 <div class="page" id="tab-publicar">
   <div class="card">
-    <div class="card-title"><span class="step-badge">1</span> Colar JSON gerado pelo Claude</div>
+    <div class="card-title"><span class="step-badge">1</span> Gerar com IA (recomendado)</div>
+    <p class="hint" style="margin-top:0">Cole o texto bruto da matéria e deixe a IA montar o JSON completo. Precisa da chave da API na aba Config.</p>
+    <textarea id="ia-texto" rows="6" placeholder="Cole aqui o texto bruto da matéria..."></textarea>
+    <button class="btn btn-primary" onclick="gerarPublicarIA()" style="width:100%"><span class="spin" id="sp-ia-pub" style="display:none"></span>✨ Gerar com IA</button>
+    <div id="st-ia-pub" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">2</span> Ou colar JSON manual</div>
     <label>Cole aqui o JSON completo</label>
     <textarea id="json-input" rows="6" placeholder='{"frase_chave":"...","titulo_seo":"...",...}'></textarea>
     <div style="display:flex;gap:8px">
@@ -243,7 +252,7 @@ TEXTO DA MATÉRIA:
     </div>
 
     <div class="card">
-      <div class="card-title"><span class="step-badge">2</span> Finalizar e publicar</div>
+      <div class="card-title"><span class="step-badge">3</span> Finalizar e publicar</div>
       <label>Link "Leia também" — matéria relacionada</label>
       <input type="url" id="wp-leia" placeholder="https://felipetommy.com.br/...">
       <label>Link do post do Instagram</label>
@@ -274,6 +283,68 @@ TEXTO DA MATÉRIA:
       <p class="hint" style="margin-top:10px;margin-bottom:0">📷 Após publicar, defina a imagem de capa manualmente no WordPress.</p>
     </div>
   </div>
+</div>
+
+<!-- COLUNISTAS -->
+<div class="page" id="tab-colunistas">
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span> Colunista</div>
+    <p class="hint" style="margin-top:0">A lista vem dos autores cadastrados no WordPress. A coluna será publicada em nome do colunista escolhido.</p>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <div style="flex:1"><label>Selecione o colunista</label>
+        <select id="coluna-autor"><option value="">— carregando… —</option></select>
+      </div>
+      <button class="btn-sm" style="height:42px;margin-bottom:14px" onclick="carregarColunistas()">🔄 Atualizar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">2</span> Texto do colunista</div>
+    <p class="hint" style="margin-top:0">Cole o texto do colunista. A IA só corrige ortografia — não reescreve nem muda o sentido.</p>
+    <textarea id="coluna-texto" rows="8" placeholder="Cole aqui o texto original do colunista..."></textarea>
+    <button class="btn btn-primary" onclick="gerarColunaIA()" style="width:100%"><span class="spin" id="sp-ia-col" style="display:none"></span>✨ Gerar com IA</button>
+    <div id="st-ia-col" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div class="card" id="coluna-pub-area" style="display:none">
+    <div class="card-title"><span class="step-badge">3</span> Revisar e publicar</div>
+    <div class="ob"><div class="ob-label">Título SEO</div><div class="ob-text" id="col-titulo"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('col-titulo')">📋 Copiar</button></div>
+    <div class="ob"><div class="ob-label">Frase-chave</div><div class="ob-text" id="col-frase"></div></div>
+    <button class="acc-btn" onclick="toggleAcc('acc-col-corpo','ic-col-corpo')">📄 Corpo HTML (revisado) <span id="ic-col-corpo">▼</span></button>
+    <div class="acc-body" id="acc-col-corpo" style="max-height:0">
+      <div class="ob" style="margin-top:8px"><div class="ob-text" id="col-corpo" style="max-height:220px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('col-corpo')">📋 Copiar</button></div>
+    </div>
+    <label style="margin-top:12px">Link "Leia também" (opcional)</label>
+    <input type="url" id="coluna-leia" placeholder="https://felipetommy.com.br/...">
+    <div id="st-coluna" class="status" style="display:none"></div>
+    <button class="btn btn-primary" onclick="publicarColuna()"><span class="spin" id="sp-coluna" style="display:none"></span>✍️ Publicar coluna (rascunho)</button>
+    <p class="hint" style="margin-top:10px;margin-bottom:0">O byline com foto do colunista, o disclaimer e o GIF do canal são injetados automaticamente pelo WordPress na categoria "Colunas" — por isso o app não os adiciona aqui.</p>
+  </div>
+
+  <!-- Prompt de coluna (oculto, usado pela IA) -->
+  <div id="prompt-coluna" style="display:none">Você é revisor e especialista em SEO/Yoast do Portal Felipe Tommy. Vou te enviar o TEXTO ORIGINAL de um colunista. É uma OPINIÃO e NÃO PODE ser reescrita.
+Regras invioláveis:
+- PRESERVE integralmente as palavras, o estilo, os argumentos e as opiniões do autor.
+- Faça APENAS correção de ortografia, acentuação, digitação e pontuação básica.
+- NÃO reescreva frases, NÃO resuma, NÃO acrescente nada, NÃO mude o sentido.
+
+Gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (nada fora do JSON):
+{
+  "frase_chave": "4 palavras com o tema central da coluna",
+  "titulo_seo": "título natural entre 55 e 65 caracteres, com a frase-chave e conectores, 1ª maiúscula",
+  "subtitulo": "linha fina até 115 caracteres (pode ser uma frase do próprio autor)",
+  "slug": "slug de 3 a 5 palavras da frase-chave, sem conectores",
+  "meta_descricao": "até 155 caracteres, com a frase-chave",
+  "resumo": "2-3 frases curtas descrevendo a coluna",
+  "tags": "tag1, tag2, ..., tag10 — sem #",
+  "corpo_html": "O TEXTO ORIGINAL do colunista, apenas com ortografia corrigida, em HTML: cada parágrafo em &lt;p&gt;. Pode inserir &lt;h2&gt; como subtítulos a cada 2-3 parágrafos, usando ideias do próprio texto, sem inventar. Comece com &lt;p&gt;. Insira LEIA_TAMBEM_AQUI entre o 2º e 3º &lt;h2&gt; e LINK_WHATSAPP_AQUI num &lt;p&gt; isolado no meio.",
+  "roteiro_video": "roteiro de vídeo de 1 min baseado na coluna, sem travessão",
+  "legenda_social": "legenda para redes, mínimo 8 linhas, emojis, CTA @felipetommyreal, hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "enquete_stories": "enquete para Stories sobre o tema da coluna",
+  "wa_canal": "📢 *Nova coluna de [NOME DO COLUNISTA]:*\n🔥 *[título até 67 caracteres]*\n👉 *Leia mais:* [Link inserido manualmente]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
+  "wa_grupo": "enquete rápida para grupos sobre o tema da coluna"
+}
+Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNCA use # em tags.</div>
 </div>
 
 <!-- REDES SOCIAIS (vídeo + legenda) -->
@@ -421,6 +492,14 @@ TEXTO DA MATÉRIA:
   </div>
 
   <div class="card">
+    <div class="card-title">✨ Chave da API Anthropic (Claude)</div>
+    <p class="hint" style="margin-top:0">Permite gerar o JSON direto no painel, sem copiar/colar do Claude.ai. Pegue em <strong>console.anthropic.com → API Keys</strong>. Fica salva só neste dispositivo.</p>
+    <label>Chave da API (sk-ant-...)</label><input type="password" id="cfg-anthropic" placeholder="sk-ant-api03-...">
+    <button class="btn btn-primary" onclick="salvarCfgIA()" style="width:100%">💾 Salvar chave da API</button>
+    <div id="st-cfg-ia" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">☁️ Conexão com a nuvem (Supabase)</div>
     <p class="hint" style="margin-top:0" id="sbInfo">—</p>
     <button class="btn-secondary" onclick="document.getElementById('setupScreen').style.display='flex'">Reconectar / trocar projeto Supabase</button>
@@ -495,6 +574,7 @@ function showTab(id,el){
   el.classList.add('active');
   if(id==='grupos')renderGrupos();
   if(id==='encaminhar'){renderEncaminhar();buscarGrupos();}
+  if(id==='colunistas'){const sel=document.getElementById('coluna-autor');if(sel&&sel.options.length<=1)carregarColunistas();}
 }
 
 function cp(id){
@@ -528,13 +608,19 @@ function showSt(id,cls,msg){
 // ───────────────────────── WORDPRESS CONFIG (local ao dispositivo) ─────────────────────────
 function getCfg(){try{return JSON.parse(localStorage.getItem('ft_cfg')||'{}');}catch(e){return{};}}
 function salvarCfgWP(){
-  localStorage.setItem('ft_cfg',JSON.stringify({
-    url:document.getElementById('cfg-url').value.trim().replace(/\/$/,''),
-    user:document.getElementById('cfg-user').value.trim(),
-    pass:document.getElementById('cfg-pass').value.trim(),
-    banner:document.getElementById('cfg-banner').value.trim()
-  }));
+  const c=getCfg();
+  c.url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');
+  c.user=document.getElementById('cfg-user').value.trim();
+  c.pass=document.getElementById('cfg-pass').value.trim();
+  c.banner=document.getElementById('cfg-banner').value.trim();
+  localStorage.setItem('ft_cfg',JSON.stringify(c));
   showSt('st-cfg','ok','✅ Configurações salvas neste dispositivo.');
+}
+function salvarCfgIA(){
+  const c=getCfg();
+  c.anthropicKey=document.getElementById('cfg-anthropic').value.trim();
+  localStorage.setItem('ft_cfg',JSON.stringify(c));
+  showSt('st-cfg-ia','ok','✅ Chave da API salva neste dispositivo.');
 }
 function carregarCfgWP(){
   const c=getCfg();
@@ -542,6 +628,7 @@ function carregarCfgWP(){
   if(c.user)document.getElementById('cfg-user').value=c.user;
   if(c.pass)document.getElementById('cfg-pass').value=c.pass;
   if(c.banner)document.getElementById('cfg-banner').value=c.banner;
+  if(c.anthropicKey)document.getElementById('cfg-anthropic').value=c.anthropicKey;
 }
 async function testarWP(){
   salvarCfgWP();
@@ -593,26 +680,81 @@ function togCat(cb){
   else catsSel=catsSel.filter(c=>c!==cb.value);
 }
 
+// ───────────────────────── GERAR COM IA (Claude API) ─────────────────────────
+async function gerarComIA(prompt, textoBruto){
+  const c = getCfg();
+  if(!c.anthropicKey){ throw new Error('Configure a chave da API na aba Config.'); }
+  const body = {
+    model: "claude-opus-4-8",
+    max_tokens: 8000,
+    messages: [{ role: "user", content: prompt + "\n\nTEXTO DA MATÉRIA:\n" + textoBruto }]
+  };
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": c.anthropicKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  if(!r.ok){ const e = await r.json().catch(()=>({})); throw new Error((e.error && e.error.message) || ("Erro "+r.status)); }
+  const data = await r.json();
+  const bloco = (data.content||[]).find(b => b.type === "text");
+  let txt = (bloco ? bloco.text : "").trim().replace(/```json|```/g, "").trim();
+  const ini = txt.indexOf("{"), fim = txt.lastIndexOf("}");
+  if(ini>=0 && fim>ini) txt = txt.slice(ini, fim+1);
+  return JSON.parse(txt);
+}
+// Prompt de notícia = o prompt embutido na aba "Como usar" (sem o rodapé "TEXTO DA MATÉRIA").
+function promptNoticia(){
+  let p=document.getElementById('prompt-modelo').textContent||'';
+  const idx=p.indexOf('TEXTO DA MATÉRIA:');
+  if(idx>=0)p=p.slice(0,idx).trim();
+  return p;
+}
+async function gerarPublicarIA(){
+  const texto=document.getElementById('ia-texto').value.trim();
+  if(!texto){showSt('st-ia-pub','err','⚠️ Cole o texto bruto da matéria.');return;}
+  document.getElementById('sp-ia-pub').style.display='inline-block';
+  showSt('st-ia-pub','loading','✨ Gerando com IA… pode levar alguns segundos.');
+  try{
+    const j=await gerarComIA(promptNoticia(),texto);
+    aplicarDados(j);
+    document.getElementById('sp-ia-pub').style.display='none';
+    showSt('st-ia-pub','ok','✅ JSON gerado e campos preenchidos! Revise abaixo e publique.');
+  }catch(e){
+    document.getElementById('sp-ia-pub').style.display='none';
+    showSt('st-ia-pub','err','❌ '+e.message);
+  }
+}
+
 // ───────────────────────── CARREGAR JSON (Publicar) ─────────────────────────
+// Mapeamento único reaproveitado por: colar JSON manual e gerar com IA.
+function aplicarDados(j){
+  j=corrigirObjeto(j);
+  j.tags=limparTags(j.tags);
+  dados=j;
+  function s(id,v){const el=document.getElementById(id);if(el)el.textContent=v||'';}
+  s('r-frase',j.frase_chave);s('r-slug',j.slug);s('r-titulo',j.titulo_seo);
+  s('r-sub',j.subtitulo);s('r-meta',j.meta_descricao);
+  s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
+  s('r-video',j.roteiro_video);s('r-legenda',j.legenda_social);s('r-stories',j.enquete_stories);
+  s('col-titulo',j.titulo_seo);s('col-frase',j.frase_chave);s('col-corpo',j.corpo_html);
+  const wt=document.getElementById('wp-tags');if(wt)wt.value=j.tags||'';
+  const ad=document.getElementById('area-dados');if(ad)ad.style.display='block';
+  preencherWhatsapp(j);
+}
 function carregarJSON(){
   const raw=document.getElementById('json-input').value.trim();
   if(!raw){showSt('st-json','err','⚠️ Cole o JSON gerado pelo Claude antes de carregar.');return;}
   try{
     const cleaned=raw.replace(/```json|```/g,'').trim();
-    let j=JSON.parse(cleaned);
-    j=corrigirObjeto(j);
-    j.tags=limparTags(j.tags);
-    dados=j;
-    function s(id,v){const el=document.getElementById(id);if(el)el.textContent=v||'';}
-    s('r-frase',j.frase_chave);s('r-slug',j.slug);s('r-titulo',j.titulo_seo);
-    s('r-sub',j.subtitulo);s('r-meta',j.meta_descricao);
-    s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
-    s('r-video',j.roteiro_video);s('r-legenda',j.legenda_social);s('r-stories',j.enquete_stories);
-    document.getElementById('wp-tags').value=j.tags||'';
-    document.getElementById('area-dados').style.display='block';
+    const j=JSON.parse(cleaned);
+    aplicarDados(j);
     showSt('st-json','ok','✅ Dados carregados! Revise abaixo, preencha os links e publique.');
     document.getElementById('area-dados').scrollIntoView({behavior:'smooth'});
-    preencherWhatsapp(j);
   }catch(e){
     showSt('st-json','err','❌ JSON inválido. Copie o bloco completo. Erro: '+e.message);
   }
@@ -845,6 +987,106 @@ async function publicar(){
   }
 }
 
+// ───────────────────────── COLUNISTAS ─────────────────────────
+async function carregarColunistas(){
+  const c=getCfg();
+  const sel=document.getElementById('coluna-autor');
+  if(!c.url||!c.user||!c.pass){sel.innerHTML='<option value="">Configure as credenciais WordPress na aba Config</option>';return;}
+  const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
+  try{
+    const r=await fetch(c.url+'/wp-json/wp/v2/users?per_page=100&context=edit',{headers:{'Authorization':'Basic '+creds}});
+    if(!r.ok)throw new Error('Erro '+r.status);
+    const users=await r.json();
+    sel.innerHTML='<option value="">— selecione o colunista —</option>'+users.map(u=>'<option value="'+u.id+'">'+(u.name||u.slug||('ID '+u.id))+'</option>').join('');
+  }catch(e){
+    sel.innerHTML='<option value="">Erro ao carregar autores ('+e.message+')</option>';
+  }
+}
+async function gerarColunaIA(){
+  const texto=document.getElementById('coluna-texto').value.trim();
+  if(!texto){showSt('st-ia-col','err','⚠️ Cole o texto do colunista.');return;}
+  const sel=document.getElementById('coluna-autor');
+  const nome=(sel.selectedIndex>0&&sel.options[sel.selectedIndex])?sel.options[sel.selectedIndex].text:'';
+  document.getElementById('sp-ia-col').style.display='inline-block';
+  showSt('st-ia-col','loading','✨ Corrigindo e gerando… pode levar alguns segundos.');
+  try{
+    let prompt=document.getElementById('prompt-coluna').textContent||'';
+    if(nome)prompt=prompt.replace('[NOME DO COLUNISTA]',nome);
+    const j=await gerarComIA(prompt,texto);
+    aplicarDados(j);
+    document.getElementById('sp-ia-col').style.display='none';
+    showSt('st-ia-col','ok','✅ Coluna revisada e gerada! Revise e publique abaixo.');
+    document.getElementById('coluna-pub-area').style.display='block';
+    document.getElementById('coluna-pub-area').scrollIntoView({behavior:'smooth'});
+  }catch(e){
+    document.getElementById('sp-ia-col').style.display='none';
+    showSt('st-ia-col','err','❌ '+e.message);
+  }
+}
+// Conteúdo de coluna: SEM byline, SEM <hr/>, SEM banner (o WordPress injeta automaticamente na categoria Colunas).
+function montarConteudoColuna(dados,leiaLink){
+  let corpo=dados.corpo_html||'';
+  const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
+  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',blocoWA);
+  const blocoLeia=leiaLink?'\n<p><strong>Leia também abaixo.</strong></p>\n<p>'+leiaLink+'</p>\n':'';
+  if(leiaLink&&corpo.indexOf('LEIA_TAMBEM_AQUI')!==-1)corpo=corpo.replace('LEIA_TAMBEM_AQUI',blocoLeia);
+  else if(leiaLink){let count=0;corpo=corpo.replace(/<h2/gi,m=>{count++;return count===3?blocoLeia+'<h2':m;});}
+  // Remove marcadores que não foram substituídos, para não vazarem no post.
+  corpo=corpo.replace('LEIA_TAMBEM_AQUI','').replace('LINK_WHATSAPP_AQUI','');
+  return (dados.subtitulo?'<h2>'+dados.subtitulo+'</h2>\n':'')+corpo;
+}
+async function garantirCategoria(nome,c,creds){
+  try{
+    const r=await fetch(c.url+'/wp-json/wp/v2/categories?search='+encodeURIComponent(nome)+'&per_page=100',{headers:{'Authorization':'Basic '+creds}});
+    const lista=await r.json();
+    const achou=(lista||[]).find(cat=>cat.name.toLowerCase()===nome.toLowerCase());
+    if(achou)return achou.id;
+    const cr=await fetch(c.url+'/wp-json/wp/v2/categories',{method:'POST',headers:{'Authorization':'Basic '+creds,'Content-Type':'application/json'},body:JSON.stringify({name:nome})});
+    const nova=await cr.json();
+    return nova.id||null;
+  }catch(e){return null;}
+}
+async function publicarColuna(){
+  const c=getCfg();
+  if(!c.url||!c.user||!c.pass){showSt('st-coluna','err','⚠️ Configure as credenciais na aba Config.');return;}
+  if(!dados.corpo_html){showSt('st-coluna','err','⚠️ Gere a coluna com IA primeiro.');return;}
+  const colunistaId=document.getElementById('coluna-autor').value;
+  if(!colunistaId){showSt('st-coluna','err','⚠️ Selecione o colunista.');return;}
+  document.getElementById('sp-coluna').style.display='inline-block';
+  showSt('st-coluna','loading','⏳ Publicando coluna como rascunho...');
+  const leiaLink=document.getElementById('coluna-leia').value.trim();
+  const conteudo=montarConteudoColuna(dados,leiaLink);
+  const tagNomes=(dados.tags||'').split(',');
+  const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
+  try{
+    const tagIds=await resolverTags(tagNomes,c,creds);
+    const catId=await garantirCategoria('Colunas',c,creds);
+    const payload={
+      title:dados.titulo_seo||'',content:conteudo,status:'draft',
+      excerpt:dados.resumo||'',tags:tagIds,categories:catId?[catId]:[],slug:dados.slug||'',
+      author:Number(colunistaId),
+      comment_status:'closed',ping_status:'closed',
+      meta:{_yoast_wpseo_focuskw:dados.frase_chave||'',_yoast_wpseo_metadesc:dados.meta_descricao||''}
+    };
+    const r=await fetch(c.url+'/wp-json/wp/v2/posts',{method:'POST',headers:{'Authorization':'Basic '+creds,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    document.getElementById('sp-coluna').style.display='none';
+    if(r.ok){
+      const post=await r.json();
+      const link=post.link||(c.url+'/?p='+post.id);
+      const linkBranded=c.url+'/r/'+post.id;
+      const lm=document.getElementById('linkMateria');
+      if(lm&&!lm.value)lm.value=linkBranded;
+      showSt('st-coluna','ok','✅ Coluna publicada como rascunho! Acesse: '+link+'\n🔗 Link curto p/ WhatsApp: '+linkBranded);
+    }else{
+      const err=await r.json().catch(()=>({}));
+      throw new Error(err.message||'Erro '+r.status);
+    }
+  }catch(e){
+    document.getElementById('sp-coluna').style.display='none';
+    showSt('st-coluna','err','❌ Erro ao publicar coluna: '+e.message);
+  }
+}
+
 // ───────────────────────── GRUPOS (Supabase) ─────────────────────────
 async function carregarGrupos(){
   setSync('syncing','Sincronizando...');
@@ -993,11 +1235,9 @@ async function marcarTodos(){
   for(const g of pendentes){await toggleDone(g.id);}
 }
 function irParaEncaminhar(){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-encaminhar').classList.add('active');
-  document.querySelectorAll('.tab')[5].classList.add('active');
-  renderEncaminhar();window.scrollTo({top:0,behavior:'smooth'});
+  const btn=[...document.querySelectorAll('.tab')].find(b=>(b.getAttribute('onclick')||'').includes("'encaminhar'"));
+  if(btn){showTab('encaminhar',btn);}
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 // ───────────────────────── BOOT ─────────────────────────
