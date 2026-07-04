@@ -339,7 +339,7 @@ Gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (nada fora do 
   "tags": "tag1, tag2, ..., tag10 — sem #",
   "corpo_html": "O TEXTO ORIGINAL do colunista, apenas com ortografia corrigida, em HTML: cada parágrafo em &lt;p&gt;. Pode inserir &lt;h2&gt; como subtítulos a cada 2-3 parágrafos, usando ideias do próprio texto, sem inventar. Comece com &lt;p&gt;. Insira LEIA_TAMBEM_AQUI entre o 2º e 3º &lt;h2&gt; e LINK_WHATSAPP_AQUI num &lt;p&gt; isolado no meio.",
   "roteiro_video": "roteiro de vídeo de 1 min baseado na coluna, sem travessão",
-  "legenda_social": "legenda para redes, mínimo 8 linhas, emojis, CTA @felipetommyreal, hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "legenda_coluna": "legenda CURTA para Instagram/Facebook, no máximo 5 linhas, com emojis. Apresente o tema e a opinião central do colunista de forma instigante, SEM entregar a conclusão. Termine SEMPRE com uma chamada forte convidando o leitor a ler a coluna completa no Portal Felipe Tommy (ex.: 👉 Leia a coluna completa no felipetommy.com.br). Feche com hashtags curtas terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
   "enquete_stories": "enquete para Stories sobre o tema da coluna",
   "wa_canal": "📢 *Nova coluna de [NOME DO COLUNISTA]:*\n🔥 *[título até 67 caracteres]*\n👉 *Leia mais:* [Link inserido manualmente]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
   "wa_grupo": "enquete rápida para grupos sobre o tema da coluna"
@@ -353,7 +353,8 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
     <div class="card-title" style="justify-content:flex-start">🎬 Redes Sociais &amp; WhatsApp</div>
     <p class="hint" style="margin-top:0">Carregue o JSON na aba "Publicar" primeiro. Use o roteiro para narrar o vídeo, publique nas redes com a legenda abaixo e depois volte na aba "Publicar" para colar o link do Instagram no WordPress.</p>
     <div class="ob"><div class="ob-label">Roteiro vídeo 1 min (Reels/TikTok/Shorts)</div><div class="ob-text" id="r-video" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-video')">📋 Copiar</button></div>
-    <div class="ob"><div class="ob-label">Legenda Instagram / Facebook / X / TikTok / Shorts</div><div class="ob-text" id="r-legenda" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda')">📋 Copiar</button></div>
+    <div class="ob" id="blk-legenda"><div class="ob-label">Legenda Instagram / Facebook / X / TikTok / Shorts (matéria normal)</div><div class="ob-text" id="r-legenda" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda')">📋 Copiar</button></div>
+    <div class="ob" id="blk-legenda-coluna" style="display:none;border-color:var(--accent)"><div class="ob-label">✍️ Legenda p/ COLUNA (curta + chamada pro site)</div><div class="ob-text" id="r-legenda-coluna" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda-coluna')">📋 Copiar</button></div>
     <div class="ob"><div class="ob-label">Enquete Stories</div><div class="ob-text" id="r-stories"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-stories')">📋 Copiar</button></div>
   </div>
 </div>
@@ -741,7 +742,13 @@ function aplicarDados(j){
   s('r-sub',j.subtitulo);s('r-meta',j.meta_descricao);
   s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
   s('r-video',j.roteiro_video);s('r-legenda',j.legenda_social);s('r-stories',j.enquete_stories);
+  s('r-legenda-coluna',j.legenda_coluna);
   s('col-titulo',j.titulo_seo);s('col-frase',j.frase_chave);s('col-corpo',j.corpo_html);
+  // Mostra só a legenda relevante: coluna tem legenda_coluna; matéria normal tem legenda_social.
+  const temCol=!!(j.legenda_coluna&&j.legenda_coluna.trim());
+  const temNorm=!!(j.legenda_social&&j.legenda_social.trim());
+  const bc=document.getElementById('blk-legenda-coluna');if(bc)bc.style.display=temCol?'block':'none';
+  const bn=document.getElementById('blk-legenda');if(bn)bn.style.display=temNorm?'block':'none';
   const wt=document.getElementById('wp-tags');if(wt)wt.value=j.tags||'';
   const ad=document.getElementById('area-dados');if(ad)ad.style.display='block';
   preencherWhatsapp(j);
@@ -988,18 +995,28 @@ async function publicar(){
 }
 
 // ───────────────────────── COLUNISTAS ─────────────────────────
+function optsAutores(arr){
+  return '<option value="">— selecione o colunista —</option>'+arr.map(u=>'<option value="'+u.id+'">'+(u.name||('ID '+u.id))+'</option>').join('');
+}
 async function carregarColunistas(){
   const c=getCfg();
   const sel=document.getElementById('coluna-autor');
   if(!c.url||!c.user||!c.pass){sel.innerHTML='<option value="">Configure as credenciais WordPress na aba Config</option>';return;}
   const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
+  const auth={headers:{'Authorization':'Basic '+creds}};
+  // 1) endpoint próprio (snippet WPCode) — contorna o bloqueio de listagem de usuários do plugin de segurança
   try{
-    const r=await fetch(c.url+'/wp-json/wp/v2/users?per_page=100&context=edit',{headers:{'Authorization':'Basic '+creds}});
+    const r=await fetch(c.url+'/wp-json/ft/v1/autores',auth);
+    if(r.ok){const u=await r.json();if(Array.isArray(u)&&u.length){sel.innerHTML=optsAutores(u);return;}}
+  }catch(e){}
+  // 2) fallback: endpoint padrão do WordPress
+  try{
+    const r=await fetch(c.url+'/wp-json/wp/v2/users?per_page=100&context=edit',auth);
     if(!r.ok)throw new Error('Erro '+r.status);
     const users=await r.json();
-    sel.innerHTML='<option value="">— selecione o colunista —</option>'+users.map(u=>'<option value="'+u.id+'">'+(u.name||u.slug||('ID '+u.id))+'</option>').join('');
+    sel.innerHTML=optsAutores(users.map(u=>({id:u.id,name:u.name||u.slug})));
   }catch(e){
-    sel.innerHTML='<option value="">Erro ao carregar autores ('+e.message+')</option>';
+    sel.innerHTML='<option value="">Erro ao carregar. Instale o snippet "Autores" no WPCode (peça as instruções).</option>';
   }
 }
 async function gerarColunaIA(){
