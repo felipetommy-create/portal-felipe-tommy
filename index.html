@@ -303,7 +303,17 @@ TEXTO DA MATÉRIA:
     <p class="hint" style="margin-top:0">Cole o texto do colunista. A IA só corrige ortografia — não reescreve nem muda o sentido.</p>
     <textarea id="coluna-texto" rows="8" placeholder="Cole aqui o texto original do colunista..."></textarea>
     <button class="btn btn-primary" onclick="gerarColunaIA()" style="width:100%"><span class="spin" id="sp-ia-col" style="display:none"></span>✨ Gerar com IA</button>
+    <p class="hint" style="margin-top:8px;margin-bottom:0">⚠️ Cada clique aqui consome créditos da sua chave de API. Para não gastar, use a opção manual abaixo.</p>
     <div id="st-ia-col" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="justify-content:flex-start">🆓 Alternativa sem IA (não gasta créditos)</div>
+    <p class="hint" style="margin-top:0">Copie o prompt, cole no Claude.ai junto com o texto do colunista, e cole aqui o JSON que ele devolver.</p>
+    <button class="btn-copy" style="margin-bottom:12px" onclick="copiarPromptColuna(this)">📋 Copiar prompt de coluna</button>
+    <textarea id="coluna-json" rows="5" placeholder="Cole aqui o JSON gerado no Claude.ai..."></textarea>
+    <button class="btn btn-secondary" onclick="carregarColunaJSON()" style="width:100%">⚡ Carregar dados (sem IA)</button>
+    <div id="st-coluna-json" class="status" style="margin-top:10px;display:none"></div>
   </div>
 
   <div class="card" id="coluna-pub-area" style="display:none">
@@ -1017,6 +1027,24 @@ async function carregarColunistas(){
     sel.innerHTML=optsAutores(users.map(u=>({id:u.id,name:u.name||u.slug})));
   }catch(e){
     sel.innerHTML='<option value="">Erro ao carregar. Instale o snippet "Autores" no WPCode (peça as instruções).</option>';
+  }
+}
+function copiarPromptColuna(btn){
+  const t=document.getElementById('prompt-coluna').textContent||'';
+  navigator.clipboard.writeText(t).then(()=>{const o=btn.textContent;btn.textContent='✅ Copiado!';setTimeout(()=>{btn.textContent=o;},1500);});
+}
+function carregarColunaJSON(){
+  const raw=document.getElementById('coluna-json').value.trim();
+  if(!raw){showSt('st-coluna-json','err','⚠️ Cole o JSON antes de carregar.');return;}
+  try{
+    const cleaned=raw.replace(/```json|```/g,'').trim();
+    const j=JSON.parse(cleaned);
+    aplicarDados(j);
+    showSt('st-coluna-json','ok','✅ Dados carregados! Revise e publique abaixo.');
+    document.getElementById('coluna-pub-area').style.display='block';
+    document.getElementById('coluna-pub-area').scrollIntoView({behavior:'smooth'});
+  }catch(e){
+    showSt('st-coluna-json','err','❌ JSON inválido. Copie o bloco completo. Erro: '+e.message);
   }
 }
 async function gerarColunaIA(){
