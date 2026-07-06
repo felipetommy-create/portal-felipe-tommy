@@ -292,7 +292,7 @@ TEXTO DA MATÉRIA:
     <p class="hint" style="margin-top:0">A lista vem dos autores cadastrados no WordPress. A coluna será publicada em nome do colunista escolhido.</p>
     <div style="display:flex;gap:8px;align-items:flex-end">
       <div style="flex:1"><label>Selecione o colunista</label>
-        <select id="coluna-autor"><option value="">— carregando… —</option></select>
+        <select id="coluna-autor" onchange="aplicarNomeColunista()"><option value="">— carregando… —</option></select>
       </div>
       <button class="btn-sm" style="height:42px;margin-bottom:14px" onclick="carregarColunistas()">🔄 Atualizar</button>
     </div>
@@ -1030,14 +1030,31 @@ async function carregarColunistas(){
     sel.innerHTML='<option value="">Erro ao carregar. Instale o snippet "Autores" no WPCode (peça as instruções).</option>';
   }
 }
-// Substitui o marcador [NOME DO COLUNISTA] pelo colunista selecionado no app (fonte da verdade).
+// Garante que o nome do colunista selecionado no app apareça na legenda/WhatsApp (fonte da verdade).
 function aplicarNomeColunista(){
   const sel=document.getElementById('coluna-autor');
-  const nome=(sel&&sel.selectedIndex>0&&sel.options[sel.selectedIndex])?sel.options[sel.selectedIndex].text:'';
-  if(!nome)return;
+  const nome=(sel&&sel.selectedIndex>0&&sel.options[sel.selectedIndex])?sel.options[sel.selectedIndex].text.trim():'';
+  // Guarda o texto original uma vez, para reprocessar sempre que trocar de colunista.
+  if(dados._lc_raw===undefined)dados._lc_raw=dados.legenda_coluna||'';
+  if(dados._wa_raw===undefined)dados._wa_raw=dados.wa_canal||'';
+  dados.legenda_coluna=dados._lc_raw;
+  dados.wa_canal=dados._wa_raw;
+  if(!nome){const rc0=document.getElementById('r-legenda-coluna');if(rc0)rc0.textContent=dados.legenda_coluna||'';return;}
+  // 1) Substitui o marcador [NOME DO COLUNISTA] onde a IA o tiver mantido.
   ['legenda_coluna','wa_canal','wa_grupo','legenda_social','titulo_seo','subtitulo','resumo'].forEach(k=>{
     if(dados[k]&&typeof dados[k]==='string')dados[k]=dados[k].split('[NOME DO COLUNISTA]').join(nome);
   });
+  // 2) Na legenda da coluna, se o nome ainda não estiver lá, insere após "nosso colunista"; senão, adiciona no topo.
+  let lc=dados.legenda_coluna||'';
+  if(lc&&!lc.includes(nome)){
+    if(/nossos?\s+colunistas?/i.test(lc))lc=lc.replace(/(nossos?\s+colunistas?)/i,'$1 '+nome);
+    else lc='✍️ Coluna de '+nome+'\n\n'+lc;
+    dados.legenda_coluna=lc;
+  }
+  // 3) No texto do canal do WhatsApp, garante o nome após "Nova coluna de".
+  if(dados.wa_canal&&!dados.wa_canal.includes(nome)&&/nova coluna de/i.test(dados.wa_canal)){
+    dados.wa_canal=dados.wa_canal.replace(/(nova coluna de)\s*:?/i,'$1 '+nome+':');
+  }
   const rc=document.getElementById('r-legenda-coluna');if(rc)rc.textContent=dados.legenda_coluna||'';
   preencherWhatsapp(dados);
 }
