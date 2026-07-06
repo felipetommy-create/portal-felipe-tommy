@@ -349,11 +349,12 @@ Gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (nada fora do 
   "tags": "tag1, tag2, ..., tag10 — sem #",
   "corpo_html": "O TEXTO ORIGINAL do colunista, apenas com ortografia corrigida, em HTML: cada parágrafo em &lt;p&gt;. Pode inserir &lt;h2&gt; como subtítulos a cada 2-3 parágrafos, usando ideias do próprio texto, sem inventar. Comece com &lt;p&gt;. Insira LEIA_TAMBEM_AQUI entre o 2º e 3º &lt;h2&gt; e LINK_WHATSAPP_AQUI num &lt;p&gt; isolado no meio.",
   "roteiro_video": "roteiro de vídeo de 1 min baseado na coluna, sem travessão",
-  "legenda_coluna": "legenda CURTA para Instagram/Facebook, no máximo 5 linhas, com emojis. Apresente o tema e a opinião central do colunista de forma instigante, SEM entregar a conclusão. Termine SEMPRE com uma chamada forte convidando o leitor a ler a coluna completa no Portal Felipe Tommy (ex.: 👉 Leia a coluna completa no felipetommy.com.br). Feche com hashtags curtas terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "legenda_coluna": "legenda CURTA para Instagram/Facebook, no máximo 5 linhas, com emojis. Comece citando o autor EXATAMENTE assim: 'Nosso colunista [NOME DO COLUNISTA]' (mantenha [NOME DO COLUNISTA] entre colchetes, NÃO substitua por nome nenhum). Apresente o tema e a opinião central de forma instigante, SEM entregar a conclusão. Termine SEMPRE com uma chamada forte convidando o leitor a ler a coluna completa no Portal Felipe Tommy (ex.: 👉 Leia a coluna completa no felipetommy.com.br). Feche com hashtags curtas terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
   "enquete_stories": "enquete para Stories sobre o tema da coluna",
   "wa_canal": "📢 *Nova coluna de [NOME DO COLUNISTA]:*\n🔥 *[título até 67 caracteres]*\n👉 *Leia mais:* [Link inserido manualmente]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
   "wa_grupo": "enquete rápida para grupos sobre o tema da coluna"
 }
+Onde aparecer o marcador [NOME DO COLUNISTA], mantenha-o LITERALMENTE entre colchetes; o sistema o substituirá pelo nome real depois.
 Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNCA use # em tags.</div>
 </div>
 
@@ -1029,6 +1030,17 @@ async function carregarColunistas(){
     sel.innerHTML='<option value="">Erro ao carregar. Instale o snippet "Autores" no WPCode (peça as instruções).</option>';
   }
 }
+// Substitui o marcador [NOME DO COLUNISTA] pelo colunista selecionado no app (fonte da verdade).
+function aplicarNomeColunista(){
+  const sel=document.getElementById('coluna-autor');
+  const nome=(sel&&sel.selectedIndex>0&&sel.options[sel.selectedIndex])?sel.options[sel.selectedIndex].text:'';
+  if(!nome)return;
+  ['legenda_coluna','wa_canal','wa_grupo','legenda_social','titulo_seo','subtitulo','resumo'].forEach(k=>{
+    if(dados[k]&&typeof dados[k]==='string')dados[k]=dados[k].split('[NOME DO COLUNISTA]').join(nome);
+  });
+  const rc=document.getElementById('r-legenda-coluna');if(rc)rc.textContent=dados.legenda_coluna||'';
+  preencherWhatsapp(dados);
+}
 function copiarPromptColuna(btn){
   const t=document.getElementById('prompt-coluna').textContent||'';
   navigator.clipboard.writeText(t).then(()=>{const o=btn.textContent;btn.textContent='✅ Copiado!';setTimeout(()=>{btn.textContent=o;},1500);});
@@ -1040,6 +1052,7 @@ function carregarColunaJSON(){
     const cleaned=raw.replace(/```json|```/g,'').trim();
     const j=JSON.parse(cleaned);
     aplicarDados(j);
+    aplicarNomeColunista();
     showSt('st-coluna-json','ok','✅ Dados carregados! Revise e publique abaixo.');
     document.getElementById('coluna-pub-area').style.display='block';
     document.getElementById('coluna-pub-area').scrollIntoView({behavior:'smooth'});
@@ -1055,10 +1068,10 @@ async function gerarColunaIA(){
   document.getElementById('sp-ia-col').style.display='inline-block';
   showSt('st-ia-col','loading','✨ Corrigindo e gerando… pode levar alguns segundos.');
   try{
-    let prompt=document.getElementById('prompt-coluna').textContent||'';
-    if(nome)prompt=prompt.replace('[NOME DO COLUNISTA]',nome);
+    const prompt=document.getElementById('prompt-coluna').textContent||'';
     const j=await gerarComIA(prompt,texto);
     aplicarDados(j);
+    aplicarNomeColunista();
     document.getElementById('sp-ia-col').style.display='none';
     showSt('st-ia-col','ok','✅ Coluna revisada e gerada! Revise e publique abaixo.');
     document.getElementById('coluna-pub-area').style.display='block';
