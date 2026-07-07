@@ -351,8 +351,8 @@ Gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (nada fora do 
   "roteiro_video": "roteiro de vídeo de 1 min baseado na coluna, sem travessão",
   "legenda_coluna": "legenda CURTA para Instagram/Facebook, no máximo 5 linhas, com emojis. Comece citando o autor EXATAMENTE assim: 'Nosso colunista [NOME DO COLUNISTA]' (mantenha [NOME DO COLUNISTA] entre colchetes, NÃO substitua por nome nenhum). Apresente o tema e a opinião central de forma instigante, SEM entregar a conclusão. Termine SEMPRE com uma chamada forte convidando o leitor a ler a coluna completa no Portal Felipe Tommy (ex.: 👉 Leia a coluna completa no felipetommy.com.br). Feche com hashtags curtas terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
   "enquete_stories": "enquete para Stories sobre o tema da coluna",
-  "wa_canal": "📢 *Nova coluna de [NOME DO COLUNISTA]:*\n🔥 *[título até 67 caracteres]*\n👉 *Leia mais:* [Link inserido manualmente]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
-  "wa_grupo": "enquete rápida para grupos sobre o tema da coluna"
+  "wa_canal": "🔥 *[título da coluna até 67 caracteres, voz ativa, primeira letra maiúscula]*",
+  "wa_grupo": "enquete para grupos de WhatsApp no formato EXATO, com quebras de linha reais (\n): 1ª linha um título curto com emoji (ex.: 🗳️ ENQUETE); 2ª linha a pergunta sobre o tema da coluna; depois EXATAMENTE 4 opções, cada uma em sua própria linha começando com 1️⃣, 2️⃣, 3️⃣ e 4️⃣; última linha: Responda com o número! 👇"
 }
 Onde aparecer o marcador [NOME DO COLUNISTA], mantenha-o LITERALMENTE entre colchetes; o sistema o substituirá pelo nome real depois.
 Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNCA use # em tags.</div>
@@ -418,10 +418,15 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
       <div class="output-header"><span class="output-label">Link curto</span><button class="btn-copy" onclick="copiar('outputLinkCurto',this)">Copiar</button></div>
       <div class="output-box" id="outputLinkCurto">—</div>
     </div>
-    <div class="card">
+    <div class="card" id="card-canal-normal">
       <div class="card-title">💬 Texto para o canal WhatsApp</div>
       <div class="output-header"><span class="output-label">Mensagem do canal</span><button class="btn-copy" onclick="copiar('outputCanal',this)">Copiar</button></div>
       <div class="output-box" id="outputCanal">—</div>
+    </div>
+    <div class="card" id="card-canal-coluna" style="display:none;border-color:var(--accent)">
+      <div class="card-title">✍️ Texto do canal — COLUNA</div>
+      <div class="output-header"><span class="output-label">Mensagem do canal (coluna)</span><button class="btn-copy" onclick="copiar('outputCanalColuna',this)">Copiar</button></div>
+      <div class="output-box" id="outputCanalColuna">—</div>
     </div>
     <div class="card">
       <div class="card-title">📊 Enquete para o canal</div>
@@ -576,6 +581,8 @@ let doneIds=new Set();  // grupo_id feitos para a matéria atual
 let dados={};
 let catsSel=[];
 let tipoInsta='video';
+let ehColuna=false;      // true quando o conteúdo carregado é de coluna
+let nomeColunista='';    // nome do colunista selecionado (para o texto do canal)
 const emojisNum=['1️⃣','2️⃣','3️⃣','4️⃣'];
 const WA_CANAL_URL='https://www.whatsapp.com/channel/0029VaaklDWHAdNcph078N2a';
 
@@ -748,6 +755,7 @@ function aplicarDados(j){
   j=corrigirObjeto(j);
   j.tags=limparTags(j.tags);
   dados=j;
+  ehColuna=false; // por padrão é matéria normal; funções de coluna marcam true depois
   function s(id,v){const el=document.getElementById(id);if(el)el.textContent=v||'';}
   s('r-frase',j.frase_chave);s('r-slug',j.slug);s('r-titulo',j.titulo_seo);
   s('r-sub',j.subtitulo);s('r-meta',j.meta_descricao);
@@ -829,6 +837,7 @@ function novaMateria(){
   document.getElementById('statusImportTxt').textContent='Carregue o JSON na aba "Publicar" primeiro — título e enquete preenchem aqui automaticamente.';
   document.getElementById('barraNova').style.display='none';
   dados={};
+  ehColuna=false;nomeColunista='';
   setTipo('video');
   doneIds=new Set();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -913,7 +922,15 @@ async function gerar(){
   document.getElementById('outputLinkCurto').textContent=linkCurto;
   const emojiInsta=tipoInsta==='video'?'📹':'📰';
   const labelInsta=tipoInsta==='video'?'*Veja o vídeo:*':'*Veja a matéria no insta:*';
-  document.getElementById('outputCanal').textContent=emojiInsta+' '+labelInsta+' '+linkInsta+'\n🔥 *'+tituloCurto+'*\n👉 *Leia mais:* '+linkCurto+'\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_';
+  const assinatura='\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_';
+  document.getElementById('outputCanal').textContent=emojiInsta+' '+labelInsta+' '+linkInsta+'\n🔥 *'+tituloCurto+'*\n👉 *Leia mais:* '+linkCurto+assinatura;
+  // Texto do canal específico para COLUNA (formato próprio + nome do colunista)
+  const labelColuna=tipoInsta==='video'?'*Veja o vídeo:*':'*Veja no insta:*';
+  const leiaColuna=nomeColunista?('*Leia a coluna do '+nomeColunista+':*'):'*Leia a coluna:*';
+  document.getElementById('outputCanalColuna').textContent='👀 '+labelColuna+' '+linkInsta+'\n📚 *'+tituloCurto+'*\n👉 '+leiaColuna+' '+linkCurto+assinatura;
+  // Mostra o card de canal certo conforme o tipo (coluna x matéria normal)
+  document.getElementById('card-canal-coluna').style.display=ehColuna?'block':'none';
+  document.getElementById('card-canal-normal').style.display=ehColuna?'none':'block';
   renderEnqueteSep(enqueteTitulo,opcoes);
 }
 
@@ -1034,6 +1051,7 @@ async function carregarColunistas(){
 function aplicarNomeColunista(){
   const sel=document.getElementById('coluna-autor');
   const nome=(sel&&sel.selectedIndex>0&&sel.options[sel.selectedIndex])?sel.options[sel.selectedIndex].text.trim():'';
+  ehColuna=true; nomeColunista=nome;
   // Guarda o texto original uma vez, para reprocessar sempre que trocar de colunista.
   if(dados._lc_raw===undefined)dados._lc_raw=dados.legenda_coluna||'';
   if(dados._wa_raw===undefined)dados._wa_raw=dados.wa_canal||'';
