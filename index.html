@@ -533,9 +533,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
 
   <div class="card" id="x-resultado" style="display:none">
     <div class="card-title"><span class="step-badge">4</span> Publicar no X</div>
-    <div class="ob"><div class="ob-label">Tweet principal</div><div class="ob-text" id="x-tweet"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('x-tweet')">📋 Copiar</button></div>
-    <div id="x-thread"></div>
-    <div class="ob"><div class="ob-label">Hashtags</div><div class="ob-text" id="x-hashtags"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('x-hashtags')">📋 Copiar</button></div>
+    <div class="ob"><div class="ob-label">Post completo (texto + hashtags)</div><div class="ob-text" id="x-post" style="max-height:340px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('x-post')">📋 Copiar post completo</button></div>
     <div class="ob"><div class="ob-label">Horário sugerido</div><div class="ob-text" id="x-horario"></div></div>
     <a class="btn btn-primary" href="https://x.com/compose/post" target="_blank" rel="noopener" style="text-decoration:none;justify-content:center">🔗 Abrir X para publicar</a>
   </div>
@@ -566,11 +564,11 @@ Regras:
 - Não escreva o post ainda. Só me entregue a matéria-prima.</div>
   <div id="prompt-x" style="display:none">Transforme a pauta abaixo em conteúdo para o X (Twitter), no estilo do Felipe Tommy: jornalismo direto, factual, com senso de urgência real, sem sensacionalismo inventado. NÃO afirme nada que não esteja na pauta. Se o Status da pauta for "boato" ou "em desenvolvimento", deixe isso EXPLÍCITO no texto (ex.: "informação ainda não confirmada").
 
+Tenho X Premium, então o post pode ser LONGO (sem limite de 280 caracteres). Quero UM post único e completo, não uma thread dividida.
+
 Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas chaves:
 {
-  "tweet_principal": "máximo 280 caracteres. Abra com o gancho mais forte. Se for quente e em desenvolvimento, pode começar com 🚨 URGENTE: ou AGORA:. Factual. Se houver thread, termine com gancho de continuidade (ex.: Veja 👇).",
-  "thread": ["de 2 a 4 tweets, um fato por tweet; o último traz contexto ou o que esperar a seguir"],
-  "hashtags": "três hashtags de alcance NACIONAL (nunca locais), separadas por espaço",
+  "post": "o post completo do X em um texto só, pronto para copiar e colar. Abra com o gancho mais forte (se quente e em desenvolvimento, pode começar com 🚨 URGENTE: ou AGORA:). Traga todos os fatos da pauta em parágrafos curtos, de forma factual e organizada. Termine o texto com TRÊS hashtags de alcance NACIONAL (nunca locais). Use quebras de linha reais entre os blocos.",
   "horario": "horário sugerido de publicação e o porquê, em uma linha"
 }
 NUNCA use o caractere — (travessão).</div>
@@ -1480,20 +1478,22 @@ function carregarPostXManual(){
 }
 function renderPostX(j){
   j=corrigirObjeto(j);
-  document.getElementById('x-tweet').textContent=j.tweet_principal||'';
-  const thread=Array.isArray(j.thread)?j.thread:(j.thread?[j.thread]:[]);
-  document.getElementById('x-thread').innerHTML=thread.map((t,i)=>'<div class="ob"><div class="ob-label">Thread '+(i+2)+'</div><div class="ob-text" id="x-thread-'+i+'"></div><button class="btn-copy" style="margin-top:6px" onclick="cp(\'x-thread-'+i+'\')">📋 Copiar</button></div>').join('');
-  thread.forEach((t,i)=>{const el=document.getElementById('x-thread-'+i);if(el)el.textContent=t;});
-  document.getElementById('x-hashtags').textContent=j.hashtags||'';
+  // Aceita o formato novo (post único) e também o antigo (tweet_principal+thread+hashtags), montando um texto só.
+  let post=j.post||'';
+  if(!post){
+    const thread=Array.isArray(j.thread)?j.thread:(j.thread?[j.thread]:[]);
+    post=[j.tweet_principal||'',...thread,j.hashtags||''].filter(Boolean).join('\n\n');
+  }
+  document.getElementById('x-post').textContent=post;
   document.getElementById('x-horario').textContent=j.horario||'';
   document.getElementById('x-resultado').style.display='block';
   document.getElementById('x-resultado').scrollIntoView({behavior:'smooth'});
-  salvarHistX(j);
+  salvarHistX(post);
 }
 function getHistX(){try{return JSON.parse(localStorage.getItem('ft_x_hist')||'[]');}catch(e){return[];}}
-function salvarHistX(j){
+function salvarHistX(post){
   const h=getHistX();
-  h.unshift({data:new Date().toLocaleString('pt-BR'),tweet:j.tweet_principal||''});
+  h.unshift({data:new Date().toLocaleString('pt-BR'),tweet:post||''});
   localStorage.setItem('ft_x_hist',JSON.stringify(h.slice(0,20)));
   renderHistX();
 }
