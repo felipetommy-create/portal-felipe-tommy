@@ -520,7 +520,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="step-badge">3</span> Gerar post do X</div>
+    <div class="card-title" style="justify-content:space-between"><span><span class="step-badge">3</span> Gerar post do X</span><button class="btn-danger-sm" onclick="limparModuloX()">🗑 Limpar tudo</button></div>
     <p class="hint" style="margin-top:0">Grátis: copie o prompt e rode no Grok/Claude.ai. Ou gere com IA (consome créditos da API).</p>
     <button class="btn-copy" style="margin-bottom:12px" onclick="copiarPromptX(this)">📋 Copiar prompt do X (grátis)</button>
     <textarea id="x-post-json" rows="4" placeholder="Cole aqui o JSON do post gerado no Grok/Claude.ai..."></textarea>
@@ -1504,6 +1504,15 @@ function renderHistX(){
   div.innerHTML=h.map(it=>'<div class="ob"><div class="ob-label">'+it.data+'</div><div class="ob-text">'+(it.tweet||'').replace(/</g,'&lt;')+'</div></div>').join('');
 }
 function limparHistX(){if(!confirm('Limpar o histórico de posts do X?'))return;localStorage.removeItem('ft_x_hist');renderHistX();}
+function limparModuloX(){
+  document.getElementById('x-resposta').value='';
+  document.getElementById('x-pauta-manual').value='';
+  document.getElementById('x-post-json').value='';
+  document.getElementById('x-pautas-list').innerHTML='';
+  document.getElementById('x-resultado').style.display='none';
+  document.getElementById('st-x').style.display='none';
+  xPautas=[];xPautaSelIdx=-1;
+}
 
 // ───────────────────────── BOOT ─────────────────────────
 async function boot(){
