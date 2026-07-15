@@ -544,23 +544,25 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
   </div>
 
   <!-- Prompts ocultos -->
-  <div id="prompt-grok" style="display:none">Você é meu editor de pauta para o X (Twitter). Encontre AGORA as notícias nacionais (Brasil) e globais com maior potencial de engajamento no X neste momento.
-Contexto: sou o Felipe Tommy, jornalista. No X, notícia local não performa — só nacional e global. Preciso das pautas mais quentes de agora para virar post.
-Faça:
-1. Escaneie o que está repercutindo no X nas últimas 6-12 horas em: política nacional, economia, mundo e fatos de grande comoção.
-2. Selecione as 5 pautas com maior potencial de viralização. Critérios: quão recente é, nível de polêmica/comoção, alcance nacional, e se é assunto em desenvolvimento (assunto vivo rende mais).
-3. Entregue cada uma EXATAMENTE neste formato:
+  <div id="prompt-grok" style="display:none">Você é meu editor de pauta para o X (Twitter). Sua fonte principal são os ASSUNTOS DO MOMENTO (trending topics) do X no Brasil AGORA — não os portais de notícia.
+Contexto: sou o Felipe Tommy, jornalista. Percebi que meus posts rendem muito mais quando falo EXATAMENTE do que as pessoas já estão comentando no X naquele momento. Notícia de portal que não está nos trends rende pouco.
+Faça, NESTA ORDEM:
+1. Consulte os Assuntos do Momento do X no Brasil AGORA (aba "Assuntos do Momento"/Trending Brasil). Liste no topo da resposta os 10 principais termos que você encontrou, com o motivo de cada um estar bombando (uma linha por termo). Inclua também os trends de Notícias e Esportes se estiverem fortes.
+2. Desses trends, selecione as 5 pautas com maior potencial para um post jornalístico: descarte trends de fã-clube/K-pop/publicidade sem fato jornalístico por trás; priorize o que tem fato, polêmica ou comoção real (política, economia, mundo, esporte com repercussão, celebridade com fato relevante).
+3. Para cada uma das 5, identifique o FATO por trás do trend (por que aquilo virou assunto) e entregue EXATAMENTE neste formato:
 PAUTA [n]
+- Trend: [o termo EXATO que está nos Assuntos do Momento, com a hashtag se houver]
 - Manchete: [uma linha, direta]
 - O que aconteceu: [3 a 4 fatos confirmados, sem opinião]
-- Por que está quente: [por que está bombando no X agora]
+- Por que está bombando no X: [o que as pessoas estão dizendo/discutindo agora sobre isso]
 - Fonte/origem: [quem noticiou primeiro]
 - Status: [confirmado / em desenvolvimento / boato]
-- Gancho sugerido: [o ângulo mais forte para um post]
+- Gancho sugerido: [o ângulo mais forte para entrar NA conversa que já existe]
 Regras:
+- A pauta TEM que nascer de um trend real do X de AGORA. Se não está nos Assuntos do Momento, não entra.
 - Só fatos verificáveis. Não confirmado = marque "em desenvolvimento" ou "boato".
 - NADA de notícia local de Parauapebas ou do Pará — isso eu cubro em outras redes.
-- Priorize o que acontece HOJE. Descarte o que já esfriou.
+- Descarte o que já esfriou (trend de ontem não serve).
 - Não escreva o post ainda. Só me entregue a matéria-prima.</div>
   <div id="prompt-x" style="display:none">Transforme a pauta abaixo em conteúdo para o X (Twitter), no estilo do Felipe Tommy: jornalismo direto, factual, com senso de urgência real, sem sensacionalismo inventado. NÃO afirme nada que não esteja na pauta. Se o Status da pauta for "boato" ou "em desenvolvimento", deixe isso EXPLÍCITO no texto (ex.: "informação ainda não confirmada").
 
@@ -568,7 +570,7 @@ Tenho X Premium, então o post pode ser LONGO (sem limite de 280 caracteres). Qu
 
 Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas chaves:
 {
-  "post": "o post completo do X em um texto só, pronto para copiar e colar. Abra com o gancho mais forte (se quente e em desenvolvimento, pode começar com 🚨 URGENTE: ou AGORA:). Traga todos os fatos da pauta em parágrafos curtos, de forma factual e organizada. Termine o texto com TRÊS hashtags de alcance NACIONAL (nunca locais). Use quebras de linha reais entre os blocos.",
+  "post": "o post completo do X em um texto só, pronto para copiar e colar. Abra com o gancho mais forte (se quente e em desenvolvimento, pode começar com 🚨 URGENTE: ou AGORA:). Traga todos os fatos da pauta em parágrafos curtos, de forma factual e organizada. Termine o texto com TRÊS hashtags de alcance NACIONAL (nunca locais) — se a pauta tiver um campo "Trend", a PRIMEIRA hashtag deve ser o próprio termo do trend (é ele que coloca o post na conversa que já está bombando). Use quebras de linha reais entre os blocos.",
   "horario": "horário sugerido de publicação e o porquê, em uma linha"
 }
 NUNCA use o caractere — (travessão).</div>
