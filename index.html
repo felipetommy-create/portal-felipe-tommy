@@ -1428,7 +1428,13 @@ function copiarTextoDe(id,btn){
 function analisarPautas(){
   const txt=document.getElementById('x-resposta').value||'';
   const blocks=txt.match(/PAUTA\s*\d+[\s\S]*?(?=PAUTA\s*\d+|$)/gi)||[];
-  xPautas=blocks.map(b=>{const m=b.match(/Manchete:\s*(.+)/i);return{manchete:m?m[1].trim():'(sem manchete)',raw:b.trim()};});
+  xPautas=blocks.map(b=>{
+    // Tolera markdown do Grok: "**Manchete**:", "* Manchete:", "- Manchete :" etc.
+    const m=b.match(/Manchete\s*\**\s*:\s*(.+)/i);
+    let man=m?m[1].replace(/\*+/g,'').trim():'';
+    if(!man){const linhas=b.split('\n').map(l=>l.replace(/[*\-#]+/g,'').trim()).filter(l=>l&&!/^PAUTA/i.test(l));man=linhas[0]||'(sem manchete)';}
+    return{manchete:man,raw:b.trim()};
+  });
   xPautaSelIdx=-1;
   const div=document.getElementById('x-pautas-list');
   if(!xPautas.length){div.innerHTML='<p class="hint" style="margin:0">Não encontrei blocos "PAUTA 1..5". Cole uma pauta manualmente abaixo.</p>';return;}
