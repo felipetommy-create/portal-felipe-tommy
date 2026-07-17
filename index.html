@@ -101,6 +101,19 @@
   .spin{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .6s linear infinite;vertical-align:middle;}
   @keyframes sp{to{transform:rotate(360deg);}}
 
+  /* Teleprompter */
+  #teleOverlay{position:fixed;inset:0;background:#000;z-index:300;display:none;overflow:hidden;}
+  #teleOverlay.on{display:block;}
+  .tele-bar{position:absolute;top:0;left:0;right:0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:10px;z-index:310;background:linear-gradient(rgba(0,0,0,.88),transparent);}
+  .tele-bar button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:8px 13px;font-size:14px;cursor:pointer;}
+  .tele-bar button:hover{background:rgba(255,255,255,.22);}
+  .tele-info{color:#9ca3af;font-size:12px;align-self:center;padding:0 6px;white-space:nowrap;}
+  .tele-marker{position:absolute;top:33vh;left:0;right:0;border-top:2px solid rgba(37,211,102,.6);z-index:305;pointer-events:none;}
+  .tele-marker::before{content:'▶';color:#25D366;position:absolute;left:8px;top:-13px;font-size:15px;}
+  #teleFlip{height:100%;}
+  #teleFlip.mirror{transform:scaleX(-1);}
+  #teleText{padding:36vh 7vw 80vh;color:#fff;font-weight:600;line-height:1.65;font-size:46px;white-space:pre-wrap;will-change:transform;cursor:pointer;}
+
   #setupScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
   .setup-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;}
   .setup-box h2{font-size:17px;margin-bottom:8px;}
@@ -135,6 +148,7 @@
   <button class="tab" onclick="showTab('redes',this)">🎬 Redes Sociais</button>
   <button class="tab" onclick="showTab('whatsapp',this)">📤 WhatsApp</button>
   <button class="tab" onclick="showTab('modulox',this)">𝕏 Módulo X</button>
+  <button class="tab" onclick="showTab('analise',this)">🎤 Análise</button>
   <button class="tab" onclick="showTab('grupos',this)">👥 Grupos</button>
   <button class="tab" onclick="showTab('encaminhar',this)">🚀 Encaminhar</button>
   <button class="tab" onclick="showTab('config',this)">⚙️ Config</button>
@@ -580,6 +594,93 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
 NUNCA use o caractere — (travessão).</div>
 </div>
 
+<!-- ANÁLISE (quadro de vídeo-análise / teleprompter) -->
+<div class="page" id="tab-analise">
+  <div class="card">
+    <div class="card-title" style="justify-content:flex-start">🎤 Quadro de Análise — roteiro para teleprompter</div>
+    <p class="hint" style="margin-top:0">Informe o fato do dia e gere um roteiro de narração de até <strong>1min30</strong> na linha do quadro (escola Jabor: gancho, tese invertida, rajada e fecho de efeito). Depois abra o teleprompter em tela cheia e grave lendo direto do painel.</p>
+    <label>Nome do quadro</label>
+    <input type="text" id="an-quadro" placeholder="Ex: A Hora do Tommy / Pingo nos Is" oninput="salvarQuadroNome()">
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span> Pauta e tom</div>
+    <label>Fato / assunto do dia</label>
+    <textarea id="an-assunto" rows="6" placeholder="Cole aqui a notícia, o fato ou o tema da análise. Quanto mais fatos concretos (nomes, números, datas), melhor o roteiro."></textarea>
+    <label>Tom da análise</label>
+    <div class="toggle-group" id="an-tons">
+      <div class="toggle-btn active" data-tom="ácido e cortante" onclick="setTomAn(this)">🌶️ Ácido</div>
+      <div class="toggle-btn" data-tom="irônico (elogio falso que revela o absurdo)" onclick="setTomAn(this)">🎭 Irônico</div>
+      <div class="toggle-btn" data-tom="indignado e grave" onclick="setTomAn(this)">🔥 Indignado</div>
+      <div class="toggle-btn" data-tom="bem-humorado e escrachado" onclick="setTomAn(this)">😄 Bem-humorado</div>
+    </div>
+    <label>Turbinas de estilo (no máximo 2 por vídeo)</label>
+    <div class="cat-grid">
+      <label><input type="checkbox" id="tb-rotulo" onchange="limitaTurbinas(this)"> 🏷️ Cunhar um rótulo</label>
+      <label><input type="checkbox" id="tb-pergunta" onchange="limitaTurbinas(this)"> 💬 Pergunta ao público</label>
+      <label><input type="checkbox" id="tb-autoironia" onchange="limitaTurbinas(this)"> 🤡 Autoironia</label>
+      <label><input type="checkbox" id="tb-historia" onchange="limitaTurbinas(this)"> 📜 Lastro histórico</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">2</span> Gerar roteiro</div>
+    <button class="btn btn-primary" onclick="gerarAnaliseIA()" style="width:100%"><span class="spin" id="sp-an" style="display:none"></span>✨ Gerar com IA</button>
+    <p class="hint" style="margin-top:8px">Grátis: copie o prompt, rode no Claude.ai e cole o JSON abaixo.</p>
+    <button class="btn-copy" style="margin-bottom:12px" onclick="copiarPromptAnalise(this)">📋 Copiar prompt do roteiro (grátis)</button>
+    <textarea id="an-json" rows="4" placeholder="Cole aqui o JSON gerado no Claude.ai..."></textarea>
+    <button class="btn btn-secondary" onclick="carregarAnaliseManual()" style="width:100%">⚡ Carregar (sem IA)</button>
+    <div id="st-an" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div class="card" id="an-resultado" style="display:none">
+    <div class="card-title"><span class="step-badge">3</span> Roteiro pronto</div>
+    <div class="ob"><div class="ob-label">Título do episódio</div><div class="ob-text" id="an-titulo"></div></div>
+    <div class="ob" id="an-rotulo-blk" style="display:none"><div class="ob-label">🏷️ Rótulo cunhado</div><div class="ob-text" id="an-rotulo"></div></div>
+    <div class="ob"><div class="ob-label">Roteiro de narração <span id="an-medida" style="text-transform:none"></span></div><div class="ob-text" id="an-roteiro" style="max-height:320px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('an-roteiro')">📋 Copiar</button></div>
+    <button class="btn btn-primary" style="margin-bottom:14px" onclick="abrirTeleprompter()">📺 Abrir teleprompter e gravar</button>
+    <div class="ob"><div class="ob-label">Legenda para as redes</div><div class="ob-text" id="an-legenda" style="max-height:220px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('an-legenda')">📋 Copiar</button></div>
+    <div class="ob"><div class="ob-label">Enquete Stories</div><div class="ob-text" id="an-enquete"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('an-enquete')">📋 Copiar</button></div>
+    <p class="hint" style="margin-bottom:0">🎬 Depois de gravar e postar, use as abas WhatsApp/Encaminhar para distribuir, como em qualquer matéria.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between"><span>🕘 Histórico de roteiros</span><button class="btn-danger-sm" onclick="limparHistAn()">Limpar</button></div>
+    <div id="an-hist"><div class="empty-state">Nenhum roteiro gerado ainda.</div></div>
+  </div>
+
+  <!-- Prompt oculto do quadro de análise -->
+  <div id="prompt-analise" style="display:none">Você é o redator-chefe do quadro de vídeo-análise "[NOME DO QUADRO]", do jornalista Felipe Tommy (Portal Felipe Tommy). Transforme o fato abaixo em um ROTEIRO DE NARRAÇÃO para teleprompter: o Felipe vai ler o texto olhando para a câmera, em vídeo de NO MÁXIMO 1 minuto e 30 segundos.
+
+ESCOLA DO QUADRO: comentário opinativo na tradição de Arnaldo Jabor. Use a TÉCNICA dele, nunca copie frases ou bordões dele.
+
+ESTRUTURA OBRIGATÓRIA EM 4 ATOS:
+1. GANCHO: entre direto no fato, sem "olá pessoal", sem preâmbulo. Pode abrir com pergunta provocativa.
+2. TESE INVERTIDA: negue a leitura óbvia e proponha a inversão ("todo mundo está olhando para X, mas a verdadeira questão é Y"). O roteiro inteiro existe para defender essa inversão.
+3. RAJADA: frases curtas, 3 a 5 exemplos ou consequências em sequência, e UMA generalização que eleva o caso a conceito.
+4. FECHO AFORÍSTICO: frase de efeito que ecoa o início (fechamento circular). Quando soar natural, amarre com o nome do quadro.
+
+REGRAS DE ESCRITA:
+- Roteiro entre 200 e 240 palavras. NUNCA passe de 240.
+- Oralidade total: frases que cabem numa respiração (máximo ~15 palavras). É texto para FALAR, não para ler em silêncio.
+- No máximo 1 ou 2 metáforas, sempre concretas e visuais (imagem que dá para filmar). Nunca metáfora abstrata.
+- Registro duplo: erudição servida em linguagem de conversa de bar.
+- Pode nomear pessoas e instituições, mas SOMENTE com base no que está na pauta.
+- PROIBIDO inventar fatos, números, datas ou citações que não estejam na pauta. A opinião é livre; o fato, só o fornecido. Se a pauta não traz um dado, não crie.
+- Se a pauta descrever acusação ainda não julgada, use "suspeito", "investigado", "segundo a denúncia". O Felipe responde juridicamente pelo que fala no vídeo.
+- Separe os blocos de fala com linha em branco (são as pausas de respiração no teleprompter).
+- NUNCA use o caractere — (travessão). Português brasileiro correto, com acentos.
+
+Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas chaves:
+{
+  "titulo": "título curto do episódio, até 60 caracteres",
+  "rotulo": "se a turbina de rótulo for pedida: a expressão cunhada; senão, string vazia",
+  "roteiro": "o roteiro completo de narração, com quebras de linha reais (\n\n) entre os blocos",
+  "legenda_social": "legenda para Instagram/TikTok/Facebook, mínimo 6 linhas, com emojis, apresentando a análise SEM entregar a conclusão, CTA para assistir até o fim e seguir @felipetommyreal, hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "enquete_stories": "enquete direta para Stories sobre a tese do vídeo"
+}</div>
+</div>
+
 <!-- CONFIG -->
 <div class="page" id="tab-config">
   <div class="card">
@@ -620,6 +721,23 @@ NUNCA use o caractere — (travessão).</div>
       <li>Copie a senha gerada (aparece só uma vez!) e cole acima</li>
     </ol>
   </div>
+</div>
+
+<!-- TELEPROMPTER (tela cheia) -->
+<div id="teleOverlay">
+  <div class="tele-bar">
+    <button id="tele-play" onclick="toggleTele()">▶ Iniciar</button>
+    <button onclick="reiniciarTele()">⏮ Início</button>
+    <button onclick="mudarVelTele(-5)">🐢 −</button>
+    <span class="tele-info" id="tele-vel">—</span>
+    <button onclick="mudarVelTele(5)">🐇 +</button>
+    <button onclick="mudarFonteTele(-4)">A−</button>
+    <button onclick="mudarFonteTele(4)">A+</button>
+    <button onclick="espelharTele()">🪞 Espelhar</button>
+    <button onclick="fecharTeleprompter()">✕ Fechar</button>
+  </div>
+  <div class="tele-marker"></div>
+  <div id="teleFlip"><div id="teleText" onclick="toggleTele()"></div></div>
 </div>
 
 <script>
@@ -685,6 +803,7 @@ function showTab(id,el){
   if(id==='encaminhar'){renderEncaminhar();buscarGrupos();}
   if(id==='colunistas'){const sel=document.getElementById('coluna-autor');if(sel&&sel.options.length<=1)carregarColunistas();}
   if(id==='modulox')renderHistX();
+  if(id==='analise')renderHistAn();
 }
 
 function cp(id){
@@ -1526,6 +1645,164 @@ function limparModuloX(){
   xPautas=[];xPautaSelIdx=-1;
 }
 
+// ───────────────────────── ANÁLISE (quadro de vídeo) ─────────────────────────
+let anDados=null;
+function salvarQuadroNome(){localStorage.setItem('ft_quadro_nome',document.getElementById('an-quadro').value);}
+function setTomAn(el){document.querySelectorAll('#an-tons .toggle-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
+function tomAn(){const a=document.querySelector('#an-tons .toggle-btn.active');return a?a.dataset.tom:'ácido e cortante';}
+function limitaTurbinas(cb){
+  const marcadas=['tb-rotulo','tb-pergunta','tb-autoironia','tb-historia'].filter(id=>document.getElementById(id).checked);
+  if(marcadas.length>2){cb.checked=false;alert('No máximo 2 turbinas por vídeo — mais que isso satura o estilo.');}
+}
+function turbinasAn(){
+  const t=[];
+  if(document.getElementById('tb-rotulo').checked)t.push('Cunhe UMA expressão nova que rotule o fenômeno do dia (na linha do que "Dilmês" fez com o falar da Dilma), use-a 2 vezes no roteiro e devolva-a na chave "rotulo".');
+  if(document.getElementById('tb-pergunta').checked)t.push('Feche com pergunta direta ao público, pedindo resposta nos comentários.');
+  if(document.getElementById('tb-autoironia').checked)t.push('Inclua um momento de autoironia: o Felipe se coloca dentro de uma cena absurda ligada ao tema.');
+  if(document.getElementById('tb-historia').checked)t.push('Inclua UM lastro histórico ou citação adaptada, em uma frase só, sem virar aula.');
+  return t;
+}
+function montarPromptAnalise(){
+  let p=document.getElementById('prompt-analise').textContent||'';
+  const quadro=document.getElementById('an-quadro').value.trim()||'A Hora do Tommy';
+  p=p.split('[NOME DO QUADRO]').join(quadro);
+  const tb=turbinasAn();
+  p+='\n\nTOM DESEJADO: '+tomAn()+'.';
+  p+='\nTURBINAS DE ESTILO PEDIDAS: '+(tb.length?tb.join(' '):'nenhuma; use apenas os 4 atos.');
+  return p;
+}
+function copiarPromptAnalise(btn){
+  const assunto=document.getElementById('an-assunto').value.trim();
+  if(!assunto){alert('Preencha o fato/assunto do dia primeiro.');return;}
+  const full=montarPromptAnalise()+'\n\nPAUTA (FATO DO DIA):\n'+assunto;
+  navigator.clipboard.writeText(full).then(()=>{const o=btn.textContent;btn.textContent='✅ Copiado!';setTimeout(()=>{btn.textContent=o;},1500);});
+}
+async function gerarAnaliseIA(){
+  const assunto=document.getElementById('an-assunto').value.trim();
+  if(!assunto){showSt('st-an','err','⚠️ Preencha o fato/assunto do dia primeiro.');return;}
+  document.getElementById('sp-an').style.display='inline-block';
+  showSt('st-an','loading','✨ Escrevendo o roteiro… pode levar alguns segundos.');
+  try{
+    const j=await gerarComIA(montarPromptAnalise(),assunto);
+    aplicarAnalise(j);
+    document.getElementById('sp-an').style.display='none';
+    showSt('st-an','ok','✅ Roteiro pronto! Revise abaixo e abra o teleprompter.');
+  }catch(e){
+    document.getElementById('sp-an').style.display='none';
+    showSt('st-an','err','❌ '+e.message);
+  }
+}
+function carregarAnaliseManual(){
+  const raw=document.getElementById('an-json').value.trim();
+  if(!raw){showSt('st-an','err','⚠️ Cole o JSON do roteiro antes de carregar.');return;}
+  try{
+    const cleaned=raw.replace(/```json|```/g,'').trim();
+    const ini=cleaned.indexOf('{'),fim=cleaned.lastIndexOf('}');
+    const j=JSON.parse(ini>=0&&fim>ini?cleaned.slice(ini,fim+1):cleaned);
+    aplicarAnalise(j);
+    showSt('st-an','ok','✅ Roteiro carregado! Revise abaixo e abra o teleprompter.');
+  }catch(e){showSt('st-an','err','❌ JSON inválido: '+e.message);}
+}
+function medidaRoteiro(rot){
+  const w=(rot||'').trim().split(/\s+/).filter(Boolean).length;
+  const s=Math.round(w/2.5); // ~150 palavras por minuto de fala
+  const t=s>=60?Math.floor(s/60)+'min'+String(s%60).padStart(2,'0')+'s':s+'s';
+  return{w,s,txt:'— '+w+' palavras • ~'+t+' de fala'};
+}
+function aplicarAnalise(j,semHist){
+  j=corrigirObjeto(j);
+  anDados=j;
+  document.getElementById('an-titulo').textContent=j.titulo||'';
+  const temRot=!!(j.rotulo&&j.rotulo.trim());
+  document.getElementById('an-rotulo-blk').style.display=temRot?'block':'none';
+  document.getElementById('an-rotulo').textContent=j.rotulo||'';
+  document.getElementById('an-roteiro').textContent=j.roteiro||'';
+  document.getElementById('an-legenda').textContent=j.legenda_social||'';
+  document.getElementById('an-enquete').textContent=j.enquete_stories||'';
+  const m=medidaRoteiro(j.roteiro);
+  const med=document.getElementById('an-medida');
+  med.textContent=m.txt+(m.w>240?' ⚠️ acima de 1min30 — corte antes de gravar':'');
+  med.style.color=m.w>240?'var(--warn)':'var(--accent)';
+  document.getElementById('an-resultado').style.display='block';
+  document.getElementById('an-resultado').scrollIntoView({behavior:'smooth'});
+  if(!semHist)salvarHistAn(j);
+}
+function getHistAn(){try{return JSON.parse(localStorage.getItem('ft_an_hist')||'[]');}catch(e){return[];}}
+function salvarHistAn(j){
+  const h=getHistAn();
+  h.unshift({data:new Date().toLocaleString('pt-BR'),j:{titulo:j.titulo||'',rotulo:j.rotulo||'',roteiro:j.roteiro||'',legenda_social:j.legenda_social||'',enquete_stories:j.enquete_stories||''}});
+  localStorage.setItem('ft_an_hist',JSON.stringify(h.slice(0,20)));
+  renderHistAn();
+}
+function renderHistAn(){
+  const div=document.getElementById('an-hist');if(!div)return;
+  const h=getHistAn();
+  if(!h.length){div.innerHTML='<div class="empty-state">Nenhum roteiro gerado ainda.</div>';return;}
+  div.innerHTML=h.map((it,i)=>'<div class="ob"><div class="ob-label">'+it.data+' — '+(it.j.titulo||'(sem título)').replace(/</g,'&lt;')+'</div><div class="ob-text" style="max-height:110px">'+(it.j.roteiro||'').replace(/</g,'&lt;')+'</div><button class="btn-sm" style="margin-top:6px" onclick="reabrirHistAn('+i+')">↩️ Reabrir este roteiro</button></div>').join('');
+}
+function reabrirHistAn(i){const h=getHistAn();if(h[i])aplicarAnalise(h[i].j,true);}
+function limparHistAn(){if(!confirm('Limpar o histórico de roteiros?'))return;localStorage.removeItem('ft_an_hist');renderHistAn();}
+
+// ───────────────────────── TELEPROMPTER ─────────────────────────
+let tele={y:0,speed:40,font:46,playing:false,raf:0,last:0};
+function abrirTeleprompter(){
+  if(!anDados||!anDados.roteiro){alert('Gere um roteiro primeiro.');return;}
+  document.getElementById('teleText').textContent=anDados.roteiro;
+  document.getElementById('teleOverlay').classList.add('on');
+  document.body.style.overflow='hidden';
+  tele.font=parseInt(localStorage.getItem('ft_tele_font')||'46',10);
+  aplicarFonteTele();
+  tele.y=0;tele.playing=false;aplicarPosTele();
+  document.getElementById('tele-play').textContent='▶ Iniciar';
+  // Velocidade automática: rolar o texto inteiro no tempo estimado de fala.
+  requestAnimationFrame(()=>{
+    const el=document.getElementById('teleText');
+    const m=medidaRoteiro(anDados.roteiro);
+    const rolavel=Math.max(el.scrollHeight-window.innerHeight*0.6,100);
+    tele.speed=Math.max(8,Math.round(rolavel/Math.max(m.s,20)));
+    atualizarVelTele();
+  });
+}
+function fecharTeleprompter(){
+  pausarTele();
+  document.getElementById('teleOverlay').classList.remove('on');
+  document.body.style.overflow='';
+}
+function toggleTele(){tele.playing?pausarTele():tocarTele();}
+function tocarTele(){
+  tele.playing=true;tele.last=performance.now();
+  document.getElementById('tele-play').textContent='⏸ Pausar';
+  tele.raf=requestAnimationFrame(stepTele);
+}
+function pausarTele(){
+  tele.playing=false;
+  if(tele.raf)cancelAnimationFrame(tele.raf);
+  const b=document.getElementById('tele-play');if(b)b.textContent='▶ Continuar';
+}
+function stepTele(t){
+  if(!tele.playing)return;
+  const dt=(t-tele.last)/1000;tele.last=t;
+  tele.y+=tele.speed*dt;
+  aplicarPosTele();
+  const el=document.getElementById('teleText');
+  if(tele.y>=el.scrollHeight-window.innerHeight*0.4){pausarTele();return;}
+  tele.raf=requestAnimationFrame(stepTele);
+}
+function aplicarPosTele(){document.getElementById('teleText').style.transform='translateY('+(-tele.y)+'px)';}
+function reiniciarTele(){pausarTele();tele.y=0;aplicarPosTele();document.getElementById('tele-play').textContent='▶ Iniciar';}
+function mudarVelTele(d){tele.speed=Math.max(5,Math.min(200,tele.speed+d));atualizarVelTele();}
+function atualizarVelTele(){document.getElementById('tele-vel').textContent=tele.speed+' px/s';}
+function mudarFonteTele(d){tele.font=Math.max(24,Math.min(90,tele.font+d));aplicarFonteTele();localStorage.setItem('ft_tele_font',tele.font);}
+function aplicarFonteTele(){document.getElementById('teleText').style.fontSize=tele.font+'px';}
+function espelharTele(){document.getElementById('teleFlip').classList.toggle('mirror');}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('teleOverlay').classList.contains('on'))return;
+  if(e.code==='Space'){e.preventDefault();toggleTele();}
+  else if(e.key==='ArrowUp'){e.preventDefault();mudarVelTele(5);}
+  else if(e.key==='ArrowDown'){e.preventDefault();mudarVelTele(-5);}
+  else if(e.key==='Escape'){fecharTeleprompter();}
+});
+
 // ───────────────────────── BOOT ─────────────────────────
 async function boot(){
   carregarCfgWP();
@@ -1533,6 +1810,8 @@ async function boot(){
   renderEncaminhar();
 }
 (function init(){
+  const qn=localStorage.getItem('ft_quadro_nome');
+  if(qn)document.getElementById('an-quadro').value=qn;
   const raw=localStorage.getItem(LS_SB);
   if(raw){
     SB=JSON.parse(raw);
