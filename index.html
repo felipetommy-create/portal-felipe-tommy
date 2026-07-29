@@ -1056,8 +1056,57 @@ async function gerarComIA(prompt, textoBruto){
   let txt = (bloco ? bloco.text : "").trim().replace(/```json|```/g, "").trim();
   const ini = txt.indexOf("{"), fim = txt.lastIndexOf("}");
   if(ini>=0 && fim>ini) txt = txt.slice(ini, fim+1);
-  return JSON.parse(txt);
+  return parseJSONFlex(txt);
 }
+
+// ───────── Parse tolerante de JSON colado ─────────
+// No celular o teclado troca aspas retas (") por curvas (“ ”) e isso quebra o JSON.parse.
+// Aspas curvas DENTRO de um texto são válidas em JSON; só as estruturais precisam ser retas.
+// Por isso tentamos em etapas, da correção mais conservadora para a mais agressiva.
+function parseJSONFlex(raw){
+  let t = (raw||'').replace(/```json|```/gi,'').trim();
+  t = t.replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\u00A0/g,' '); // invisíveis e espaço fixo
+  const recorta = s => { const i=s.indexOf('{'), f=s.lastIndexOf('}'); return (i>=0&&f>i) ? s.slice(i,f+1) : s; };
+  t = recorta(t);
+
+  // 1) tenta como veio
+  try { return JSON.parse(t); } catch(e){}
+
+  // 2) varre caractere a caractere sabendo quando está DENTRO de um texto.
+  //    Só as aspas que abrem/fecham o texto viram retas; as citações internas
+  //    continuam curvas (o que é válido em JSON e preserva a fala do entrevistado).
+  const estrutural = (function(s){
+    const curva = /[“”„‟]/;
+    let out = '', dentro = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (!dentro) {
+        if (c === '"' || curva.test(c)) { dentro = true; out += '"'; }
+        else out += c;
+      } else {
+        if (c === '\\') { out += c + (s[i+1] || ''); i++; continue; }
+        if (c === '"' || curva.test(c)) {
+          let j = i + 1;
+          while (j < s.length && /\s/.test(s[j])) j++;
+          if (j >= s.length || ':,}]'.indexOf(s[j]) >= 0) { dentro = false; out += '"'; }
+          else out += (c === '"' ? '\\"' : c); // aspa no meio da frase: não fecha o texto
+        } else out += c;
+      }
+    }
+    return out;
+  })(t);
+  try { return JSON.parse(recorta(estrutural)); } catch(e){}
+
+  // 3) último recurso: troca todas as aspas curvas e remove vírgula sobrando antes de } ou ]
+  const tudo = estrutural
+    .replace(/[“”„‟″]/g,'"')
+    .replace(/[‘’‚‛′]/g,"'")
+    .replace(/,\s*([}\]])/g,'$1');
+  try { return JSON.parse(recorta(tudo)); } catch(e){
+    throw new Error('não consegui ler o JSON. Se você está no celular, o teclado pode ter trocado as aspas retas (") por curvas (”). Copie a resposta de novo e cole sem editar nada no meio.');
+  }
+}
+
 // Prompt de notícia = o prompt embutido na aba "Como usar" (sem o rodapé "TEXTO DA MATÉRIA").
 function promptNoticia(){
   let p=document.getElementById('prompt-modelo').textContent||'';
@@ -1108,8 +1157,7 @@ function carregarJSON(){
   const raw=document.getElementById('json-input').value.trim();
   if(!raw){showSt('st-json','err','⚠️ Cole o JSON gerado pelo Claude antes de carregar.');return;}
   try{
-    const cleaned=raw.replace(/```json|```/g,'').trim();
-    const j=JSON.parse(cleaned);
+    const j=parseJSONFlex(raw);
     aplicarDados(j);
     showSt('st-json','ok','✅ Dados carregados! Revise abaixo, preencha os links e publique.');
     document.getElementById('area-dados').scrollIntoView({behavior:'smooth'});
@@ -1416,8 +1464,7 @@ function carregarColunaJSON(){
   const raw=document.getElementById('coluna-json').value.trim();
   if(!raw){showSt('st-coluna-json','err','⚠️ Cole o JSON antes de carregar.');return;}
   try{
-    const cleaned=raw.replace(/```json|```/g,'').trim();
-    const j=JSON.parse(cleaned);
+    const j=parseJSONFlex(raw);
     aplicarDados(j);
     aplicarNomeColunista();
     showSt('st-coluna-json','ok','✅ Dados carregados! Revise e publique abaixo.');
@@ -1722,9 +1769,7 @@ function carregarPostXManual(){
   const raw=document.getElementById('x-post-json').value.trim();
   if(!raw){showSt('st-x','err','⚠️ Cole o JSON do post gerado.');return;}
   try{
-    const cleaned=raw.replace(/```json|```/g,'').trim();
-    const ini=cleaned.indexOf('{'),fim=cleaned.lastIndexOf('}');
-    const j=JSON.parse(ini>=0&&fim>ini?cleaned.slice(ini,fim+1):cleaned);
+    const j=parseJSONFlex(raw);
     renderPostX(j);
     showSt('st-x','ok','✅ Post carregado!');
   }catch(e){showSt('st-x','err','❌ JSON inválido: '+e.message);}
@@ -1818,9 +1863,7 @@ function carregarAnaliseManual(){
   const raw=document.getElementById('an-json').value.trim();
   if(!raw){showSt('st-an','err','⚠️ Cole o JSON do roteiro antes de carregar.');return;}
   try{
-    const cleaned=raw.replace(/```json|```/g,'').trim();
-    const ini=cleaned.indexOf('{'),fim=cleaned.lastIndexOf('}');
-    const j=JSON.parse(ini>=0&&fim>ini?cleaned.slice(ini,fim+1):cleaned);
+    const j=parseJSONFlex(raw);
     aplicarAnalise(j);
     showSt('st-an','ok','✅ Roteiro carregado! Revise abaixo e abra o teleprompter.');
   }catch(e){showSt('st-an','err','❌ JSON inválido: '+e.message);}
