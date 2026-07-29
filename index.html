@@ -156,6 +156,92 @@
 
 <!-- COMO USAR -->
 <div class="page active" id="tab-comousar">
+
+  <!-- ROTINA PADRAO -->
+  <div class="card">
+    <div class="card-title">🗓️ Minha rotina padrão do dia</div>
+    <p class="hint" style="margin-top:0">O procedimento da redação, do começo ao fim. Se bater dúvida, é aqui.</p>
+
+    <div class="passo">
+      <div class="step-badge" style="width:auto;padding:0 8px;border-radius:11px;font-size:10px">6h</div>
+      <div class="passo-texto"><strong>A pauta chega sozinha</strong><br>
+      Roda automático e salva em <code>05-REDACAO\pautas\</code>. Ordem: Parauapebas → Canaã, Marabá, Curionópolis, Redenção, Eldorado → nacional → esporte → internacional → tecnologia.<br>
+      <em>Sua tarefa: ler e escolher a que abre o dia.</em> Precisa do app do Claude aberto.</div>
+    </div>
+
+    <div class="passo">
+      <div class="step-badge" style="width:auto;padding:0 8px;border-radius:11px;font-size:10px">7h</div>
+      <div class="passo-texto"><strong>Abrir a sessão de trabalho</strong><br>
+      Conversa nova no Claude, com a pasta <code>PORTAL-FELIPE-TOMMY</code> selecionada.<br>
+      Teste: pergunte <em>"o que você sabe sobre o portal?"</em>. Se ele responder sem você explicar nada, está certo.</div>
+    </div>
+
+    <div class="passo">
+      <div class="step-badge" style="width:auto;padding:0 8px;border-radius:11px;font-size:10px">MANHÃ</div>
+      <div class="passo-texto"><strong>Produzir a matéria</strong><br>
+      Cole o material bruto e diga <strong>"nova matéria"</strong>. Depois: JSON na aba <strong>Publicar</strong> → imagem de capa → publica → copia o link → aba <strong>WhatsApp</strong> → canal + enquete → aba <strong>Encaminhar</strong>.<br>
+      Não esqueça o <strong>contraditório</strong> pelo Titan (ver quadro abaixo).</div>
+    </div>
+
+    <div class="passo">
+      <div class="step-badge" style="width:auto;padding:0 8px;border-radius:11px;font-size:10px">TARDE</div>
+      <div class="passo-texto"><strong>Vídeo e desdobramento</strong><br>
+      Corte vertical de até 60s da notícia quente, momento mais forte nos 3 primeiros segundos. O mesmo corte serve TikTok e Reel; a mesma arte serve Facebook e feed.<br>
+      <strong>Desdobramento:</strong> notícia quente de 1 ou 2 dias atrás merece ângulo novo hoje. Viral tem cauda de 3 a 5 dias.</div>
+    </div>
+
+    <div class="passo">
+      <div class="step-badge" style="width:auto;padding:0 8px;border-radius:11px;font-size:10px">NOITE</div>
+      <div class="passo-texto"><strong>Fechamento</strong><br>
+      Colunas recebidas → aba <strong>Colunistas</strong> (o texto do colunista só é corrigido, nunca reescrito).<br>
+      Se a pauta pedir opinião, use a aba <strong>🎤 Análise</strong> e grave no teleprompter.</div>
+    </div>
+  </div>
+
+  <!-- REGRAS DE CORTE -->
+  <div class="card">
+    <div class="card-title">🚫 Regras que não se quebram</div>
+    <div class="ob">
+      <div class="ob-label">Facebook</div>
+      <div class="ob-text" style="max-height:none">Sempre card-notícia. NUNCA link solto (rende 42× menos). O link vai no primeiro comentário.</div>
+    </div>
+    <div class="ob">
+      <div class="ob-label">Instagram</div>
+      <div class="ob-text" style="max-height:none">O card precisa de logo + data, porque ele circula solto no WhatsApp. Card converte seguidor, Reel dá alcance. Na notícia quente, os dois.</div>
+    </div>
+    <div class="ob">
+      <div class="ob-label">TikTok</div>
+      <div class="ob-text" style="max-height:none">SÓ notícia quente. Vídeo morno afunda o perfil no algoritmo. Até 60s, sem vinheta, sem "olá pessoal".</div>
+    </div>
+    <div class="ob">
+      <div class="ob-label">X (Twitter)</div>
+      <div class="ob-text" style="max-height:none">NÃO postar notícia local. NÃO postar vídeo (tempo médio de exibição: 4 segundos). O público de lá veio de 2022, por pauta nacional, e não engaja com Pará.</div>
+    </div>
+    <div class="ob">
+      <div class="ob-label">Texto que não pode parecer IA</div>
+      <div class="ob-text" style="max-height:none">Na legenda: 1 emoji por BLOCO de 2 a 3 frases, nunca 1 emoji por frase. Todo bloco com número, data, nome ou órgão. Material fino = legenda curta, nunca esticada.</div>
+    </div>
+  </div>
+
+  <!-- CONTRADITORIO -->
+  <div class="card">
+    <div class="card-title">📧 Contraditório — enviar pelo Titan</div>
+    <p class="hint" style="margin-top:0">Sempre por <code>diretoria@felipetommy.com.br</code>, nunca pelo e-mail pessoal.</p>
+    <div class="ob">
+      <div class="ob-label">Fixos em toda matéria de Parauapebas</div>
+      <div class="ob-text" id="emails-fixos" style="max-height:none">ouvidoria@parauapebas.pa.gov.br, ascom@parauapebas.pa.gov.br, imprensa@parauapebas.pa.gov.br, gabinete@parauapebas.pa.gov.br</div>
+      <button class="btn btn-copy" style="margin-top:8px" onclick="cp('emails-fixos')">📋 Copiar destinatários</button>
+    </div>
+    <div class="ob">
+      <div class="ob-label">Somar conforme o tema</div>
+      <div class="ob-text" style="max-height:none">Educação → semed@parauapebas.pa.gov.br
+Urbanismo / obras → semurb@parauapebas.pa.gov.br
+Outra pasta → a secretaria correspondente
+
+Outro município ou órgão estadual: confirmar o endereço antes. Errar o destinatário é pior que não enviar.</div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">📖 Fluxo de publicação</div>
     <div class="passo"><div class="step-badge">1</div><div class="passo-texto"><strong>Gere o JSON no Claude</strong><br>Copie o prompt abaixo, cole no Claude.ai com o texto da matéria e copie o JSON que ele devolver.</div></div>
@@ -184,10 +270,10 @@ Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAME
   "corpo_html": "texto completo em HTML seguindo TODAS as regras de legibilidade abaixo",
   "email_ascom": "e-mail formal para ASCOM informando a publicação, solicitando contraditório e com perguntas pontuais",
   "roteiro_video": "roteiro para narração de vídeo de 1 minuto (Reels/TikTok/Shorts), sem travessão",
-  "legenda_social": "legenda para Instagram/Facebook/X/TikTok/Shorts, mínimo 8 linhas, com emojis, CTA para seguir @felipetommyreal, pergunta instigante e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
-  "enquete_stories": "enquete polêmica e direta para Stories",
+  "legenda_social": "legenda para Instagram/Facebook/TikTok em BLOCOS (ver REGRAS DA LEGENDA SOCIAL abaixo), terminando com CTA para seguir @felipetommyreal, pergunta que expõe a contradição do fato e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "enquete_stories": "enquete para Stories (ver REGRAS DA ENQUETE abaixo)",
   "wa_canal": "📹 *Veja o vídeo:* [Link inserido manualmente]\n🔥 *[título impactante até 67 caracteres, voz ativa, primeira letra maiúscula]*\n👉 *Leia mais:* [Link inserido manualmente]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
-  "wa_grupo": "enquete rápida para grupos de WhatsApp"
+  "wa_grupo": "enquete para grupos de WhatsApp, mesmas REGRAS DA ENQUETE, opções numeradas com 1..4"
 }
 
 REGRAS DE LEGIBILIDADE (Yoast) — siga à risca para o texto ficar VERDE:
@@ -209,6 +295,42 @@ REGRAS DE SEO:
 - Use &lt;p&gt; para todos os parágrafos. Mais de 600 palavras no total.
 - Insira a marcação LEIA_TAMBEM_AQUI entre o segundo e o terceiro subtítulo.
 - Insira a marcação LINK_WHATSAPP_AQUI em um parágrafo isolado no meio do texto.
+
+REGRAS DA LEGENDA SOCIAL (legenda_social) — o texto NAO pode parecer feito por IA:
+
+1. Escreva de 5 a 8 BLOCOS. Cada bloco = 1 emoji + 2 a 3 FRASES INTEIRAS.
+   PROIBIDO 1 emoji por frase curta. Esse padrao denuncia IA na hora.
+2. As REGRAS DE LEGIBILIDADE do Yoast valem SO para o corpo_html. Na legenda social
+   frase longa e permitida e desejavel. Varie o tamanho das frases.
+3. TODO bloco precisa de fato concreto: numero, data, nome proprio, orgao, valor ou cargo.
+   Bloco sem fato concreto NAO ENTRA. Melhor 4 blocos densos que 8 blocos vazios.
+4. PROIBIDAS frases de enchimento como "expectativa e de novos capitulos", "o caso segue
+   repercutindo", "acompanhe os proximos capitulos", "o nome ganha forca".
+5. Feche com forca: contraste, construcao em tres tempos, ou pergunta que expoe a
+   contradicao do fato. Nunca feche com frase morna.
+6. Use de 6 a 9 emojis no total, um por bloco. Nunca emoji dentro da frase.
+7. Se o material for FINO, entregue 3 ou 4 blocos e pare. NUNCA estique ate 8.
+
+EXEMPLO DO PADRAO CORRETO (bloco denso, com fato concreto):
+"⚖️ O TRF1, em novembro de 2025, reconheceu que Herlon Soares da Silva cometeu crime ao
+atestar obra federal que nunca existiu em Sao Domingos do Araguaia. A punicao foi extinta
+por prescricao. Isso nao e absolvicao."
+
+EXEMPLO DO QUE NAO FAZER (linha vazia com emoji na frente):
+"📈 Expectativa e de novas pesquisas nos proximos meses."
+
+REGRAS DA ENQUETE (enquete_stories e wa_grupo):
+
+1. Comece com 2 a 3 frases de CONTEXTO FACTUAL, com os numeros do caso. O leitor precisa
+   conseguir votar sem ter lido a materia.
+2. A pergunta final deve FORCAR UMA DECISAO: "O que deveria acontecer?", "Quem deve
+   responder por isso?", "Isso deveria ser permitido?".
+   PROIBIDO terminar com "qual a sua opiniao?" ou "o que voce acha?".
+3. As 4 opcoes sao ACOES ou POSICOES CONCRETAS, nunca sentimentos.
+   BOM: "Exoneracao imediata" / "TCM deve auditar a secretaria".
+   RUIM: "Ainda e cedo para saber" / "Acho que tem chance".
+4. Quando couber, nomeie o orgao que deveria agir (MP, TCM, Camara, prefeito).
+5. Em wa_grupo, numere as opcoes com os emojis 1️⃣ 2️⃣ 3️⃣ 4️⃣, um por linha.
 
 REGRAS GERAIS:
 - Responda APENAS com o JSON. Zero texto antes ou depois.
