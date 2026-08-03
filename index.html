@@ -332,6 +332,31 @@ REGRAS DA ENQUETE (enquete_stories e wa_grupo):
 4. Quando couber, nomeie o orgao que deveria agir (MP, TCM, Camara, prefeito).
 5. Em wa_grupo, numere as opcoes com os emojis 1️⃣ 2️⃣ 3️⃣ 4️⃣, um por linha.
 
+REGRAS DE BLINDAGEM DE ALCANCE (Meta/TikTok) — evitam shadowban e bloqueio:
+
+Aplique APENAS nos campos sociais: legenda_social, enquete_stories, wa_grupo e roteiro_video.
+NAO aplique em corpo_html, titulo_seo nem meta_descricao (o site nao sofre shadowban e o
+leitor busca o termo real no Google). A troca NAO pode criar frase falsa nem esconder a
+gravidade: se o eufemismo distorcer o fato, reescreva de forma tecnica/neutra.
+
+Substitua as palavras-gatilho pela alternativa segura:
+- estupro/estuprador -> crime sexual, abuso sexual, violencia sexual
+- suicidio/se matar -> atentado contra a propria vida
+- assassinado/matar -> tirar a vida, crime violento (homicidio como termo juridico e aceito)
+- pedofilia/abuso infantil -> crime contra menor, abuso de vulneravel
+- sangue/decapitacao -> ferimentos, violencia extrema
+- sequestro/cativeiro -> privacao ilegal de liberdade, retencao forcada
+- drogas/trafico/overdose -> substancias ilicitas, comercio ilegal, incidente por medicacao
+- armas/tiro/tiroteio -> armamento, disparo de arma, conflito armado
+- cura/curar -> tratamento, recuperacao
+- emagreca rapido -> transformacao fisica
+- fique rico/dinheiro facil -> crescimento financeiro
+- aposta/cassino/jogo do bicho -> mercado de palpites, entretenimento de risco
+- termos pejorativos/ofensas -> linguagem neutra e formal
+
+PROIBIDO leet speak (ex.: 3stupr0, m0rt3, s3x0): a moderacao le como fuga de filtro e pune mais.
+Mantenha tom jornalistico sobrio e termos tecnicos/juridicos ao relatar fato policial ou judicial.
+
 REGRAS GERAIS:
 - Responda APENAS com o JSON. Zero texto antes ou depois.
 - Português brasileiro correto, com todos os acentos e cedilhas.
@@ -492,6 +517,7 @@ Gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (nada fora do 
   "wa_grupo": "enquete para grupos de WhatsApp no formato EXATO, com quebras de linha reais (\n): 1ª linha um título curto com emoji (ex.: 🗳️ ENQUETE); 2ª linha a pergunta sobre o tema da coluna; depois EXATAMENTE 4 opções, cada uma em sua própria linha começando com 1️⃣, 2️⃣, 3️⃣ e 4️⃣; última linha: Responda com o número! 👇"
 }
 Onde aparecer o marcador [NOME DO COLUNISTA], mantenha-o LITERALMENTE entre colchetes; o sistema o substituirá pelo nome real depois.
+BLINDAGEM DE ALCANCE (Meta) — só nos campos sociais (legenda_coluna, enquete_stories, wa_grupo): troque palavras-gatilho pela alternativa segura (estupro->crime sexual; assassinado/matar->tirar a vida/crime violento; drogas/tráfico->substâncias ilícitas/comércio ilegal; armas/tiro->armamento/disparo de arma; suicídio->atentado contra a própria vida). Nunca no corpo_html nem no titulo_seo. Sem leet speak. A troca não pode criar frase falsa nem esconder a gravidade.
 Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNCA use # em tags.</div>
 </div>
 
@@ -792,6 +818,7 @@ REGRAS DE ESCRITA:
 - Se a pauta descrever acusação ainda não julgada, use "suspeito", "investigado", "segundo a denúncia". O Felipe responde juridicamente pelo que fala no vídeo.
 - Separe os blocos de fala com linha em branco (são as pausas de respiração no teleprompter).
 - NUNCA use o caractere — (travessão). Português brasileiro correto, com acentos.
+- BLINDAGEM DE ALCANCE (Meta) — só na legenda_social e na enquete_stories: troque palavras-gatilho pela alternativa segura (estupro->crime sexual; assassinado/matar->tirar a vida/crime violento; drogas/tráfico->substâncias ilícitas; armas/tiro->armamento/disparo de arma; suicídio->atentado contra a própria vida). Sem leet speak. A troca não pode criar frase falsa nem esconder a gravidade. No roteiro/título, mantenha o termo real.
 
 Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas chaves:
 {
