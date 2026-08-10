@@ -245,7 +245,7 @@ Outro município ou órgão estadual: confirmar o endereço antes. Errar o desti
   <div class="card">
     <div class="card-title">📖 Fluxo de publicação</div>
     <div class="passo"><div class="step-badge">1</div><div class="passo-texto"><strong>Gere o JSON no Claude</strong><br>Copie o prompt abaixo, cole no Claude.ai com o texto da matéria e copie o JSON que ele devolver.</div></div>
-    <div class="passo"><div class="step-badge">2</div><div class="passo-texto"><strong>Cole o JSON na aba "Publicar"</strong><br>Carregue os dados, preencha os links e publique no WordPress como rascunho.</div></div>
+    <div class="passo"><div class="step-badge">2</div><div class="passo-texto"><strong>Cole o JSON na aba "Publicar"</strong><br>Carregue os dados, confira o bloco "Leia também" (já vem pronto no JSON, com os links relacionados) e publique no WordPress como rascunho.</div></div>
     <div class="passo"><div class="step-badge">3</div><div class="passo-texto"><strong>Adicione a imagem e publique</strong><br>No WordPress, defina a imagem de capa e publique o post.</div></div>
     <div class="passo"><div class="step-badge">4</div><div class="passo-texto"><strong>Vá para a aba "WhatsApp"</strong><br>O título e a enquete já vêm preenchidos automaticamente do mesmo JSON. Cole o link da matéria publicada e do Instagram, gere o texto do canal.</div></div>
     <div class="passo"><div class="step-badge">5</div><div class="passo-texto"><strong>Publique no canal e use a aba "Encaminhar"</strong><br>Busque por palavra-chave e marque os grupos conforme for encaminhando — o progresso fica salvo na nuvem.</div></div>
@@ -268,6 +268,7 @@ Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAME
   "resumo": "resumo em 2-3 frases curtas",
   "tags": "tag1, tag2, ..., tag10 — palavras simples, NUNCA use o caractere #",
   "corpo_html": "texto completo em HTML seguindo TODAS as regras de legibilidade abaixo",
+  "leia_tambem": "bloco HTML pronto do Leia também, com 3 links REAIS de matérias já publicadas em felipetommy.com.br relacionadas ao tema e aos nomes citados. Formato exato: &lt;p&gt;&lt;strong&gt;Leia também:&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=\"URL\"&gt;Título da matéria&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;. NUNCA invente URL: só entra link confirmado no site (busque em felipetommy.com.br pelos nomes próprios da matéria). Se não achar nada relacionado, devolva string vazia.",
   "email_ascom": "e-mail formal para ASCOM informando a publicação, solicitando contraditório e com perguntas pontuais",
   "roteiro_video": "roteiro para narração de vídeo de 1 minuto (Reels/TikTok/Shorts), sem travessão",
   "legenda_social": "legenda para Instagram/Facebook/TikTok em BLOCOS (ver REGRAS DA LEGENDA SOCIAL abaixo), terminando com CTA para seguir @felipetommyreal, pergunta que expõe a contradição do fato e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
@@ -293,8 +294,14 @@ REGRAS DE LEGIBILIDADE (Yoast) — siga à risca para o texto ficar VERDE:
 REGRAS DE SEO:
 - A frase-chave aparece no primeiro parágrafo e mais 2 vezes ao longo do texto.
 - Use &lt;p&gt; para todos os parágrafos. Mais de 600 palavras no total.
-- Insira a marcação LEIA_TAMBEM_AQUI entre o segundo e o terceiro subtítulo.
+- Insira a marcação LEIA_TAMBEM_AQUI entre o segundo e o terceiro subtítulo. O painel troca essa marcação pelo bloco do campo leia_tambem. NÃO escreva "Leia também" dentro do corpo_html: ele viria duplicado.
 - Insira a marcação LINK_WHATSAPP_AQUI em um parágrafo isolado no meio do texto.
+
+REGRAS DO LEIA TAMBÉM (campo leia_tambem):
+- Pesquise em felipetommy.com.br pelos nomes próprios e pelo tema da matéria e devolva 3 links de matérias JÁ PUBLICADAS no portal.
+- Prefira, nesta ordem: matéria sobre a mesma pessoa citada, matéria sobre o mesmo caso, matéria sobre o mesmo órgão ou assunto.
+- O texto do link é o título real da matéria, não o slug da URL.
+- URL inventada é o pior erro possível aqui: gera link quebrado no site e derruba o SEO. Se não confirmar, não inclua.
 
 REGRAS DA LEGENDA SOCIAL (legenda_social) — o texto NAO pode parecer feito por IA:
 
@@ -321,8 +328,16 @@ EXEMPLO DO QUE NAO FAZER (linha vazia com emoji na frente):
 
 REGRAS DA ENQUETE (enquete_stories e wa_grupo):
 
-1. Comece com 2 a 3 frases de CONTEXTO FACTUAL, com os numeros do caso. O leitor precisa
-   conseguir votar sem ter lido a materia.
+0. LIMITE RIGIDO DE 206 CARACTERES NA PERGUNTA. O campo de pergunta da enquete do canal do
+   WhatsApp aceita no maximo 206 caracteres. O painel monta a pergunta juntando a 1a linha
+   do wa_grupo (o titulo) + ": " + a 2a linha (o contexto e a pergunta). Esse texto inteiro,
+   contando espacos, emojis e pontuacao, TEM QUE FICAR EM 206 CARACTERES OU MENOS.
+   CONTE antes de entregar. Se passar, corte contexto ate caber, nunca corte a pergunta final.
+   As 4 opcoes sao contadas a parte e continuam do tamanho de sempre.
+   EXEMPLO NO TAMANHO CERTO (padrao a seguir):
+   "🚨 *ENQUETE: troca na SEFAZ*: Segundo o Picunhao, Glauton Sousa teria ficado de entregar o cargo nesta segunda-feira. Luiz Veloso aparece como provavel substituto. O que deveria acontecer?"
+1. Comece com 1 a 2 frases de CONTEXTO FACTUAL, com os numeros ou nomes do caso. O leitor
+   precisa conseguir votar sem ter lido a materia, mas dentro do limite de 206 caracteres.
 2. A pergunta final deve FORCAR UMA DECISAO: "O que deveria acontecer?", "Quem deve
    responder por isso?", "Isso deveria ser permitido?".
    PROIBIDO terminar com "qual a sua opiniao?" ou "o que voce acha?".
@@ -331,6 +346,7 @@ REGRAS DA ENQUETE (enquete_stories e wa_grupo):
    RUIM: "Ainda e cedo para saber" / "Acho que tem chance".
 4. Quando couber, nomeie o orgao que deveria agir (MP, TCM, Camara, prefeito).
 5. Em wa_grupo, numere as opcoes com os emojis 1️⃣ 2️⃣ 3️⃣ 4️⃣, um por linha.
+6. O limite de 206 caracteres vale tambem para a enquete_stories, para as duas ficarem iguais.
 
 REGRAS DE BLINDAGEM DE ALCANCE (Meta/TikTok) — evitam shadowban e bloqueio:
 
@@ -407,6 +423,11 @@ TEXTO DA MATÉRIA:
       <div class="acc-body" id="acc-corpo" style="max-height:0">
         <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-corpo" style="max-height:220px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-corpo')">📋 Copiar</button></div>
       </div>
+      <button class="acc-btn" onclick="toggleAcc('acc-leia','ic-leia')">🔗 Leia também (links relacionados) <span id="ic-leia">▼</span></button>
+      <div class="acc-body" id="acc-leia" style="max-height:0">
+        <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-leia" style="max-height:200px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-leia')">📋 Copiar</button></div>
+        <p class="hint" id="hint-leia" style="margin-top:6px"></p>
+      </div>
       <button class="acc-btn" onclick="toggleAcc('acc-email','ic-email')">📧 E-mail ASCOM <span id="ic-email">▼</span></button>
       <div class="acc-body" id="acc-email" style="max-height:0">
         <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-email" style="max-height:200px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-email')">📋 Copiar</button></div>
@@ -415,8 +436,10 @@ TEXTO DA MATÉRIA:
 
     <div class="card">
       <div class="card-title"><span class="step-badge">3</span> Finalizar e publicar</div>
-      <label>Link "Leia também" — matéria relacionada</label>
+      <label>Link "Leia também" em destaque — opcional</label>
       <input type="url" id="wp-leia" placeholder="https://felipetommy.com.br/...">
+      <input type="text" id="wp-leia-titulo" placeholder="Título desse link (opcional)" style="margin-top:6px">
+      <p class="hint" style="margin-top:6px">O bloco "Leia também" já vem pronto no JSON, com os links relacionados. Use este campo só quando quiser empurrar uma matéria específica: ela entra como <strong>primeiro item</strong> da lista.</p>
       <label>Link do post do Instagram</label>
       <input type="url" id="wp-ig" placeholder="https://www.instagram.com/p/...">
       <label>Categorias</label>
@@ -486,8 +509,9 @@ TEXTO DA MATÉRIA:
     <div class="acc-body" id="acc-col-corpo" style="max-height:0">
       <div class="ob" style="margin-top:8px"><div class="ob-text" id="col-corpo" style="max-height:220px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('col-corpo')">📋 Copiar</button></div>
     </div>
-    <label style="margin-top:12px">Link "Leia também" (opcional)</label>
+    <label style="margin-top:12px">Link "Leia também" em destaque (opcional)</label>
     <input type="url" id="coluna-leia" placeholder="https://felipetommy.com.br/...">
+    <input type="text" id="coluna-leia-titulo" placeholder="Título desse link (opcional)" style="margin-top:6px">
     <div id="st-coluna" class="status" style="display:none"></div>
     <button class="btn btn-primary" onclick="publicarColuna()"><span class="spin" id="sp-coluna" style="display:none"></span>✍️ Publicar coluna (rascunho)</button>
     <p class="hint" style="margin-top:10px;margin-bottom:0">O byline com foto do colunista, o disclaimer e o GIF do canal são injetados automaticamente pelo WordPress na categoria "Colunas" — por isso o app não os adiciona aqui.</p>
@@ -510,12 +534,14 @@ Gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (nada fora do 
   "resumo": "2-3 frases curtas descrevendo a coluna",
   "tags": "tag1, tag2, ..., tag10 — sem #",
   "corpo_html": "O TEXTO ORIGINAL do colunista, apenas com ortografia corrigida, em HTML: cada parágrafo em &lt;p&gt;. Pode inserir &lt;h2&gt; como subtítulos a cada 2-3 parágrafos, usando ideias do próprio texto, sem inventar. Comece com &lt;p&gt;. Insira LEIA_TAMBEM_AQUI entre o 2º e 3º &lt;h2&gt; e LINK_WHATSAPP_AQUI num &lt;p&gt; isolado no meio.",
+  "leia_tambem": "bloco HTML pronto do Leia também com 3 links REAIS de matérias já publicadas em felipetommy.com.br sobre o tema da coluna. Formato: &lt;p&gt;&lt;strong&gt;Leia também:&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=\"URL\"&gt;Título&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;. NUNCA invente URL. Sem link confirmado, devolva string vazia.",
   "roteiro_video": "roteiro de vídeo de 1 min baseado na coluna, sem travessão",
   "legenda_coluna": "legenda CURTA para Instagram/Facebook, no máximo 5 linhas, com emojis. Comece citando o autor EXATAMENTE assim: 'Nosso colunista [NOME DO COLUNISTA]' (mantenha [NOME DO COLUNISTA] entre colchetes, NÃO substitua por nome nenhum). Apresente o tema e a opinião central de forma instigante, SEM entregar a conclusão. Termine SEMPRE com uma chamada forte convidando o leitor a ler a coluna completa no Portal Felipe Tommy (ex.: 👉 Leia a coluna completa no felipetommy.com.br). Feche com hashtags curtas terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
   "enquete_stories": "enquete para Stories sobre o tema da coluna",
   "wa_canal": "🔥 *[título da coluna até 67 caracteres, voz ativa, primeira letra maiúscula]*",
   "wa_grupo": "enquete para grupos de WhatsApp no formato EXATO, com quebras de linha reais (\n): 1ª linha um título curto com emoji (ex.: 🗳️ ENQUETE); 2ª linha a pergunta sobre o tema da coluna; depois EXATAMENTE 4 opções, cada uma em sua própria linha começando com 1️⃣, 2️⃣, 3️⃣ e 4️⃣; última linha: Responda com o número! 👇"
 }
+LIMITE DA ENQUETE: a 1ª linha do wa_grupo + ": " + a 2ª linha somadas NÃO podem passar de 206 caracteres, que é o máximo aceito pelo campo de pergunta da enquete do canal do WhatsApp. Conte antes de entregar e corte contexto até caber. O mesmo limite vale para enquete_stories. As 4 opções são contadas à parte.
 Onde aparecer o marcador [NOME DO COLUNISTA], mantenha-o LITERALMENTE entre colchetes; o sistema o substituirá pelo nome real depois.
 BLINDAGEM DE ALCANCE (Meta) — só nos campos sociais (legenda_coluna, enquete_stories, wa_grupo): troque palavras-gatilho pela alternativa segura (estupro->crime sexual; assassinado/matar->tirar a vida/crime violento; drogas/tráfico->substâncias ilícitas/comércio ilegal; armas/tiro->armamento/disparo de arma; suicídio->atentado contra a própria vida). Nunca no corpo_html nem no titulo_seo. Sem leet speak. A troca não pode criar frase falsa nem esconder a gravidade.
 Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNCA use # em tags.</div>
@@ -562,8 +588,9 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
 
   <div class="card">
     <div class="card-title"><span class="step-badge">2</span> Enquete para o canal</div>
-    <label>Título da enquete</label>
-    <input type="text" id="enqueteTitulo" placeholder="Ex: 🇧🇷 ENQUETE: Qual sua opinião sobre..."/>
+    <label>Título da enquete <span class="hint" style="font-weight:400">(máx. 206 caracteres)</span></label>
+    <input type="text" id="enqueteTitulo" placeholder="Ex: 🇧🇷 ENQUETE: Qual sua opinião sobre..." oninput="contarEnquete()"/>
+    <div class="hint" id="cont-enquete" style="margin-top:4px">0 / 206 caracteres</div>
     <label>Opções (mínimo 2, máximo 4)</label>
     <div class="enquete-options" id="enqueteOpcoes">
       <div class="enquete-option"><span style="font-size:13px;min-width:20px">1️⃣</span><input type="text" placeholder="Opção 1"/><button onclick="removeOpcao(this)">✕</button></div>
@@ -1169,6 +1196,11 @@ function aplicarDados(j){
   s('r-sub',j.subtitulo);s('r-meta',j.meta_descricao);
   s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
   s('r-video',j.roteiro_video);s('r-legenda',j.legenda_social);s('r-stories',j.enquete_stories);
+  s('r-leia',j.leia_tambem);
+  const hl=document.getElementById('hint-leia');
+  if(hl)hl.textContent=(j.leia_tambem&&j.leia_tambem.trim())
+    ?'Confira se os 3 links existem mesmo antes de publicar. Este bloco entra no lugar da marcação LEIA_TAMBEM_AQUI, no meio da matéria.'
+    :'⚠️ O JSON veio sem o campo leia_tambem. Peça o "Leia também" ao Claude ou preencha o link em destaque abaixo.';
   s('r-legenda-coluna',j.legenda_coluna);
   s('col-titulo',j.titulo_seo);s('col-frase',j.frase_chave);s('col-corpo',j.corpo_html);
   // Mostra só a legenda relevante: coluna tem legenda_coluna; matéria normal tem legenda_social.
@@ -1191,6 +1223,21 @@ function carregarJSON(){
   }catch(e){
     showSt('st-json','err','❌ JSON inválido. Copie o bloco completo. Erro: '+e.message);
   }
+}
+
+// O campo de pergunta da enquete do canal do WhatsApp aceita no máximo 206 caracteres.
+// Passou disso, o WhatsApp corta ou recusa — por isso o contador avisa antes.
+const ENQUETE_MAX=206;
+function tamEnquete(s){return [...(s||'')].length;}
+function contarEnquete(){
+  const el=document.getElementById('enqueteTitulo');
+  const c=document.getElementById('cont-enquete');
+  if(!el||!c)return 0;
+  const n=tamEnquete(el.value);
+  c.textContent=n+' / '+ENQUETE_MAX+' caracteres'+(n>ENQUETE_MAX?' — passou '+(n-ENQUETE_MAX)+', o WhatsApp não aceita':'');
+  c.style.color=n>ENQUETE_MAX?'#ff6b6b':(n>ENQUETE_MAX-20?'#e8b339':'');
+  el.style.borderColor=n>ENQUETE_MAX?'#ff6b6b':'';
+  return n;
 }
 
 function preencherWhatsapp(data){
@@ -1227,7 +1274,9 @@ function preencherWhatsapp(data){
       });
     }
   }
-  document.getElementById('statusImportTxt').textContent='✓ Importado da aba Publicar: "'+(titulo||'—')+'". Preencha os links abaixo.';
+  const nEnq=contarEnquete();
+  const avisoEnq=nEnq>ENQUETE_MAX?' ⚠️ A pergunta da enquete está com '+nEnq+' caracteres: corte '+(nEnq-ENQUETE_MAX)+' para caber nos 206 do WhatsApp.':'';
+  document.getElementById('statusImportTxt').textContent='✓ Importado da aba Publicar: "'+(titulo||'—')+'". Preencha os links abaixo.'+avisoEnq;
   verificarBarraNova();
 }
 
@@ -1239,6 +1288,9 @@ function novaMateria(){
   document.getElementById('tituloCurto').value='';
   document.getElementById('linkInsta').value='';
   document.getElementById('enqueteTitulo').value='';
+  contarEnquete();
+  const wlt=document.getElementById('wp-leia-titulo');if(wlt)wlt.value='';
+  const wl=document.getElementById('wp-leia');if(wl)wl.value='';
   document.getElementById('enqueteOpcoes').innerHTML='<div class="enquete-option"><span style="font-size:13px;min-width:20px">1️⃣</span><input type="text" placeholder="Opção 1"/><button onclick="removeOpcao(this)">✕</button></div><div class="enquete-option"><span style="font-size:13px;min-width:20px">2️⃣</span><input type="text" placeholder="Opção 2"/><button onclick="removeOpcao(this)">✕</button></div>';
   document.getElementById('resultados').style.display='none';
   document.getElementById('statusImportTxt').textContent='Carregue o JSON na aba "Publicar" primeiro — título e enquete preenchem aqui automaticamente.';
@@ -1341,16 +1393,48 @@ async function gerar(){
   renderEnqueteSep(enqueteTitulo,opcoes);
 }
 
-function montarConteudo(dados,dataStr,leiaLink,igLink,banner){
+// ───────────────────────── LEIA TAMBÉM ─────────────────────────
+// Monta um único bloco "Leia também": o link em destaque escolhido pelo Felipe entra
+// como primeiro item, seguido dos links relacionados que vieram no JSON (leia_tambem).
+// Cabeçalho único, sem duplicar, sem repetir URL.
+function blocoLeiaTambem(dados,leiaLink,leiaTitulo){
+  const itens=[];const vistos=new Set();
+  function add(url,txt){
+    const u=(url||'').trim();
+    if(!u||vistos.has(u))return;
+    vistos.add(u);
+    itens.push('<li><a href="'+u+'" target="_blank" rel="noopener">'+((txt||'').trim()||u)+'</a></li>');
+  }
+  add(leiaLink,leiaTitulo);
+  const gerado=((dados&&dados.leia_tambem)||'').trim();
+  if(gerado){
+    const lis=gerado.match(/<li[\s\S]*?<\/li>/gi)||[];
+    lis.forEach(li=>{
+      const h=li.match(/href\s*=\s*["']([^"']+)["']/i);
+      if(h)add(h[1],li.replace(/<[^>]+>/g,'').trim());
+    });
+    // Formato inesperado (sem <li>): usa o HTML como veio, para não perder os links.
+    if(!lis.length&&!itens.length)return '\n'+gerado+'\n';
+  }
+  if(!itens.length)return '';
+  return '\n<p><strong>Leia também:</strong></p>\n<ul>\n'+itens.join('\n')+'\n</ul>\n';
+}
+// Insere o bloco no lugar da marcação; sem marcação, antes do 3º <h2>; em último caso, no fim.
+function inserirLeia(corpo,blocoLeia){
+  if(!blocoLeia)return corpo;
+  if(corpo.indexOf('LEIA_TAMBEM_AQUI')!==-1)return corpo.replace('LEIA_TAMBEM_AQUI',()=>blocoLeia);
+  let count=0,ok=false;
+  const novo=corpo.replace(/<h2/gi,m=>{count++;if(count===3){ok=true;return blocoLeia+'<h2';}return m;});
+  return ok?novo:corpo+blocoLeia;
+}
+
+function montarConteudo(dados,dataStr,leiaLink,igLink,banner,leiaTitulo){
   let corpo=dados.corpo_html||'';
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
-  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',blocoWA);
-  const blocoLeia=leiaLink?'\n<p><strong>Leia também abaixo.</strong></p>\n<p>'+leiaLink+'</p>\n':'';
-  if(leiaLink&&corpo.indexOf('LEIA_TAMBEM_AQUI')!==-1)corpo=corpo.replace('LEIA_TAMBEM_AQUI',blocoLeia);
-  else if(leiaLink){
-    let count=0;
-    corpo=corpo.replace(/<h2/gi,m=>{count++;return count===3?blocoLeia+'<h2':m;});
-  }
+  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoWA);
+  corpo=inserirLeia(corpo,blocoLeiaTambem(dados,leiaLink,leiaTitulo));
+  // Remove marcações que sobraram, para não vazarem no post publicado.
+  corpo=corpo.replace('LEIA_TAMBEM_AQUI','').replace('LINK_WHATSAPP_AQUI','');
   let conteudo='<p><em>Publicado em '+dataStr+' | Atualizado '+dataStr+' por <a href="https://www.instagram.com/felipetommyreal/" target="_blank" rel="noopener">felipetommyreal</a></em></p>\n<hr/>\n<h2>'+(dados.subtitulo||'')+'</h2>\n'+corpo;
   if(banner)conteudo+='\n\n<p><a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><img src="'+banner+'" alt="Canal WhatsApp Felipe Tommy" /></a></p>';
   if(igLink)conteudo+='\n\n<p>'+igLink+'</p>';
@@ -1396,8 +1480,9 @@ async function publicar(){
   showSt('st-pub','loading','⏳ Publicando no WordPress...');
   const dataStr=horaBrasilia();
   const leiaLink=document.getElementById('wp-leia').value.trim();
+  const leiaTitulo=(document.getElementById('wp-leia-titulo')||{value:''}).value.trim();
   const igLink=document.getElementById('wp-ig').value.trim();
-  const conteudo=montarConteudo(dados,dataStr,leiaLink,igLink,c.banner);
+  const conteudo=montarConteudo(dados,dataStr,leiaLink,igLink,c.banner,leiaTitulo);
   const tagNomes=(document.getElementById('wp-tags').value||'').split(',');
   const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
   try{
@@ -1523,13 +1608,11 @@ async function gerarColunaIA(){
   }
 }
 // Conteúdo de coluna: SEM byline, SEM <hr/>, SEM banner (o WordPress injeta automaticamente na categoria Colunas).
-function montarConteudoColuna(dados,leiaLink){
+function montarConteudoColuna(dados,leiaLink,leiaTitulo){
   let corpo=dados.corpo_html||'';
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
-  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',blocoWA);
-  const blocoLeia=leiaLink?'\n<p><strong>Leia também abaixo.</strong></p>\n<p>'+leiaLink+'</p>\n':'';
-  if(leiaLink&&corpo.indexOf('LEIA_TAMBEM_AQUI')!==-1)corpo=corpo.replace('LEIA_TAMBEM_AQUI',blocoLeia);
-  else if(leiaLink){let count=0;corpo=corpo.replace(/<h2/gi,m=>{count++;return count===3?blocoLeia+'<h2':m;});}
+  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoWA);
+  corpo=inserirLeia(corpo,blocoLeiaTambem(dados,leiaLink,leiaTitulo));
   // Remove marcadores que não foram substituídos, para não vazarem no post.
   corpo=corpo.replace('LEIA_TAMBEM_AQUI','').replace('LINK_WHATSAPP_AQUI','');
   return (dados.subtitulo?'<h2>'+dados.subtitulo+'</h2>\n':'')+corpo;
@@ -1554,7 +1637,8 @@ async function publicarColuna(){
   document.getElementById('sp-coluna').style.display='inline-block';
   showSt('st-coluna','loading','⏳ Publicando coluna como rascunho...');
   const leiaLink=document.getElementById('coluna-leia').value.trim();
-  const conteudo=montarConteudoColuna(dados,leiaLink);
+  const leiaTitulo=(document.getElementById('coluna-leia-titulo')||{value:''}).value.trim();
+  const conteudo=montarConteudoColuna(dados,leiaLink,leiaTitulo);
   const tagNomes=(dados.tags||'').split(',');
   const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
   try{
