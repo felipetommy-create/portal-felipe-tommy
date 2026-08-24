@@ -137,7 +137,7 @@
 
 <header>
   <div class="logo">📰</div>
-  <div><h1>Portal Felipe Tommy</h1><p>Painel Unificado — Publicação &amp; Distribuição</p></div>
+  <div><h1>Portal Felipe Tommy</h1><p>Painel Unificado — Publicação &amp; Distribuição <span id="hd-ver" style="opacity:.75"></span></p></div>
   <div class="sync-dot" id="syncDot"><span class="dot"></span><span id="syncTxt">—</span></div>
 </header>
 
@@ -271,7 +271,8 @@ Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAME
   "leia_tambem": "bloco HTML pronto do Leia também, com 3 links REAIS de matérias já publicadas em felipetommy.com.br relacionadas ao tema e aos nomes citados. Formato exato: &lt;p&gt;&lt;strong&gt;Leia também:&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=\"URL\"&gt;Título da matéria&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;. NUNCA invente URL: só entra link confirmado no site (busque em felipetommy.com.br pelos nomes próprios da matéria). Se não achar nada relacionado, devolva string vazia.",
   "email_ascom": "e-mail formal para ASCOM informando a publicação, solicitando contraditório e com perguntas pontuais",
   "roteiro_video": "roteiro para narração de vídeo de 1 minuto (Reels/TikTok/Shorts), sem travessão",
-  "legenda_social": "legenda para Instagram/Facebook/TikTok em BLOCOS (ver REGRAS DA LEGENDA SOCIAL abaixo), terminando com CTA para seguir @felipetommyreal, pergunta que expõe a contradição do fato e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "legenda_social": "legenda LONGA, para postagem em CARD/foto no Instagram/Facebook, em BLOCOS (ver REGRAS DA LEGENDA SOCIAL abaixo), terminando com CTA para seguir @felipetommyreal, pergunta que expõe a contradição do fato e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "legenda_video": "legenda CURTA, para postagem em VÍDEO (Reels, TikTok, Shorts), no padrão CNN Brasil: chapéu em caixa alta, 2 ou 3 parágrafos curtos e hashtags. SEM emoji. Ver REGRAS DA LEGENDA DE VÍDEO abaixo.",
   "enquete_stories": "enquete para Stories (ver REGRAS DA ENQUETE abaixo)",
   "wa_canal": "📹 *Veja o vídeo:* [Link inserido manualmente]\n🔥 *[título impactante até 67 caracteres, voz ativa, primeira letra maiúscula]*\n👉 *Leia mais:* [Link inserido manualmente]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
   "wa_grupo": "enquete para grupos de WhatsApp, mesmas REGRAS DA ENQUETE, opções numeradas com 1..4"
@@ -326,6 +327,43 @@ por prescricao. Isso nao e absolvicao."
 EXEMPLO DO QUE NAO FAZER (linha vazia com emoji na frente):
 "📈 Expectativa e de novas pesquisas nos proximos meses."
 
+REGRAS DA LEGENDA DE VIDEO (legenda_video) — curta, padrao CNN Brasil:
+
+A legenda_social e para CARD, onde o texto e a materia. A legenda_video acompanha REELS,
+TIKTOK e SHORTS: quem assiste ja recebe a informacao pela narracao, entao a legenda so
+situa o assunto. Ela NAO e um resumo da legenda_social — e outro texto, mais seco.
+
+1. TAMANHO: entre 300 e 480 caracteres no total, contando as hashtags. Se passar de 480,
+   corte. Melhor 320 caracteres certeiros que 480 esticados.
+2. ESTRUTURA EXATA, com linha em branco entre as partes:
+   - 1a linha: CHAPEU em CAIXA ALTA, de 2 a 4 palavras (ex.: SEGURANCA PUBLICA,
+     OPERACAO EM TUCUMA, ELEICOES 2026, CONTAS DE PARAUAPEBAS).
+   - 2 ou 3 paragrafos de 1 a 2 frases cada. O primeiro entrega o fato principal com
+     nome, numero, data ou orgao. Os outros trazem o desdobramento mais forte.
+   - Ultima linha: de 4 a 6 hashtags, terminando com #Parauapebas #CanaadosCarajas #Pará.
+3. SEM EMOJI NENHUM. Nem no comeco de paragrafo, nem no meio da frase.
+4. SEM CTA de seguir, SEM pergunta final, SEM "acompanhe a cobertura". O video ja tem a
+   marca na tela. Esses fechos alongam a legenda sem trazer alcance.
+5. NAO repita palavra por palavra a manchete que aparece na capa do video. Complemente.
+6. Todo paragrafo precisa de fato concreto. Paragrafo generico nao entra: some com ele.
+7. A blindagem de alcance do Meta vale aqui igual aos outros campos sociais.
+
+EXEMPLO DO PADRAO CORRETO (410 caracteres):
+"SEGURANCA PUBLICA
+
+A Policia Civil localizou em Tucuma o homem apontado como executor do duplo homicidio as
+margens do rio Parauapebas. Aleff Sergio Sena Jorge morreu no confronto e outras tres
+pessoas foram presas em flagrante.
+
+No imovel, os agentes apreenderam quatro armamentos, municoes e aparelhos celulares. A
+investigacao aponta disputa entre grupos rivais.
+
+#Tucuma #Carajas #Parauapebas #CanaadosCarajas #Pará"
+
+EXEMPLO DO QUE NAO FAZER na legenda_video (emoji por bloco, CTA e pergunta — isso e a
+legenda_social, que vai no card):
+"🚨 A POLICIA CIVIL LOCALIZOU... 📲 Siga @felipetommyreal... ❓ Quantas familias ainda..."
+
 REGRAS DA ENQUETE (enquete_stories e wa_grupo):
 
 0. LIMITE RIGIDO DE 206 CARACTERES NA PERGUNTA. O campo de pergunta da enquete do canal do
@@ -350,7 +388,7 @@ REGRAS DA ENQUETE (enquete_stories e wa_grupo):
 
 REGRAS DE BLINDAGEM DE ALCANCE (Meta/TikTok) — evitam shadowban e bloqueio:
 
-Aplique APENAS nos campos sociais: legenda_social, enquete_stories, wa_grupo e roteiro_video.
+Aplique APENAS nos campos sociais: legenda_social, legenda_video, enquete_stories, wa_grupo e roteiro_video.
 NAO aplique em corpo_html, titulo_seo nem meta_descricao (o site nao sofre shadowban e o
 leitor busca o termo real no Google). A troca NAO pode criar frase falsa nem esconder a
 gravidade: se o eufemismo distorcer o fato, reescreva de forma tecnica/neutra.
@@ -551,9 +589,15 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
 <div class="page" id="tab-redes">
   <div class="card">
     <div class="card-title" style="justify-content:flex-start">🎬 Redes Sociais &amp; WhatsApp</div>
-    <p class="hint" style="margin-top:0">Carregue o JSON na aba "Publicar" primeiro. Use o roteiro para narrar o vídeo, publique nas redes com a legenda abaixo e depois volte na aba "Publicar" para colar o link do Instagram no WordPress.</p>
+    <p class="hint" style="margin-top:0">Carregue o JSON na aba "Publicar" primeiro. Use o roteiro para narrar o vídeo, publique nas redes com a legenda abaixo e depois volte na aba "Publicar" para colar o link do Instagram no WordPress.<br><strong>Postagem em card → legenda longa. Postagem em vídeo (Reels/TikTok/Shorts) → legenda curta.</strong></p>
     <div class="ob"><div class="ob-label">Roteiro vídeo 1 min (Reels/TikTok/Shorts)</div><div class="ob-text" id="r-video" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-video')">📋 Copiar</button></div>
-    <div class="ob" id="blk-legenda"><div class="ob-label">Legenda Instagram / Facebook / X / TikTok / Shorts (matéria normal)</div><div class="ob-text" id="r-legenda" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda')">📋 Copiar</button></div>
+    <div class="ob" id="blk-legenda"><div class="ob-label">🖼️ Legenda p/ CARD — longa (Instagram / Facebook)</div><div class="ob-text" id="r-legenda" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda')">📋 Copiar</button></div>
+    <div class="ob" id="blk-legenda-video" style="border-color:var(--azul)">
+      <div class="ob-label">🎬 Legenda p/ VÍDEO — curta (Reels / TikTok / Shorts) <span id="cont-legenda-video" style="text-transform:none;font-weight:600;color:var(--muted)"></span></div>
+      <div class="ob-text" id="r-legenda-video" style="max-height:260px"></div>
+      <p class="hint" id="hint-legenda-video" style="margin:6px 0 0"></p>
+      <button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda-video')">📋 Copiar</button>
+    </div>
     <div class="ob" id="blk-legenda-coluna" style="display:none;border-color:var(--accent)"><div class="ob-label">✍️ Legenda p/ COLUNA (curta + chamada pro site)</div><div class="ob-text" id="r-legenda-coluna" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda-coluna')">📋 Copiar</button></div>
     <div class="ob"><div class="ob-label">Enquete Stories</div><div class="ob-text" id="r-stories"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-stories')">📋 Copiar</button></div>
   </div>
@@ -859,6 +903,22 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
 
 <!-- CONFIG -->
 <div class="page" id="tab-config">
+  <div class="card">
+    <div class="card-title">🧾 Versão do painel</div>
+    <p class="hint" style="margin-top:0">Esta é a versão que está aberta <strong>neste aparelho</strong>. Se estiver atrás da última publicada, recarregue com <strong>Ctrl+Shift+R</strong> (no celular, puxe a página para baixo para atualizar).</p>
+    <div class="ob">
+      <div class="ob-label">Versão instalada</div>
+      <div class="ob-text" style="max-height:none;font-size:15px">
+        <strong id="ver-num" style="color:var(--accent)">—</strong>
+        &nbsp;·&nbsp; atualizado em <strong id="ver-data">—</strong>
+      </div>
+    </div>
+    <div class="ob">
+      <div class="ob-label">O que mudou</div>
+      <div class="ob-text" id="ver-log" style="max-height:240px"></div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">🌐 WordPress — Credenciais</div>
     <p class="hint" style="margin-top:0">Crie uma <strong>Senha de Aplicativo</strong> em: WordPress → Usuários → Seu Perfil → Senhas de aplicativo. Fica salva só neste navegador/dispositivo.</p>
@@ -1208,10 +1268,63 @@ function aplicarDados(j){
   const temNorm=!!(j.legenda_social&&j.legenda_social.trim());
   const bc=document.getElementById('blk-legenda-coluna');if(bc)bc.style.display=temCol?'block':'none';
   const bn=document.getElementById('blk-legenda');if(bn)bn.style.display=temNorm?'block':'none';
+  preencherLegendaVideo(j,temCol);
   const wt=document.getElementById('wp-tags');if(wt)wt.value=j.tags||'';
   const ad=document.getElementById('area-dados');if(ad)ad.style.display='block';
   preencherWhatsapp(j);
 }
+// ───────────────────── LEGENDA DE VÍDEO (curta, padrão CNN) ─────────────────────
+// Card = legenda longa (legenda_social). Reels/TikTok/Shorts = esta versão curta.
+// Se o JSON vier sem legenda_video (JSON antigo), o painel encurta a legenda longa
+// automaticamente e avisa que aquilo é rascunho, para o Felipe revisar antes de postar.
+const LIMITE_LEGENDA_VIDEO=480;
+
+function encurtarLegenda(j){
+  const base=(j.legenda_social||'').trim();
+  if(!base)return '';
+  const chapeu=(j.frase_chave||j.titulo_seo||'').trim().toUpperCase();
+  const blocos=base.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  let tags='';
+  const ult=blocos.length?blocos[blocos.length-1]:'';
+  if(ult.charAt(0)==='#'){
+    const todas=ult.split(/\s+/).filter(t=>t.charAt(0)==='#');
+    const curtas=todas.slice(0,5);
+    // A última hashtag do padrão do portal é #Pará: se o corte deixou ela de fora, ela volta.
+    const fim=todas[todas.length-1];
+    if(fim&&curtas.indexOf(fim)<0)curtas[curtas.length-1]=fim;
+    tags=curtas.join(' ');
+    blocos.pop();
+  }
+  const corpo=blocos
+    .filter(b=>!/@felipetommyreal/i.test(b)&&!/^❓/.test(b)&&!/\bsiga\b/i.test(b))
+    .map(b=>b.replace(/^[^\p{L}\p{N}"«(]+/u,'').trim())
+    .filter(Boolean)
+    .slice(0,2);
+  return [chapeu].concat(corpo,tags).filter(Boolean).join('\n\n');
+}
+
+function preencherLegendaVideo(j,ehColunaAgora){
+  const blk=document.getElementById('blk-legenda-video');
+  const box=document.getElementById('r-legenda-video');
+  const cont=document.getElementById('cont-legenda-video');
+  const hint=document.getElementById('hint-legenda-video');
+  if(!blk||!box)return;
+  const esconde=()=>{blk.style.display='none';box.textContent='';if(cont)cont.textContent='';if(hint)hint.textContent='';};
+  if(ehColunaAgora){esconde();return;}
+  const pronta=(j.legenda_video||'').trim();
+  const txt=pronta||encurtarLegenda(j);
+  if(!txt){esconde();return;}
+  blk.style.display='block';
+  box.textContent=txt;
+  if(cont){
+    cont.textContent='— '+txt.length+' caracteres';
+    cont.style.color=txt.length>LIMITE_LEGENDA_VIDEO?'var(--danger)':'var(--muted)';
+  }
+  if(hint)hint.innerHTML=pronta
+    ?'Use esta quando a postagem for <strong>vídeo</strong>. No card, use a legenda longa acima.'
+    :'⚠️ Este JSON foi gerado antes da legenda de vídeo existir. O painel encurtou a legenda longa sozinho — <strong>leia antes de postar</strong>.';
+}
+
 function carregarJSON(){
   const raw=document.getElementById('json-input').value.trim();
   if(!raw){showSt('st-json','err','⚠️ Cole o JSON gerado pelo Claude antes de carregar.');return;}
@@ -2079,6 +2192,25 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Escape'){fecharTeleprompter();}
 });
 
+// ───────────────────────── VERSÃO DO PAINEL ─────────────────────────
+// Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
+// no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
+// com a versão nova ou se ficou com a antiga em cache.
+const PAINEL_VERSAO='2.1.0';
+const PAINEL_DATA='24/08/2026';
+const PAINEL_CHANGELOG=[
+  ['2.1.0','24/08/2026','Legenda curta para postagem em vídeo (padrão CNN) na aba Redes Sociais, separada da legenda longa do card. Selo de versão aqui na Config.'],
+  ['2.0.0','10/08/2026','Painel unificado no ar: Publicar, Colunistas, Redes Sociais, WhatsApp, Módulo X, Análise, Grupos e Encaminhar em uma ferramenta só, com Supabase e GitHub Pages.']
+];
+
+function renderVersao(){
+  const n=document.getElementById('ver-num');if(n)n.textContent='v'+PAINEL_VERSAO;
+  const d=document.getElementById('ver-data');if(d)d.textContent=PAINEL_DATA;
+  const h=document.getElementById('hd-ver');if(h)h.textContent='· v'+PAINEL_VERSAO;
+  const log=document.getElementById('ver-log');
+  if(log)log.textContent=PAINEL_CHANGELOG.map(l=>'v'+l[0]+' — '+l[1]+'\n'+l[2]).join('\n\n');
+}
+
 // ───────────────────────── BOOT ─────────────────────────
 async function boot(){
   carregarCfgWP();
@@ -2086,6 +2218,7 @@ async function boot(){
   renderEncaminhar();
 }
 (function init(){
+  renderVersao();
   const qn=localStorage.getItem('ft_quadro_nome');
   if(qn)document.getElementById('an-quadro').value=qn;
   const raw=localStorage.getItem(LS_SB);
