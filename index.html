@@ -1132,14 +1132,6 @@ function corrigirObjeto(obj){
   return obj;
 }
 function limparTags(s){return(s||'').split(',').map(t=>t.replace(/#/g,'').trim()).filter(Boolean).join(', ');}
-function horaBrasilia(){
-  const agora=new Date();
-  const utc=agora.getTime()+(agora.getTimezoneOffset()*60000);
-  const b=new Date(utc+(-3*3600000));
-  const d=String(b.getDate()).padStart(2,'0'),m=String(b.getMonth()+1).padStart(2,'0'),y=b.getFullYear();
-  const h=String(b.getHours()).padStart(2,'0'),min=String(b.getMinutes()).padStart(2,'0');
-  return d+'/'+m+'/'+y+' às '+h+':'+min;
-}
 function togCat(cb){
   if(cb.checked){if(!catsSel.includes(cb.value))catsSel.push(cb.value);}
   else catsSel=catsSel.filter(c=>c!==cb.value);
@@ -1541,14 +1533,19 @@ function inserirLeia(corpo,blocoLeia){
   return ok?novo:corpo+blocoLeia;
 }
 
-function montarConteudo(dados,dataStr,leiaLink,igLink,banner,leiaTitulo){
+function montarConteudo(dados,leiaLink,igLink,banner,leiaTitulo){
   let corpo=dados.corpo_html||'';
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
   if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoWA);
   corpo=inserirLeia(corpo,blocoLeiaTambem(dados,leiaLink,leiaTitulo));
   // Remove marcações que sobraram, para não vazarem no post publicado.
   corpo=corpo.replace('LEIA_TAMBEM_AQUI','').replace('LINK_WHATSAPP_AQUI','');
-  let conteudo='<p><em>Publicado em '+dataStr+' | Atualizado '+dataStr+' por <a href="https://www.instagram.com/felipetommyreal/" target="_blank" rel="noopener">felipetommyreal</a></em></p>\n<hr/>\n<h2>'+(dados.subtitulo||'')+'</h2>\n'+corpo;
+  // A assinatura ("por Redação" + Publicado/Atualizado) NÃO é mais gravada aqui.
+  // Antes ela vinha como texto fixo dentro da matéria, e por isso o "Atualizado"
+  // nunca mudava. Agora quem monta é o WordPress, na hora de exibir, lendo a data
+  // real do post — assim a hora de atualização muda a cada edição.
+  // Ver 02-WORDPRESS/snippets/wpcode-snippet-byline-redacao.php
+  let conteudo='<h2>'+(dados.subtitulo||'')+'</h2>\n'+corpo;
   if(banner)conteudo+='\n\n<p><a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><img src="'+banner+'" alt="Canal WhatsApp Felipe Tommy" /></a></p>';
   if(igLink)conteudo+='\n\n<p>'+igLink+'</p>';
   return conteudo;
@@ -1591,11 +1588,10 @@ async function publicar(){
   if(!dados.corpo_html){showSt('st-pub','err','⚠️ Carregue o JSON gerado pelo Claude primeiro.');return;}
   document.getElementById('sp-pub').style.display='inline-block';
   showSt('st-pub','loading','⏳ Publicando no WordPress...');
-  const dataStr=horaBrasilia();
   const leiaLink=document.getElementById('wp-leia').value.trim();
   const leiaTitulo=(document.getElementById('wp-leia-titulo')||{value:''}).value.trim();
   const igLink=document.getElementById('wp-ig').value.trim();
-  const conteudo=montarConteudo(dados,dataStr,leiaLink,igLink,c.banner,leiaTitulo);
+  const conteudo=montarConteudo(dados,leiaLink,igLink,c.banner,leiaTitulo);
   const tagNomes=(document.getElementById('wp-tags').value||'').split(',');
   const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
   try{
