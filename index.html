@@ -601,6 +601,40 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
     <div class="ob" id="blk-legenda-coluna" style="display:none;border-color:var(--accent)"><div class="ob-label">✍️ Legenda p/ COLUNA (curta + chamada pro site)</div><div class="ob-text" id="r-legenda-coluna" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-legenda-coluna')">📋 Copiar</button></div>
     <div class="ob"><div class="ob-label">Enquete Stories</div><div class="ob-text" id="r-stories"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-stories')">📋 Copiar</button></div>
   </div>
+
+  <!-- YOUTUBE — mesmo JSON da matéria, textos próprios: no YouTube título e descrição são busca, não legenda -->
+  <div class="card" id="card-youtube" style="border-color:rgba(239,68,68,.35)">
+    <div class="card-title" style="justify-content:flex-start">▶️ YouTube — Short e Comunidade</div>
+    <p class="hint" style="margin-top:0">O vídeo do Short é <strong>o mesmo arquivo do Reels</strong> — aqui só mudam os textos. No YouTube o título e a descrição funcionam como busca, então a cidade abre o título e o link da matéria entra sempre.</p>
+
+    <label>Link da matéria no portal <span class="hint" style="font-weight:400">(entra na descrição do Short e no post da Comunidade)</span></label>
+    <div class="row" style="grid-template-columns:1fr auto;align-items:end">
+      <input type="url" id="yt-link" placeholder="https://felipetommy.com.br/slug-da-materia/" oninput="montarYoutube()"/>
+      <button class="btn-sm" onclick="ytUsarLinkWhatsapp()" style="height:44px">↙ Usar o link da aba WhatsApp</button>
+    </div>
+    <p class="hint" id="yt-hint-link" style="margin:6px 0 14px"></p>
+
+    <div class="ob">
+      <div class="ob-label">🎬 Título do Short — com hashtags <span id="cont-yt-titulo" style="text-transform:none;font-weight:600;color:var(--muted)"></span></div>
+      <div class="ob-text" id="yt-titulo"></div>
+      <p class="hint" style="margin:6px 0 0">O YouTube corta em 100 caracteres e conta as hashtags junto. As três primeiras hashtags aparecem acima do título.</p>
+      <button class="btn-copy" style="margin-top:6px" onclick="cp('yt-titulo')">📋 Copiar</button>
+    </div>
+
+    <div class="ob">
+      <div class="ob-label">📝 Descrição do Short — curta, com link da matéria <span id="cont-yt-desc" style="text-transform:none;font-weight:600;color:var(--muted)"></span></div>
+      <div class="ob-text" id="yt-desc" style="max-height:260px"></div>
+      <p class="hint" style="margin:6px 0 0">No Short só aparecem as duas primeiras linhas antes do "mais" — por isso o fato vem na frente e o link logo depois.</p>
+      <button class="btn-copy" style="margin-top:6px" onclick="cp('yt-desc')">📋 Copiar</button>
+    </div>
+
+    <div class="ob">
+      <div class="ob-label">📢 Post na Comunidade — matéria sem vídeo <span id="cont-yt-com" style="text-transform:none;font-weight:600;color:var(--muted)"></span></div>
+      <div class="ob-text" id="yt-comunidade" style="max-height:300px"></div>
+      <p class="hint" style="margin:6px 0 0">Vai junto com a arte da Comunidade — o PNG com sufixo <strong>-youtube</strong> em 05-REDACAO/cards. Limite de 1500 caracteres.</p>
+      <button class="btn-copy" style="margin-top:6px" onclick="cp('yt-comunidade')">📋 Copiar</button>
+    </div>
+  </div>
 </div>
 
 <!-- WHATSAPP - PUBLICAR -->
@@ -1261,6 +1295,9 @@ function aplicarDados(j){
   const bc=document.getElementById('blk-legenda-coluna');if(bc)bc.style.display=temCol?'block':'none';
   const bn=document.getElementById('blk-legenda');if(bn)bn.style.display=temNorm?'block':'none';
   preencherLegendaVideo(j,temCol);
+  // matéria nova zera o link do YouTube: o sugerido é remontado a partir do slug deste JSON
+  const yl=document.getElementById('yt-link');if(yl)yl.value='';
+  montarYoutube();
   const wt=document.getElementById('wp-tags');if(wt)wt.value=j.tags||'';
   const ad=document.getElementById('area-dados');if(ad)ad.style.display='block';
   preencherWhatsapp(j);
@@ -1315,6 +1352,127 @@ function preencherLegendaVideo(j,ehColunaAgora){
   if(hint)hint.innerHTML=pronta
     ?'Use esta quando a postagem for <strong>vídeo</strong>. No card, use a legenda longa acima.'
     :'⚠️ Este JSON foi gerado antes da legenda de vídeo existir. O painel encurtou a legenda longa sozinho — <strong>leia antes de postar</strong>.';
+}
+
+// ───────────────────── YOUTUBE (Short + Comunidade) ─────────────────────
+// O vídeo do Short é o mesmo arquivo do Reels; o que muda é o texto. No YouTube
+// título e descrição são busca, não legenda: por isso a manchete abre com a cidade
+// e o link da matéria entra sempre, que é o que traz o espectador para o portal.
+const YT_TITULO_MAX=100;        // o YouTube corta aqui, e conta as hashtags junto
+const YT_COMUNIDADE_MAX=1500;   // limite do post de texto na aba Comunidade
+const YT_CANAL='https://www.youtube.com/@portalfelipetommy';
+const YT_SITE='https://felipetommy.com.br/';
+
+// As hashtags boas já vêm curadas no JSON, no último bloco da legenda. Só quando
+// não há nenhuma é que elas são derivadas do campo tags.
+function ytHashtags(j){
+  const fontes=[j.legenda_video,j.legenda_social,j.legenda_coluna];
+  for(const campo of fontes){
+    const blocos=String(campo||'').trim().split(/\n\s*\n/);
+    const ult=(blocos[blocos.length-1]||'').trim();
+    if(ult.charAt(0)==='#'){
+      const tags=ult.split(/\s+/).filter(t=>t.charAt(0)==='#');
+      if(tags.length)return tags;
+    }
+  }
+  const derivadas=String(j.tags||'').split(',').map(t=>t.trim()).filter(Boolean)
+    .map(t=>'#'+t.split(/\s+/).map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(''));
+  return derivadas.length?derivadas.slice(0,5):['#Parauapebas','#Carajas','#Pará'];
+}
+
+function ytTitulo(j){
+  const base=String(j.titulo_seo||j.frase_chave||'').trim();
+  if(!base)return '';
+  const tags=ytHashtags(j);
+  // Duas hashtags é o padrão. Se elas não couberem, quem sai é a hashtag, nunca a
+  // manchete: título cortado no meio faz a hashtag parecer o fim da frase.
+  // #Shorts não entra — o YouTube classifica o Short pelo vídeo, e aqui custaria 8 caracteres.
+  for(const n of [2,1,0]){
+    const sufixo=n?' '+tags.slice(0,n).join(' '):'';
+    if(base.length+sufixo.length<=YT_TITULO_MAX)return base+sufixo;
+  }
+  // a manchete sozinha já passa de 100: corta na palavra e tira conector solto do fim
+  return base.slice(0,YT_TITULO_MAX).replace(/\s+\S*$/,'')
+    .replace(/\s+(?:de|da|do|das|dos|em|no|na|nos|nas|com|e|ou|para|por|a|o|as|os|que|após)$/i,'')
+    .replace(/[\s.,;:-]+$/,'');
+}
+
+// A legenda de vídeo já vem no formato certo (chapéu, 2-3 parágrafos, hashtags no fim).
+// Aqui só sai o bloco de hashtags, que volta depois do link.
+function ytCorpoDoShort(j){
+  const blocos=String(j.legenda_video||'').trim().split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  if(blocos.length&&blocos[blocos.length-1].charAt(0)==='#')blocos.pop();
+  if(blocos.length)return blocos.join('\n\n');
+  const alt=[String(j.frase_chave||'').toUpperCase(),String(j.resumo||j.subtitulo||'').trim()];
+  return alt.filter(Boolean).join('\n\n');
+}
+
+function ytDescricaoShort(j,link){
+  const corpo=ytCorpoDoShort(j);
+  if(!corpo)return '';
+  return [corpo,'Matéria completa: '+link,'Inscreva-se no canal: '+YT_CANAL,ytHashtags(j).join(' ')].join('\n\n');
+}
+
+function ytComunidade(j,link){
+  const titulo=String(j.titulo_seo||'').trim();
+  const fonte=String(j.legenda_coluna||j.legenda_social||'').trim();
+  let corpo=fonte?fonte.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean):[];
+  if(corpo.length&&corpo[corpo.length-1].charAt(0)==='#')corpo.pop();
+  // o "siga @felipetommyreal" é do Instagram; no canal quem faz esse papel é o link da matéria
+  corpo=corpo.filter(b=>!/@felipetommyreal/i.test(b));
+  if(!corpo.length)corpo=[String(j.subtitulo||''),String(j.resumo||'')].map(t=>t.trim()).filter(Boolean);
+  if(!titulo&&!corpo.length)return '';
+  const fim=['Matéria completa: '+link,ytHashtags(j).join(' ')];
+  const montar=()=>[titulo].concat(corpo,fim).filter(Boolean).join('\n\n');
+  // passou de 1500, cai um bloco do fim do corpo — o título e o link nunca saem
+  while(montar().length>YT_COMUNIDADE_MAX&&corpo.length>1)corpo.pop();
+  return montar();
+}
+
+// Antes de publicar ainda não existe link real, então o painel monta um a partir do slug.
+// Depois de publicar, o botão puxa o link verdadeiro da aba WhatsApp.
+function ytLinkSugerido(j){
+  const slug=String((j&&j.slug)||'').trim().replace(/^\/+|\/+$/g,'');
+  return slug?YT_SITE+slug+'/':'';
+}
+
+function ytUsarLinkWhatsapp(){
+  const lm=document.getElementById('linkMateria');
+  const el=document.getElementById('yt-link');
+  if(!lm||!el)return;
+  const v=lm.value.trim();
+  if(!v){alert('A aba WhatsApp ainda está sem o link da matéria. Publique no WordPress ou cole o link lá primeiro.');return;}
+  el.value=v;
+  montarYoutube();
+}
+
+function ytContador(id,txt,max){
+  const c=document.getElementById(id);
+  if(!c)return;
+  const n=[...(txt||'')].length;
+  c.textContent=max?('— '+n+' / '+max+' caracteres'):('— '+n+' caracteres');
+  c.style.color=(max&&n>max)?'var(--danger)':'var(--muted)';
+}
+
+function montarYoutube(){
+  if(!document.getElementById('card-youtube'))return;
+  const j=dados||{};
+  const el=document.getElementById('yt-link');
+  const sugerido=ytLinkSugerido(j);
+  if(el&&!el.value.trim()&&sugerido)el.value=sugerido;
+  const link=(el&&el.value.trim())||sugerido||YT_SITE;
+
+  const titulo=ytTitulo(j),desc=ytDescricaoShort(j,link),com=ytComunidade(j,link);
+  const por=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt||'';};
+  por('yt-titulo',titulo);por('yt-desc',desc);por('yt-comunidade',com);
+  ytContador('cont-yt-titulo',titulo,YT_TITULO_MAX);
+  ytContador('cont-yt-desc',desc,0);
+  ytContador('cont-yt-com',com,YT_COMUNIDADE_MAX);
+
+  const hint=document.getElementById('yt-hint-link');
+  if(hint)hint.textContent=(sugerido&&el&&el.value.trim()===sugerido)
+    ?'Link montado a partir do slug do JSON. Depois de publicar, confira: se o WordPress mudou o slug, o link quebra.'
+    :'';
 }
 
 function carregarJSON(){
@@ -1392,6 +1550,7 @@ function novaMateria(){
   document.getElementById('linkMateria').value='';
   document.getElementById('tituloCurto').value='';
   document.getElementById('linkInsta').value='';
+  const yl0=document.getElementById('yt-link');if(yl0)yl0.value='';
   document.getElementById('enqueteTitulo').value='';
   contarEnquete();
   const wlt=document.getElementById('wp-leia-titulo');if(wlt)wlt.value='';
@@ -1404,6 +1563,7 @@ function novaMateria(){
   ehColuna=false;nomeColunista='';
   setTipo('video');
   doneIds=new Set();
+  montarYoutube();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function verificarBarraNova(){
@@ -1676,6 +1836,7 @@ function aplicarNomeColunista(){
   }
   const rc=document.getElementById('r-legenda-coluna');if(rc)rc.textContent=dados.legenda_coluna||'';
   preencherWhatsapp(dados);
+  montarYoutube();
 }
 function copiarPromptColuna(btn){
   const t=document.getElementById('prompt-coluna').textContent||'';
@@ -2192,9 +2353,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.2.0';
-const PAINEL_DATA='25/08/2026';
+const PAINEL_VERSAO='2.3.0';
+const PAINEL_DATA='27/08/2026';
 const PAINEL_CHANGELOG=[
+  ['2.3.0','27/08/2026','Bloco do YouTube na aba Redes Sociais: título do Short com hashtags e contador de 100 caracteres, descrição curta do Short já com o link da matéria, e o texto do post na Comunidade. Tudo sai do mesmo JSON. A arte da Comunidade sai junto com o card, na pasta 05-REDACAO/cards, com sufixo -youtube.'],
   ['2.2.0','25/08/2026','A assinatura da matéria não é mais gravada dentro do texto. Quem monta agora é o WordPress, lendo a data real do post: o "Atualizado" muda sozinho a cada edição e a hora sai sempre em Brasília. A autoria virou "Redação". O site também ganhou o player "Ouvir a matéria", com voz do Google.'],
   ['2.1.0','24/08/2026','Legenda curta para postagem em vídeo (padrão CNN) na aba Redes Sociais, separada da legenda longa do card. Selo de versão aqui na Config.'],
   ['2.0.0','10/08/2026','Painel unificado no ar: Publicar, Colunistas, Redes Sociais, WhatsApp, Módulo X, Análise, Grupos e Encaminhar em uma ferramenta só, com Supabase e GitHub Pages.']
