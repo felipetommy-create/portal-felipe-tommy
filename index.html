@@ -2399,9 +2399,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.3.0';
-const PAINEL_DATA='27/08/2026';
+const PAINEL_VERSAO='2.4.0';
+const PAINEL_DATA='01/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.4.0','01/09/2026','A aba Publicar ganhou o campo "Atualizar matéria existente". Vazio, publica matéria nova como sempre. Preenchido com o ID ou o link, atualiza aquela matéria e mantém a URL, a data e as visualizações, em vez de criar uma segunda com slug duplicado. Ao atualizar, o slug não é trocado e o status só muda se você escolher Publicar imediatamente, para o padrão Rascunho nunca tirar do ar uma matéria publicada.'],
   ['2.3.0','27/08/2026','Bloco do YouTube na aba Redes Sociais: título do Short com hashtags e contador de 100 caracteres, descrição curta do Short já com o link da matéria, e o texto do post na Comunidade. Tudo sai do mesmo JSON. A arte da Comunidade sai junto com o card, na pasta 05-REDACAO/cards, com sufixo -youtube.'],
   ['2.2.0','25/08/2026','A assinatura da matéria não é mais gravada dentro do texto. Quem monta agora é o WordPress, lendo a data real do post: o "Atualizado" muda sozinho a cada edição e a hora sai sempre em Brasília. A autoria virou "Redação". O site também ganhou o player "Ouvir a matéria", com voz do Google.'],
   ['2.1.0','24/08/2026','Legenda curta para postagem em vídeo (padrão CNN) na aba Redes Sociais, separada da legenda longa do card. Selo de versão aqui na Config.'],
