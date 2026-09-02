@@ -496,13 +496,16 @@ TEXTO DA MATÉRIA:
       </div>
       <label>Tags (preenchido automaticamente)</label>
       <textarea id="wp-tags" rows="2"></textarea>
+      <label>Atualizar matéria existente (opcional)</label>
+      <input type="text" id="wp-post-id" placeholder="ID ou link da matéria já publicada" oninput="atualizarBotaoPub()">
+      <p class="hint" style="margin-top:4px;margin-bottom:10px">Vazio publica matéria nova, como sempre. Preenchido, atualiza aquela matéria e mantém a URL, a data e as visualizações. Aceita o ID (1234), o link curto (/r/1234) ou o link normal da matéria.</p>
       <label>Status de publicação</label>
       <select id="wp-status">
         <option value="draft">Rascunho — revisar antes de publicar</option>
         <option value="publish">Publicar imediatamente</option>
       </select>
       <div id="st-pub" class="status" style="display:none"></div>
-      <button class="btn btn-primary" onclick="publicar()"><span class="spin" id="sp-pub" style="display:none"></span>🌐 Publicar no WordPress</button>
+      <button class="btn btn-primary" id="btn-pub" onclick="publicar()"><span class="spin" id="sp-pub" style="display:none"></span>🌐 Publicar no WordPress</button>
       <p class="hint" style="margin-top:10px;margin-bottom:0">📷 Após publicar, defina a imagem de capa manualmente no WordPress.</p>
     </div>
   </div>
@@ -1555,6 +1558,7 @@ function novaMateria(){
   contarEnquete();
   const wlt=document.getElementById('wp-leia-titulo');if(wlt)wlt.value='';
   const wl=document.getElementById('wp-leia');if(wl)wl.value='';
+  const wpi=document.getElementById('wp-post-id');if(wpi){wpi.value='';atualizarBotaoPub();}
   document.getElementById('enqueteOpcoes').innerHTML='<div class="enquete-option"><span style="font-size:13px;min-width:20px">1️⃣</span><input type="text" placeholder="Opção 1"/><button onclick="removeOpcao(this)">✕</button></div><div class="enquete-option"><span style="font-size:13px;min-width:20px">2️⃣</span><input type="text" placeholder="Opção 2"/><button onclick="removeOpcao(this)">✕</button></div>';
   document.getElementById('resultados').style.display='none';
   document.getElementById('statusImportTxt').textContent='Carregue o JSON na aba "Publicar" primeiro — título e enquete preenchem aqui automaticamente.';
@@ -1742,12 +1746,37 @@ async function resolverCats(nomes,c,creds){
   }catch(e){}
   return ids;
 }
+// Troca o rótulo do botão conforme o campo "Atualizar matéria existente".
+function atualizarBotaoPub(){
+  const el=document.getElementById('wp-post-id'),b=document.getElementById('btn-pub');
+  if(!el||!b)return;
+  const t=el.value.trim();
+  const sp='<span class="spin" id="sp-pub" style="display:none"></span>';
+  b.innerHTML=sp+(t?('♻️ Atualizar matéria '+(/^\d+$/.test(t)?('#'+t):'existente')):'🌐 Publicar no WordPress');
+}
+// Aceita ID puro, link curto /r/1234, ?p=1234 ou o permalink; resolve o slug pela API.
+async function resolverPostId(entrada,c,creds){
+  const t=(entrada||'').trim();
+  if(!t)return null;
+  if(/^\d+$/.test(t))return parseInt(t,10);
+  let m=t.match(/[?&]p=(\d+)/);if(m)return parseInt(m[1],10);
+  m=t.match(/\/r\/(\d+)/);if(m)return parseInt(m[1],10);
+  let slug='';
+  try{slug=new URL(t).pathname.replace(/\/+$/,'').split('/').pop();}
+  catch(e){slug=t.replace(/\/+$/,'').split('/').pop();}
+  if(!slug)return null;
+  const r=await fetch(c.url+'/wp-json/wp/v2/posts?status=any&slug='+encodeURIComponent(slug),{headers:{'Authorization':'Basic '+creds}});
+  if(!r.ok)return null;
+  const lista=await r.json();
+  return (Array.isArray(lista)&&lista.length&&lista[0].id)?lista[0].id:null;
+}
 async function publicar(){
   const c=getCfg();
   if(!c.url||!c.user||!c.pass){showSt('st-pub','err','⚠️ Configure as credenciais na aba Config.');return;}
   if(!dados.corpo_html){showSt('st-pub','err','⚠️ Carregue o JSON gerado pelo Claude primeiro.');return;}
+  const alvoTxt=(document.getElementById('wp-post-id')||{value:''}).value.trim();
   document.getElementById('sp-pub').style.display='inline-block';
-  showSt('st-pub','loading','⏳ Publicando no WordPress...');
+  showSt('st-pub','loading',alvoTxt?'⏳ Atualizando a matéria no WordPress...':'⏳ Publicando no WordPress...');
   const leiaLink=document.getElementById('wp-leia').value.trim();
   const leiaTitulo=(document.getElementById('wp-leia-titulo')||{value:''}).value.trim();
   const igLink=document.getElementById('wp-ig').value.trim();
@@ -1757,13 +1786,25 @@ async function publicar(){
   try{
     const tagIds=await resolverTags(tagNomes,c,creds);
     const catIds=await resolverCats(catsSel,c,creds);
+    const postId=await resolverPostId(alvoTxt,c,creds);
+    if(alvoTxt&&!postId)throw new Error('não achei a matéria "'+alvoTxt+'". Use o ID numérico ou o link exato dela.');
     const payload={
-      title:dados.titulo_seo||'',content:conteudo,status:document.getElementById('wp-status').value,
-      excerpt:dados.resumo||'',tags:tagIds,categories:catIds,slug:dados.slug||'',
+      title:dados.titulo_seo||'',content:conteudo,
+      excerpt:dados.resumo||'',tags:tagIds,categories:catIds,
       comment_status:'closed',ping_status:'closed',
       meta:{_yoast_wpseo_focuskw:dados.frase_chave||'',_yoast_wpseo_metadesc:dados.meta_descricao||''}
     };
-    const r=await fetch(c.url+'/wp-json/wp/v2/posts',{method:'POST',headers:{'Authorization':'Basic '+creds,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(postId){
+      // Atualizando: não mexe no slug (a URL já está divulgada) e só muda o status
+      // se ele escolher "Publicar imediatamente" — assim "Rascunho" nunca tira do ar
+      // uma matéria que já está publicada.
+      if(document.getElementById('wp-status').value==='publish')payload.status='publish';
+    }else{
+      payload.status=document.getElementById('wp-status').value;
+      payload.slug=dados.slug||'';
+    }
+    const endpoint=c.url+'/wp-json/wp/v2/posts'+(postId?('/'+postId):'');
+    const r=await fetch(endpoint,{method:'POST',headers:{'Authorization':'Basic '+creds,'Content-Type':'application/json'},body:JSON.stringify(payload)});
     document.getElementById('sp-pub').style.display='none';
     if(r.ok){
       const post=await r.json();
@@ -1772,14 +1813,19 @@ async function publicar(){
       const linkBranded=c.url+'/r/'+post.id;
       const lm=document.getElementById('linkMateria');
       if(lm&&!lm.value)lm.value=linkBranded;
-      showSt('st-pub','ok','✅ Publicado com sucesso! Acesse: '+link+'\n🔗 Link curto p/ WhatsApp: '+linkBranded);
+      if(postId){
+        const wpi=document.getElementById('wp-post-id');if(wpi){wpi.value=String(post.id);atualizarBotaoPub();}
+        showSt('st-pub','ok','♻️ Matéria #'+post.id+' atualizada! A URL continua a mesma: '+link+'\n🔗 Link curto p/ WhatsApp: '+linkBranded);
+      }else{
+        showSt('st-pub','ok','✅ Publicado com sucesso! Acesse: '+link+'\n🔗 Link curto p/ WhatsApp: '+linkBranded);
+      }
     }else{
       const err=await r.json().catch(()=>({}));
       throw new Error(err.message||'Erro '+r.status);
     }
   }catch(e){
     document.getElementById('sp-pub').style.display='none';
-    showSt('st-pub','err','❌ Erro ao publicar: '+e.message);
+    showSt('st-pub','err','❌ Erro ao '+(alvoTxt?'atualizar':'publicar')+': '+e.message);
   }
 }
 
