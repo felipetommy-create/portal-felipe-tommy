@@ -744,6 +744,11 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
     <p class="hint" style="margin-top:0">Encontramos <span id="qtdMigrar"></span> grupos salvos neste navegador (versão antiga, local). Quer enviá-los para a nuvem agora?</p>
     <button class="btn btn-primary" onclick="migrarGruposAntigos()">☁️ Migrar para o Supabase</button>
   </div>
+  <div class="card" id="problemasCard" style="display:none;border-color:var(--warn)">
+    <div class="card-title" style="color:var(--warn)">⚠️ Problemas na lista</div>
+    <p class="hint" style="margin-top:0">O encaminhador automático não roda enquanto houver <strong>nome repetido</strong> ou <strong>grupo sem nome</strong>: ele não teria como saber qual é qual na hora de marcar no WhatsApp.</p>
+    <div id="problemasLista" style="margin-top:12px"></div>
+  </div>
   <div class="card">
     <div class="card-title">
       <span>👥 Lista de grupos (<span id="totalGrupos">0</span>)</span>
@@ -790,6 +795,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
     <div class="card-title">🤖 Encaminhador automático</div>
     <p class="hint" style="margin-top:0">O robô abre o canal Portal Felipe Tommy, seleciona a última matéria e a enquete juntas, encaminha para até 5 grupos e repete o ciclo. Tudo roda no navegador, sem chamadas de IA.</p>
     <p class="hint" style="margin-top:8px">Confira a matéria carregada e os grupos abaixo. O progresso é salvo por matéria; um lote com resultado incerto fica separado para conferência.</p>
+    <div id="autoAviso" style="display:none;margin-top:12px;padding:12px 14px;background:rgba(245,158,11,.12);border:1px solid var(--warn);border-radius:8px;font-size:13px;line-height:1.6;color:var(--text)"></div>
   </div>
 
   <div class="card">
@@ -2100,8 +2106,71 @@ async function limparGrupos(){
 function renderGrupos(){
   document.getElementById('totalGrupos').textContent=grupos.length;
   const div=document.getElementById('listaGrupos');
-  if(!grupos.length){div.innerHTML='<div class="empty-state">Nenhum grupo cadastrado ainda.</div>';return;}
-  div.innerHTML=grupos.map((g,i)=>'<div class="group-item"><div class="group-num">'+(i+1)+'</div><span>'+g.nome+'</span><button class="btn-danger-sm" onclick="removerGrupo(\''+g.id+'\')">✕</button></div>').join('');
+  if(!grupos.length){div.innerHTML='<div class="empty-state">Nenhum grupo cadastrado ainda.</div>';renderProblemasGrupos();return;}
+  div.innerHTML=grupos.map((g,i)=>'<div class="group-item"><div class="group-num">'+(i+1)+'</div><span>'+esc(g.nome)+'</span><button class="btn-danger-sm" onclick="removerGrupo(\''+g.id+'\')">✕</button></div>').join('');
+  renderProblemasGrupos();
+}
+
+// ── Duplicados e grupos sem nome ─────────────────────────────────────────
+// Mesma normalização do runner (ftWhatsAppRunner). Se mudar lá, mudar aqui.
+function ftNormNome(s){
+  return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[‎‏‪-‮⁦-⁩]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function detectarProblemasGrupos(){
+  const porNome=new Map(),semNome=[];
+  for(const g of grupos){
+    const n=ftNormNome(g.nome);
+    if(!g.id||!n){semNome.push(g);continue;}
+    if(!porNome.has(n))porNome.set(n,[]);
+    porNome.get(n).push(g);
+  }
+  const dupes=[...porNome.entries()].filter(([,v])=>v.length>1).map(([n,v])=>({norm:n,itens:v}));
+  return {dupes,semNome};
+}
+function renderProblemasGrupos(){
+  const card=document.getElementById('problemasCard'),div=document.getElementById('problemasLista');
+  if(!card||!div)return;
+  const {dupes,semNome}=detectarProblemasGrupos();
+  if(!dupes.length&&!semNome.length){card.style.display='none';div.innerHTML='';return;}
+  card.style.display='block';
+  let html='';
+  if(dupes.length){
+    html+='<div style="font-size:12px;font-weight:700;color:var(--warn);text-transform:uppercase;margin-bottom:8px">Nomes repetidos ('+dupes.length+')</div>';
+    html+=dupes.map(d=>{
+      const nome=esc(d.itens[0].nome);
+      return '<div class="kgroup-item" style="align-items:flex-start;flex-wrap:wrap;gap:8px">'
+        +'<span class="name" style="flex:1 1 200px"><strong>'+nome+'</strong><br><span class="hint">'+d.itens.length+' cadastros iguais</span></span>'
+        +'<button class="btn-sm" onclick="resolverDuplicado(\''+encodeURIComponent(d.norm)+'\',this)">Manter 1 e remover '+(d.itens.length-1)+'</button></div>';
+    }).join('');
+  }
+  if(semNome.length){
+    html+='<div style="font-size:12px;font-weight:700;color:var(--warn);text-transform:uppercase;margin:14px 0 8px">Sem nome ('+semNome.length+')</div>';
+    html+=semNome.map(g=>'<div class="kgroup-item"><span class="name">(vazio)</span><button class="btn-danger-sm" onclick="removerGrupo(\''+g.id+'\')">Remover</button></div>').join('');
+  }
+  div.innerHTML=html;
+}
+async function resolverDuplicado(normEnc,btn){
+  const alvo=decodeURIComponent(normEnc);
+  const itens=grupos.filter(g=>ftNormNome(g.nome)===alvo);
+  if(itens.length<2)return renderProblemasGrupos();
+  const manter=itens[0],remover=itens.slice(1);
+  if(!confirm('Grupo "'+manter.nome+'"\n\nManter 1 cadastro e remover '+remover.length+' repetido(s)?\n\nO histórico de encaminhamento dos removidos também sai. O grupo continua no seu WhatsApp: isso mexe só na lista do painel.'))return;
+  const orig=btn.textContent;btn.disabled=true;btn.textContent='Removendo…';
+  let ok=0,erro=null;
+  for(const g of remover){
+    try{
+      await sbFetch('encaminhamentos?grupo_id=eq.'+g.id,'DELETE');
+      await sbFetch('grupos?id=eq.'+g.id,'DELETE');
+      grupos=grupos.filter(x=>x.id!==g.id);
+      autoSelIds.delete(g.id);doneIds.delete(g.id);
+      ok++;
+    }catch(e){erro=e;break;}
+  }
+  btn.disabled=false;btn.textContent=orig;
+  if(erro)alert('Removi '+ok+' de '+remover.length+'. Depois deu erro:\n'+(erro.message||erro));
+  renderGrupos();
 }
 
 function checarMigracaoAntiga(){
@@ -2471,9 +2540,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.0';
+const PAINEL_VERSAO='2.8.1';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.1','19/09/2026','O encaminhador parava com o aviso "Há grupos sem identificação ou com nomes iguais" sem dizer quais eram. A causa é a lista: existem cadastros repetidos (três "Picunhão", por exemplo) e o robô não tem como saber qual marcar no WhatsApp. Agora a aba Grupos mostra o card "Problemas na lista", que aponta cada nome repetido e resolve em um clique, mantendo um cadastro e removendo os extras. A aba Auto-envio avisa antes de copiar o código e marca os repetidos com ⚠ na lista. A checagem usa a mesma normalização do robô, então o que o painel aprova o robô aceita.'],
   ['2.8.0','19/09/2026','Encaminhador refeito a partir da skill e dos controles reais do WhatsApp: matéria + enquete fixadas por ID, conferência de 2 itens, grupos por nome completo, lotes de até 5 e repetição por palavra-chave. Progresso persistente, proteção contra duas abas, pausa/parada verificadas e teste de dois ciclos sem envio.'],
   ['2.7.4','19/09/2026','Auto-envio: em canal, a opção do menu se chama "Selecionar atualizações" (não "Selecionar mensagens" como no chat comum). Regex ajustado para reconhecer as duas formas.'],
   ['2.7.3','19/09/2026','Auto-envio: seleção agora entra pelo ⋮ do header do chat (Selecionar mensagens) em vez do menu de contexto — o WhatsApp Web ignora hover/right-click sintético do console, mas o ⋮ do header sempre está visível. Depois marca as 2 últimas via checkbox.'],
@@ -2513,14 +2583,35 @@ const AUTO_KEYWORDS=['picu','faixa','noticia','amigo','parauapeba','caraja','pol
 async function renderAutoEnvio(){
   await carregarDone();
   const div=document.getElementById('autoListaGrupos');
-  if(!grupos.length){div.innerHTML='<div class="empty-state">Cadastre grupos na aba Grupos.</div>';return;}
+  if(!grupos.length){div.innerHTML='<div class="empty-state">Cadastre grupos na aba Grupos.</div>';renderAutoAviso();return;}
   if(autoSelSlug!==slugAtual()){autoSelSlug=slugAtual();autoSelIds=new Set(grupos.filter(g=>g.ativo!==false&&!doneIds.has(g.id)).map(g=>g.id));}
+  const {dupes}=detectarProblemasGrupos();
+  const nomesDup=new Set(dupes.map(d=>d.norm));
   div.innerHTML=grupos.map((g,i)=>{
     const f=doneIds.has(g.id);
     const sel=autoSelIds.has(g.id);
-    return '<label class="kgroup-item" style="cursor:pointer;'+(f?'opacity:.55':'')+'"><input type="checkbox" '+(sel?'checked':'')+' onchange="autoToggle(\''+g.id+'\',this.checked)" style="margin-right:8px"/><div class="group-num">'+(i+1)+'</div><span class="name">'+g.nome+'</span>'+(f?'<span class="done-tag">✓ Já feito</span>':'')+'</label>';
+    const dup=nomesDup.has(ftNormNome(g.nome));
+    return '<label class="kgroup-item" style="cursor:pointer;'+(f?'opacity:.55;':'')+(dup?'border-color:var(--warn);':'')+'"><input type="checkbox" '+(sel?'checked':'')+' onchange="autoToggle(\''+g.id+'\',this.checked)" style="margin-right:8px"/><div class="group-num">'+(i+1)+'</div><span class="name">'+esc(g.nome)+'</span>'+(dup?'<span class="done-tag" style="background:rgba(245,158,11,.15);color:var(--warn)">⚠ repetido</span>':'')+(f?'<span class="done-tag">✓ Já feito</span>':'')+'</label>';
   }).join('');
   autoAtualizarContagem();
+  renderAutoAviso();
+}
+function renderAutoAviso(){
+  const el=document.getElementById('autoAviso');
+  if(!el)return;
+  const {dupes,semNome}=detectarProblemasGrupos();
+  if(!dupes.length&&!semNome.length){el.style.display='none';return;}
+  el.style.display='block';
+  const partes=[];
+  if(dupes.length)partes.push(dupes.length+' nome(s) repetido(s)');
+  if(semNome.length)partes.push(semNome.length+' sem nome');
+  el.innerHTML='⚠️ <strong>O encaminhador não vai rodar assim:</strong> '+partes.join(' e ')
+    +'. Ele não teria como saber qual grupo marcar no WhatsApp. '
+    +'<button class="btn-sm" style="margin-left:6px" onclick="irParaGrupos()">Resolver na aba Grupos</button>';
+}
+function irParaGrupos(){
+  const btn=[...document.querySelectorAll('.tab')].find(b=>(b.getAttribute('onclick')||'').includes("'grupos'"));
+  if(btn)showTab('grupos',btn);
 }
 function autoToggle(id,checked){if(checked)autoSelIds.add(id);else autoSelIds.delete(id);autoAtualizarContagem();}
 function autoAtualizarContagem(){document.getElementById('autoContagem').textContent=autoSelIds.size+' grupo(s) selecionado(s) de '+grupos.length+' cadastrados.';}
@@ -2532,6 +2623,20 @@ function autoMontarPayload(dryRun=false){
   const ids=[...autoSelIds];
   const gs=grupos.filter(g=>g.ativo!==false&&ids.includes(g.id)).map(g=>({id:g.id,nome:g.nome}));
   if(!gs.length){alert('Selecione pelo menos 1 grupo.');return null;}
+  const vistos=new Map(),repetidos=new Set(),vazios=[];
+  for(const g of gs){
+    const n=ftNormNome(g.nome);
+    if(!g.id||!n){vazios.push(g);continue;}
+    if(vistos.has(n))repetidos.add(vistos.get(n));else vistos.set(n,g.nome);
+  }
+  if(repetidos.size||vazios.length){
+    let msg='A lista tem grupos que o encaminhador não consegue diferenciar:\n\n';
+    if(repetidos.size)msg+='Nome repetido:\n'+[...repetidos].map(n=>'  • '+n).join('\n')+'\n\n';
+    if(vazios.length)msg+=vazios.length+' grupo(s) sem nome.\n\n';
+    msg+='Abra a aba Grupos: o card "Problemas na lista" resolve isso em um clique.';
+    alert(msg);
+    return null;
+  }
   const delayMs=Math.max(2,parseInt(document.getElementById('autoDelay').value||'4',10))*1000;
   const jitterMs=Math.max(0,parseInt(document.getElementById('autoJitter').value||'3',10))*1000;
   const slug=slugAtual();
