@@ -2470,9 +2470,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.7.1';
+const PAINEL_VERSAO='2.7.2';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.7.2','19/09/2026','Auto-envio: seleção da matéria agora usa right-click (contextmenu) que abre o menu direto sem depender de hover — muito mais confiável que caçar o botão ⋮. Fallback pro hover se o contextmenu não aparecer.'],
   ['2.7.1','19/09/2026','Auto-envio 100% automático: agora o robô também navega para Canais → canal Portal Felipe Tommy, seleciona a última matéria + enquete pelo menu ⋮, clica na seta Encaminhar, faz o lote de 5 grupos, envia, e sozinho refaz a seleção pra próximo lote. Felipe só cola o código no Console e aperta ▶ Iniciar. Nunca duplica grupo, marca tudo no Supabase.'],
   ['2.7.0','19/09/2026','Auto-envio agora replica o método manual do encaminhamento: você seleciona matéria + enquete no canal do WhatsApp, clica Encaminhar, e o robô cuida do resto — busca por palavra-chave na ordem fixa (picu, faixa, noticia, amigo, parauapeba, caraja, politica, fora, unido, etc), marca até 5 grupos pendentes por lote, clica no aviãozinho, aguarda você reabrir o modal, continua até a lista zerar. Marca no Supabase automaticamente e nunca duplica grupo.'],
   ['2.6.4','19/09/2026','Auto-envio: busca de grupo na lista lateral não depende mais de #pane-side nem de role=listitem. Agora acha qualquer span/div com title do grupo fora do painel do chat aberto, e sobe pelo DOM até um clicável (listitem/row/button/option). DIAG lista imprime primeiros 8 candidatos.'],
@@ -2587,41 +2588,53 @@ const openChannel=async name=>{
 };
 
 // ── Selecionar última matéria + enquete e clicar Encaminhar
+const rightClick=el=>{
+  const r=el.getBoundingClientRect();
+  const cx=Math.round(r.left+r.width/2),cy=Math.round(r.top+Math.min(r.height/2,80));
+  const opts={bubbles:true,cancelable:true,button:2,buttons:2,clientX:cx,clientY:cy,view:window};
+  el.dispatchEvent(new PointerEvent('pointerdown',{...opts,pointerType:'mouse'}));
+  el.dispatchEvent(new MouseEvent('mousedown',opts));
+  el.dispatchEvent(new PointerEvent('pointerup',{...opts,pointerType:'mouse'}));
+  el.dispatchEvent(new MouseEvent('mouseup',opts));
+  el.dispatchEvent(new MouseEvent('contextmenu',opts));
+};
+const findEncaminharItem=()=>{
+  for(const el of document.querySelectorAll('[role="menuitem"],[role="button"],li,div[role]')){
+    const t=(el.textContent||'').trim().toLowerCase();
+    if(t==='encaminhar'||t==='forward'||t==='reencaminhar')return el;
+    if(/^encaminhar$/.test(t.split('\\n')[0]))return el;
+  }
+  return null;
+};
 const selectLastTwoMessages=async()=>{
   const main=await waitFor(()=>document.querySelector('#main'),5000);
   if(!main){log('sem #main','e');return false;}
-  // Ache todas as bolhas de mensagem no chat
   const msgs=main.querySelectorAll('[data-id]');
-  if(msgs.length<2){log('menos de 2 mensagens visíveis','e');return false;}
+  if(msgs.length<2){log('menos de 2 msgs visíveis ('+msgs.length+')','e');return false;}
   const last=msgs[msgs.length-1];
   const penult=msgs[msgs.length-2];
-  // Hover na última pra revelar o menu ⋮
-  last.scrollIntoView({block:'center'});await sleep(400);
-  last.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
-  last.dispatchEvent(new MouseEvent('mouseenter',{bubbles:true}));
-  await sleep(500);
-  // O ⋮ é geralmente um botão com data-icon="down-context" ou aria-label contendo "menu"/"mensagem"
-  let ctx=last.querySelector('span[data-icon="down-context"],span[data-icon="chevron"],[aria-label*="ensagem"],[aria-label*="essage"]');
-  if(!ctx){
-    // procurar botão dentro da bolha
-    const bs=last.querySelectorAll('button,[role="button"]');for(const b of bs){const l=(b.getAttribute('aria-label')||'').toLowerCase();if(/mensagem|message|context|menu/.test(l)){ctx=b;break;}}
+  last.scrollIntoView({block:'center'});await sleep(500);
+  // Estratégia 1: right-click (contextmenu) — abre menu diretamente
+  rightClick(last);
+  let enc=await waitFor(findEncaminharItem,2500);
+  // Estratégia 2 (fallback): hover + botão ⋮
+  if(!enc){
+    log('contextmenu não abriu — tentando hover','w');
+    const opts={bubbles:true,cancelable:true};
+    last.dispatchEvent(new MouseEvent('mouseover',opts));
+    last.dispatchEvent(new MouseEvent('mouseenter',opts));
+    last.dispatchEvent(new MouseEvent('mousemove',opts));
+    await sleep(700);
+    let ctx=last.querySelector('span[data-icon="down-context"],span[data-icon="down-context-refreshed"],span[data-icon="chevron-down"],span[data-icon="chevron"]');
+    if(!ctx){for(const b of last.querySelectorAll('button,[role="button"]')){const l=(b.getAttribute('aria-label')||'').toLowerCase();if(/mensagem|message|context|menu/.test(l)){ctx=b;break;}}}
+    if(ctx){clickIt(ctx);await sleep(500);enc=await waitFor(findEncaminharItem,2500);}
   }
-  if(!ctx){log('sem ⋮ na última msg — tente hover manual','e');return false;}
-  clickIt(ctx);await sleep(500);
-  // Menu popup → item "Encaminhar"
-  const enc=await waitFor(()=>{
-    for(const el of document.querySelectorAll('[role="menuitem"],li,[role="button"]')){
-      const t=(el.textContent||'').trim().toLowerCase();
-      if(t==='encaminhar'||t==='forward')return el;
-    }
-    return null;
-  },3000);
-  if(!enc){log('sem opção Encaminhar no menu','e');return false;}
-  clickIt(enc);await sleep(700);
-  // Agora deve ter checkbox nas mensagens; a última pode já estar marcada; marcar a penúltima também
+  if(!enc){log('sem opção Encaminhar em nenhum modo','e');return false;}
+  clickIt(enc);await sleep(800);
+  // Modo seleção múltipla: agora tem checkbox nas mensagens; marcar a penúltima
   const pcb=penult.querySelector('input[type="checkbox"],[role="checkbox"]');
   if(pcb){clickIt(pcb);}else{clickIt(penult);}
-  await sleep(500);
+  await sleep(600);
   return true;
 };
 const clickForwardArrow=async()=>{
