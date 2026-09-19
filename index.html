@@ -2470,9 +2470,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.7.3';
+const PAINEL_VERSAO='2.7.4';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.7.4','19/09/2026','Auto-envio: em canal, a opção do menu se chama "Selecionar atualizações" (não "Selecionar mensagens" como no chat comum). Regex ajustado para reconhecer as duas formas.'],
   ['2.7.3','19/09/2026','Auto-envio: seleção agora entra pelo ⋮ do header do chat (Selecionar mensagens) em vez do menu de contexto — o WhatsApp Web ignora hover/right-click sintético do console, mas o ⋮ do header sempre está visível. Depois marca as 2 últimas via checkbox.'],
   ['2.7.2','19/09/2026','Auto-envio: seleção da matéria agora usa right-click (contextmenu) que abre o menu direto sem depender de hover — muito mais confiável que caçar o botão ⋮. Fallback pro hover se o contextmenu não aparecer.'],
   ['2.7.1','19/09/2026','Auto-envio 100% automático: agora o robô também navega para Canais → canal Portal Felipe Tommy, seleciona a última matéria + enquete pelo menu ⋮, clica na seta Encaminhar, faz o lote de 5 grupos, envia, e sozinho refaz a seleção pra próximo lote. Felipe só cola o código no Console e aperta ▶ Iniciar. Nunca duplica grupo, marca tudo no Supabase.'],
@@ -2614,9 +2615,9 @@ const enterSelectionMode=async()=>{
   }
   if(!menuBtn){log('sem ⋮ no header do chat','e');return false;}
   clickIt(menuBtn);await sleep(500);
-  // 2) Item "Selecionar mensagens"
-  const sel=await waitFor(()=>findMenuItemByText(/^selecionar (mensagens|várias mensagens|mensagem)$|^select messages$/i),2500);
-  if(!sel){log('sem opção Selecionar mensagens no menu','e');return false;}
+  // 2) Item "Selecionar atualizações" (canal) OU "Selecionar mensagens" (chat)
+  const sel=await waitFor(()=>findMenuItemByText(/^selecionar (atualiza|mensagens|várias mensagens|mensagem)|^select (updates|messages)/i),2500);
+  if(!sel){log('sem opção Selecionar no menu','e');return false;}
   clickIt(sel);await sleep(700);
   return true;
 };
@@ -2645,7 +2646,7 @@ const clickForwardArrow=async()=>{
   const btn=await waitFor(()=>{
     let b=byIcon('forward-refreshed')||byIcon('forward');
     if(b)return b;
-    b=byAriaText(/^(encaminhar|forward|encaminhar mensagens|forward messages)( selecionad| selected)?/);
+    b=byAriaText(/^(encaminhar|forward|reencaminhar)/);
     if(b)return b;
     // fallback: procurar botão flutuante no canto inferior direito
     const cands=document.querySelectorAll('button,[role="button"]');let best=null,bestX=0,bestY=0;for(const c of cands){if(!visible(c))continue;const r=c.getBoundingClientRect();if(r.right>window.innerWidth-120&&r.bottom>window.innerHeight-160){if(r.right+r.bottom>bestX+bestY){best=c;bestX=r.right;bestY=r.bottom;}}}
