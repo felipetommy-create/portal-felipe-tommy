@@ -2540,9 +2540,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.1';
+const PAINEL_VERSAO='2.8.2';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.2','19/09/2026','Corrigido o "O canal de origem não abriu", que parava o robô mesmo com o canal aberto na tela. Ele confirmava a abertura procurando o nome do canal dentro de um <button> do cabeçalho, mas o nome não fica em botão: os botões de lá são só os ícones (link, trocar conta, mais opções). Agora a confirmação lê o texto do próprio cabeçalho, conferido no WhatsApp real. O painel flutuante também passa a mostrar a versão que veio do painel, para não restar dúvida se o código colado está atualizado.'],
   ['2.8.1','19/09/2026','O encaminhador parava com o aviso "Há grupos sem identificação ou com nomes iguais" sem dizer quais eram. A causa é a lista: existem cadastros repetidos (três "Picunhão", por exemplo) e o robô não tem como saber qual marcar no WhatsApp. Agora a aba Grupos mostra o card "Problemas na lista", que aponta cada nome repetido e resolve em um clique, mantendo um cadastro e removendo os extras. A aba Auto-envio avisa antes de copiar o código e marca os repetidos com ⚠ na lista. A checagem usa a mesma normalização do robô, então o que o painel aprova o robô aceita.'],
   ['2.8.0','19/09/2026','Encaminhador refeito a partir da skill e dos controles reais do WhatsApp: matéria + enquete fixadas por ID, conferência de 2 itens, grupos por nome completo, lotes de até 5 e repetição por palavra-chave. Progresso persistente, proteção contra duas abas, pausa/parada verificadas e teste de dois ciclos sem envio.'],
   ['2.7.4','19/09/2026','Auto-envio: em canal, a opção do menu se chama "Selecionar atualizações" (não "Selecionar mensagens" como no chat comum). Regex ajustado para reconhecer as duas formas.'],
@@ -2643,7 +2644,7 @@ function autoMontarPayload(dryRun=false){
   const articleTitle=document.getElementById('tituloCurto').value.trim();
   const articleLinks=[document.getElementById('linkMateria').value,document.getElementById('outputLinkCurto').textContent].map(s=>s.trim()).filter(s=>/^https:\/\/felipetommy\.com\.br\//i.test(s));
   if(!SB||slug==='sem-slug'||!articleLinks.length){alert('Carregue a matéria e seu link na aba WhatsApp antes de encaminhar.');return null;}
-  return {v:4,dryRun,articleTitle,articleLinks,groups:gs,keywords:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug}};
+  return {v:4,dryRun,versao:PAINEL_VERSAO,articleTitle,articleLinks,groups:gs,keywords:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug}};
 }
 
 // Encaminhamento nativo. Seletores conferidos no DOM do WhatsApp em 19/09/2026.
@@ -2653,7 +2654,7 @@ function ftWhatsAppRunner(P){
   if(location.hostname!=='web.whatsapp.com'){alert('Abra este código no WhatsApp Web.');return;}
   if(window.__ftAuto){alert('Feche o encaminhador anterior antes de abrir outro.');return;}
   const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
-  const {groups,keywords=[],sb,channelName='Portal Felipe Tommy',dryRun=false}=P;
+  const {groups,keywords=[],sb,channelName='Portal Felipe Tommy',dryRun=false,versao='?'}=P;
   if(!Array.isArray(groups)||!groups.length||!sb?.slug||sb.slug==='sem-slug'){alert('Carregue a matéria e selecione os grupos no painel.');return;}
   const byName=new Map();
   for(const g of groups){
@@ -2674,7 +2675,7 @@ function ftWhatsAppRunner(P){
   const box=document.createElement('section');
   box.id='_ftForward';
   box.style.cssText='position:fixed;top:16px;right:16px;width:min(370px,94vw);background:#111b21;color:#e9edef;border:1px solid #40545e;border-radius:12px;padding:14px;font:13px Segoe UI,sans-serif;z-index:2147483647;box-shadow:0 8px 30px #0008';
-  box.innerHTML='<div style="display:flex;justify-content:space-between"><b>Encaminhador FT · v2.8.0</b><button data-act="close" aria-label="Fechar encaminhador">✕</button></div><p data-status aria-live="polite"></p><progress max="100" value="0" style="width:100%;accent-color:#00a884"></progress><div data-log style="max-height:160px;overflow:auto;font-size:12px;margin:10px 0"></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button data-act="start">▶ Iniciar</button><button data-act="pause" disabled>⏸ Pausar</button><button data-act="stop" disabled>■ Parar</button><button data-act="report">↓ Relatório</button></div>';
+  box.innerHTML='<div style="display:flex;justify-content:space-between"><b>Encaminhador FT · v'+versao+'</b><button data-act="close" aria-label="Fechar encaminhador">✕</button></div><p data-status aria-live="polite"></p><progress max="100" value="0" style="width:100%;accent-color:#00a884"></progress><div data-log style="max-height:160px;overflow:auto;font-size:12px;margin:10px 0"></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button data-act="start">▶ Iniciar</button><button data-act="pause" disabled>⏸ Pausar</button><button data-act="stop" disabled>■ Parar</button><button data-act="report">↓ Relatório</button></div>';
   document.body.appendChild(box);
   window.__ftAuto=true;
   const ui=s=>box.querySelector(s),status=t=>{ui('[data-status]').textContent=t;};
@@ -2725,7 +2726,14 @@ function ftWhatsAppRunner(P){
     await click(channels);
     const channel=await wait(()=>all('button,[role="button"]').find(e=>visible(e)&&norm(e.getAttribute('aria-label'))===norm('Canal '+channelName)),'Canal Portal Felipe Tommy não encontrado na lista.');
     await click(channel);
-    await wait(()=>main()&&all('header button',main()).some(b=>norm(b.textContent).startsWith(norm(channelName))),'O canal de origem não abriu.');
+    // O nome do canal nao fica num <button>: em 19/09/2026 os <button> do header eram
+    // ic-link, ic-switch-account e ic-more-vert. O titulo abre o texto do proprio header.
+    await wait(()=>{
+      const h=main()&&all('header',main())[0];
+      if(!h)return false;
+      if(norm(h.textContent).startsWith(norm(channelName)))return true;
+      return all('button,[role="button"]',h).some(b=>norm(b.textContent).startsWith(norm(channelName)));
+    },'O canal de origem não abriu.');
     await sleep(600);
   };
   const pinSource=async()=>{
