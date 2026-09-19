@@ -2486,10 +2486,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.6.1';
+const PAINEL_VERSAO='2.6.2';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
-  ['2.6.1','19/09/2026','Auto-envio: seletores do WhatsApp Web reforçados (data-tab=3 para busca, data-tab=10 para composer, aria-label em pt/en). Se não achar o campo de busca, o log mostra o diagnóstico dos contenteditable existentes para eu ajustar rápido.'],
+  ['2.6.2','19/09/2026','Auto-envio: seletores do WhatsApp Web ainda mais tolerantes (aceita contenteditable em qualquer forma, busca por texto do placeholder, cai no #side). Log de DIAG imprime todo contenteditable + todos os data-tab do documento para eu ajustar caso o WhatsApp mude o layout de novo.'],
   ['2.6.0','19/09/2026','Layout novo: as abas saíram do topo e viraram menu lateral à esquerda, agrupado por seção (Produção, Distribuição, Editorial, Sistema). No celular vira gaveta que abre pelo botão ☰ no cabeçalho e fecha ao escolher a aba. Facilita andar pelo painel conforme ele cresce, sem rolar a lista de abas.'],
   ['2.5.0','19/09/2026','Aba nova "Auto-envio" nos grupos. Puxa o texto que já foi para o canal, deixa escolher quais grupos vão receber (padrão: os que ainda faltam) e gera um código para colar no Console do web.whatsapp.com (F12). Aparece um painel flutuante dentro do WhatsApp com Iniciar/Pausar/Parar, intervalo e jitter configuráveis, e teste em 1 grupo antes do disparo geral. Também exporta como bookmarklet para reutilizar. Zero token de IA: a automação roda no seu navegador.'],
   ['2.4.0','01/09/2026','A aba Publicar ganhou o campo "Atualizar matéria existente". Vazio, publica matéria nova como sempre. Preenchido com o ID ou o link, atualiza aquela matéria e mantém a URL, a data e as visualizações, em vez de criar uma segunda com slug duplicado. Ao atualizar, o slug não é trocado e o status só muda se você escolher Publicar imediatamente, para o padrão Rascunho nunca tirar do ar uma matéria publicada.'],
@@ -2578,25 +2578,44 @@ const st=t=>$('_ftS').textContent=t;
 const pr=p=>$('_ftB').style.width=p+'%';
 let state='idle';
 const pausable=async()=>{while(state==='paused')await sleep(300);};
+const editables=()=>document.querySelectorAll('[contenteditable="true"],[contenteditable="plaintext-only"],[contenteditable=""],[role="textbox"]');
+const attrsOf=e=>((e.getAttribute?e.getAttribute('aria-label')||'':'')+' '+(e.getAttribute?e.getAttribute('title')||'':'')+' '+(e.getAttribute?e.getAttribute('placeholder')||'':'')+' '+(e.getAttribute?e.getAttribute('data-placeholder')||'':'')).toLowerCase();
+const findByPlaceholderText=re=>{
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_ELEMENT);
+  let n;while(n=walker.nextNode()){
+    if(n.childElementCount>0)continue;
+    const t=(n.textContent||'').trim();
+    if(!t||t.length>60)continue;
+    if(re.test(t)){let p=n;for(let i=0;i<10&&p;i++){if(p.getAttribute&&(p.getAttribute('contenteditable')!==null||p.getAttribute('role')==='textbox'||p.tagName==='INPUT'||p.tagName==='TEXTAREA'))return p;p=p.parentElement;}return n;}
+  }
+  return null;
+};
 const findSearch=()=>{
   let el=document.querySelector('div[contenteditable="true"][data-tab="3"]');if(el)return el;
-  const cs=document.querySelectorAll('div[contenteditable="true"]');
-  for(const c of cs){const l=((c.getAttribute('aria-label')||'')+' '+(c.getAttribute('title')||'')+' '+(c.getAttribute('placeholder')||'')).toLowerCase();if(l.includes('pesquis')||l.includes('search')||l.includes('busca')||l.includes('nova conversa'))return c;}
-  const side=document.querySelector('#side, aside, div[data-tab="4"]');
-  if(side){const c=side.querySelector('div[contenteditable="true"]');if(c)return c;}
+  el=document.querySelector('[contenteditable][data-tab="3"]');if(el)return el;
+  for(const e of editables()){if(/pesquis|search|busca|nova conversa/i.test(attrsOf(e)))return e;}
+  const side=document.querySelector('#side, aside, [data-tab="4"]');
+  if(side){for(const e of side.querySelectorAll('[contenteditable],[role="textbox"],input,textarea')){return e;}}
+  el=findByPlaceholderText(/^(pesquisar|search|buscar).{0,40}$/i);if(el)return el;
   return null;
 };
 const findComposer=()=>{
   let el=document.querySelector('div[contenteditable="true"][data-tab="10"]');if(el)return el;
-  const main=document.querySelector('#main, div[data-tab="6"]');
-  if(main){const c=main.querySelector('div[contenteditable="true"]');if(c)return c;}
-  const cs=document.querySelectorAll('div[contenteditable="true"]');
-  for(const c of cs){const l=((c.getAttribute('aria-label')||'')+' '+(c.getAttribute('title')||'')+' '+(c.getAttribute('data-placeholder')||'')).toLowerCase();if(l.includes('mensagem')||l.includes('message')||l.includes('digite')||l.includes('type a message'))return c;}
+  el=document.querySelector('[contenteditable][data-tab="10"]');if(el)return el;
+  const main=document.querySelector('#main, [data-tab="6"]');
+  if(main){for(const e of main.querySelectorAll('[contenteditable],[role="textbox"]')){if(!/pesquis|search/i.test(attrsOf(e)))return e;}}
+  for(const e of editables()){if(/mensagem|message|digite|type a message/i.test(attrsOf(e)))return e;}
   const fs=document.querySelectorAll('footer');
-  for(const f of fs){const c=f.querySelector('div[contenteditable="true"]');if(c)return c;}
+  for(const f of fs){const c=f.querySelector('[contenteditable],[role="textbox"]');if(c)return c;}
   return null;
 };
-const diag=()=>{const cs=document.querySelectorAll('div[contenteditable="true"]');let r='['+cs.length+' campos editáveis]';cs.forEach((c,i)=>{r+=' #'+i+':tab='+c.getAttribute('data-tab')+',aria="'+(c.getAttribute('aria-label')||'').slice(0,30)+'"';});log(r,'e');};
+const diag=()=>{
+  const eds=editables();
+  log('DIAG editables='+eds.length+' inputs='+document.querySelectorAll('input').length+' textareas='+document.querySelectorAll('textarea').length,'e');
+  eds.forEach((c,i)=>{log('  ed#'+i+' tag='+c.tagName+' tab='+c.getAttribute('data-tab')+' ce='+c.getAttribute('contenteditable')+' role='+c.getAttribute('role')+' aria="'+(c.getAttribute('aria-label')||'').slice(0,40)+'"','e');});
+  const tabs=[...document.querySelectorAll('[data-tab]')].map(e=>e.getAttribute('data-tab'));
+  log('  data-tabs no doc: '+[...new Set(tabs)].join(','),'e');
+};
 const clearBox=el=>{el.focus();document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'deleteContentBackward'}));};
 const pasteBox=(el,text)=>{el.focus();document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);const dt=new DataTransfer();dt.setData('text/plain',text);const evt=new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:dt});el.dispatchEvent(evt);if(!el.textContent||el.textContent.length<3){document.execCommand('insertText',false,text);}el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));};
 const pressEnter=el=>{['keydown','keypress','keyup'].forEach(t=>el.dispatchEvent(new KeyboardEvent(t,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true})));};
