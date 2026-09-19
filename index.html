@@ -787,61 +787,54 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
 <!-- AUTO-ENVIO NOS GRUPOS -->
 <div class="page" id="tab-autoenvio">
   <div class="card">
-    <div class="card-title">🤖 Envio automático nos grupos</div>
-    <p class="hint" style="margin-top:0">Pega a mensagem do canal e envia sozinho para os grupos do WhatsApp, um por um, sem custo de tokens. Roda dentro do próprio web.whatsapp.com no seu navegador.</p>
-    <p class="hint" style="margin-top:8px;color:var(--warn)">⚠️ Deixe o WhatsApp Web aberto e visível numa janela grande. Não mexa no mouse enquanto estiver rodando.</p>
+    <div class="card-title">🤖 Encaminhador automático</div>
+    <p class="hint" style="margin-top:0">Replica o método manual: você seleciona a matéria + enquete no canal, clica Encaminhar, e o robô cuida do resto — busca por palavra-chave, marca 5 grupos, envia (aviãozinho), repete até acabar.</p>
+    <p class="hint" style="margin-top:8px;color:var(--warn)">⚠️ WhatsApp só encaminha 5 conversas por vez. O robô respeita isso e não duplica grupo.</p>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="step-badge">1</span> Mensagem que será enviada</div>
-    <p class="hint" style="margin-top:0">Puxa automaticamente da aba WhatsApp. Você pode editar antes de gerar o pacote.</p>
-    <textarea id="autoMsg" rows="8" placeholder="Gere primeiro o texto do canal na aba WhatsApp…" style="width:100%;font-family:inherit;font-size:13px;padding:10px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:6px"></textarea>
-    <button class="btn-sm" onclick="autoPuxarDoCanal()" style="margin-top:8px">↺ Puxar da aba WhatsApp</button>
+    <div class="card-title"><span class="step-badge">1</span> No WhatsApp Web (você faz uma vez)</div>
+    <ol style="font-size:13px;line-height:1.7;padding-left:20px;margin:0">
+      <li>Abra <a href="https://web.whatsapp.com" target="_blank" rel="noopener" style="color:var(--accent)">web.whatsapp.com</a>.</li>
+      <li>Vá em <strong>Canais</strong> → canal <strong>Portal Felipe Tommy</strong>.</li>
+      <li>Selecione a <strong>última matéria</strong> (menu ⋮ da mensagem → <em>Encaminhar</em>) e marque também a <strong>enquete</strong>. O rodapé mostra <strong>"2 selecionados"</strong>.</li>
+      <li>Clique na seta de <strong>encaminhar</strong> (canto inferior direito). Abre o modal <em>"Encaminhar atualizações para"</em>.</li>
+    </ol>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="step-badge">2</span> Grupos que vão receber</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+    <div class="card-title"><span class="step-badge">2</span> Cole o robô no Console</div>
+    <ol style="font-size:13px;line-height:1.7;padding-left:20px;margin:0 0 12px">
+      <li>F12 → aba <strong>Console</strong>.</li>
+      <li>Se pedir, digite <code>allow pasting</code> e Enter.</li>
+      <li>Aqui no painel FT: <strong>📋 Copiar código</strong>.</li>
+      <li>Volta no Console → Ctrl+V → Enter.</li>
+      <li>Aparece o painel flutuante no canto → clique <strong>▶ Iniciar</strong>.</li>
+    </ol>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="autoCopiarCodigo(this)">📋 Copiar código para o Console</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">3</span> Grupos e ordem das palavras-chave</div>
+    <p class="hint" style="margin-top:0">A ordem fixa das buscas (mesma do procedimento manual): <code>picu, faixa, noticia, amigo, parauapeba, caraja, politica, fora, unido, la vai, vs, fogo, jorja, portal</code>. O robô esgota cada uma antes de passar para a próxima e nunca marca grupo já enviado nesta matéria.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;align-items:center">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Pausa entre lotes:</span><input type="number" id="autoDelay" value="4" min="2" max="30" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Jitter:</span><input type="number" id="autoJitter" value="3" min="0" max="15" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <button class="btn-sm" onclick="autoMarcarTodosPendentes()">☑ Só os que faltam</button>
       <button class="btn-sm" onclick="autoMarcarTodos()">☑ Todos os grupos</button>
       <button class="btn-sm" onclick="autoDesmarcarTodos()">☐ Nenhum</button>
     </div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px">
-        <span>Intervalo entre grupos:</span>
-        <input type="number" id="autoDelay" value="7" min="3" max="60" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px">
-        <span>Variação aleatória (jitter):</span>
-        <input type="number" id="autoJitter" value="4" min="0" max="30" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s
-      </label>
-    </div>
-    <p class="hint" style="margin-top:0">Ex: 7s + jitter 4s = espera de 7 a 11s entre cada grupo. Mais devagar diminui risco do WhatsApp travar sua conta.</p>
     <div class="group-list" id="autoListaGrupos" style="max-height:340px;overflow:auto"><div class="empty-state">Carregando grupos…</div></div>
     <p class="hint" id="autoContagem" style="margin-top:10px;font-weight:600"></p>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="step-badge">3</span> Rodar o encaminhador no WhatsApp Web</div>
-    <ol style="font-size:13px;line-height:1.7;padding-left:20px;margin:0 0 12px">
-      <li>Clique em <strong>"Copiar código"</strong> abaixo.</li>
-      <li>Abra <a href="https://web.whatsapp.com" target="_blank" rel="noopener" style="color:var(--accent)">web.whatsapp.com</a> em outra janela, autenticado, com a lista de conversas visível.</li>
-      <li>Aperte <strong>F12</strong> (ou Ctrl+Shift+I) → aba <strong>Console</strong>.</li>
-      <li>Se aparecer o aviso vermelho do Chrome, digite <code>allow pasting</code> e Enter.</li>
-      <li>Cole (Ctrl+V) e aperte Enter. Vai aparecer um painel flutuante no canto do WhatsApp.</li>
-      <li>Clique <strong>▶ Iniciar</strong> no painel. Volte na aba do Painel FT no final para marcar todos como feitos.</li>
-    </ol>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="autoCopiarCodigo(this)">📋 Copiar código para o Console</button>
-      <button class="btn btn-secondary" onclick="autoCopiarBookmarklet(this)">🔗 Copiar como bookmarklet</button>
-      <button class="btn-sm" onclick="autoTestar1(this)">🧪 Testar em 1 grupo só</button>
-    </div>
-    <p class="hint" style="margin-top:10px">💡 O bookmarklet você arrasta uma vez para a barra de favoritos do navegador (no WhatsApp Web) e nas próximas matérias basta clicar nele — o pacote fica na área de transferência.</p>
-  </div>
-
-  <div class="card">
     <div class="card-title"><span class="step-badge">4</span> Depois que terminou</div>
-    <p class="hint" style="margin-top:0">O encaminhador não conversa com o painel. Quando ele avisar "finalizado", volte aqui e marque tudo:</p>
+    <p class="hint" style="margin-top:0">Se o robô não conseguir marcar sozinho no Supabase (ele tenta), volte aqui para bater tudo:</p>
     <button class="btn btn-primary" onclick="autoMarcarSelecionadosComoFeitos(this)">✅ Marcar os selecionados como feitos nesta matéria</button>
   </div>
 </div>
@@ -2486,9 +2479,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.6.4';
+const PAINEL_VERSAO='2.7.0';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.7.0','19/09/2026','Auto-envio agora replica o método manual do encaminhamento: você seleciona matéria + enquete no canal do WhatsApp, clica Encaminhar, e o robô cuida do resto — busca por palavra-chave na ordem fixa (picu, faixa, noticia, amigo, parauapeba, caraja, politica, fora, unido, etc), marca até 5 grupos pendentes por lote, clica no aviãozinho, aguarda você reabrir o modal, continua até a lista zerar. Marca no Supabase automaticamente e nunca duplica grupo.'],
   ['2.6.4','19/09/2026','Auto-envio: busca de grupo na lista lateral não depende mais de #pane-side nem de role=listitem. Agora acha qualquer span/div com title do grupo fora do painel do chat aberto, e sobe pelo DOM até um clicável (listitem/row/button/option). DIAG lista imprime primeiros 8 candidatos.'],
   ['2.6.3','19/09/2026','Auto-envio: WhatsApp Web migrou o campo de busca para <input> HTML nativo (não é mais contenteditable). Runner reescrito para escrever via native value setter — jeito que o React reconhece — e para achar tanto input quanto textarea quanto contenteditable, tanto na busca quanto no composer. DIAG agora inclui inputs, textareas e contenteditable com placeholders e data-tab.'],
   ['2.6.0','19/09/2026','Layout novo: as abas saíram do topo e viraram menu lateral à esquerda, agrupado por seção (Produção, Distribuição, Editorial, Sistema). No celular vira gaveta que abre pelo botão ☰ no cabeçalho e fecha ao escolher a aba. Facilita andar pelo painel conforme ele cresce, sem rolar a lista de abas.'],
@@ -2516,20 +2510,9 @@ async function boot(){
 }
 // ───────────────────────── AUTO-ENVIO NOS GRUPOS ─────────────────────────
 let autoSelIds=new Set();
-
-function autoPuxarDoCanal(){
-  const c=document.getElementById('outputCanal');
-  const cc=document.getElementById('outputCanalColuna');
-  let txt='';
-  if(cc && cc.textContent && cc.textContent!=='—' && cc.parentElement.style.display!=='none')txt=cc.textContent;
-  else if(c && c.textContent && c.textContent!=='—')txt=c.textContent;
-  if(!txt){alert('Gere primeiro o texto do canal na aba WhatsApp.');return;}
-  document.getElementById('autoMsg').value=txt;
-}
+const AUTO_KEYWORDS=['picu','faixa','noticia','amigo','parauapeba','caraja','politica','fora','unido','la vai','vs','fogo','jorja','portal'];
 
 async function renderAutoEnvio(){
-  const ta=document.getElementById('autoMsg');
-  if(!ta.value)autoPuxarDoCanal();
   await carregarDone();
   const div=document.getElementById('autoListaGrupos');
   if(!grupos.length){div.innerHTML='<div class="empty-state">Cadastre grupos na aba Grupos.</div>';return;}
@@ -2547,154 +2530,124 @@ function autoMarcarTodosPendentes(){autoSelIds=new Set(grupos.filter(g=>!doneIds
 function autoMarcarTodos(){autoSelIds=new Set(grupos.map(g=>g.id));renderAutoEnvio();}
 function autoDesmarcarTodos(){autoSelIds=new Set();renderAutoEnvio();}
 
-function autoMontarPayload(soUm){
-  const msg=(document.getElementById('autoMsg').value||'').trim();
-  if(!msg){alert('A mensagem está vazia.');return null;}
-  let ids=[...autoSelIds];
-  if(soUm)ids=ids.slice(0,1);
-  const nomes=grupos.filter(g=>ids.includes(g.id)).map(g=>g.nome);
-  if(!nomes.length){alert('Selecione pelo menos 1 grupo.');return null;}
-  const delayMs=Math.max(3,parseInt(document.getElementById('autoDelay').value||'7',10))*1000;
-  const jitterMs=Math.max(0,parseInt(document.getElementById('autoJitter').value||'4',10))*1000;
-  return {v:1,msg,groups:nomes,delayMs,jitterMs};
+function autoMontarPayload(){
+  const ids=[...autoSelIds];
+  const gs=grupos.filter(g=>ids.includes(g.id)).map(g=>({id:g.id,nome:g.nome}));
+  if(!gs.length){alert('Selecione pelo menos 1 grupo.');return null;}
+  const delayMs=Math.max(2,parseInt(document.getElementById('autoDelay').value||'4',10))*1000;
+  const jitterMs=Math.max(0,parseInt(document.getElementById('autoJitter').value||'3',10))*1000;
+  return {v:2,groups:gs,keywords:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug:slugAtual()}};
 }
 
-// Script que roda dentro do web.whatsapp.com. Recebe o payload por __FT_PAYLOAD__.
+// Runner v2: usa o modal nativo "Encaminhar atualizações para" (5 grupos por vez)
 const AUTO_RUNNER_SRC=`(async function(){
 if(location.hostname!=='web.whatsapp.com'){alert('Cole este código apenas no console do web.whatsapp.com');return;}
-if(window.__ftAuto)return alert('O encaminhador já está aberto — feche o painel antes de rodar de novo.');
+if(window.__ftAuto){alert('O encaminhador já está aberto.');return;}
 window.__ftAuto=true;
 const P=__FT_PAYLOAD__;
-const {msg,groups,delayMs=7000,jitterMs=4000}=P;
+const {groups,keywords,delayMs=4000,jitterMs=3000,sb}=P;
+const total=groups.length;
+const remaining=new Map();
+const normalize=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim();
+for(const g of groups)remaining.set(normalize(g.nome),g);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const rnd=(a,b)=>a+Math.random()*(b-a);
 const waitFor=async(fn,to=15000,st=250)=>{const t0=Date.now();while(Date.now()-t0<to){const v=fn();if(v)return v;await sleep(st);}return null;};
 const box=document.createElement('div');
-box.style.cssText='position:fixed;bottom:20px;right:20px;width:360px;background:#111b21;color:#e9edef;border:1px solid #2a3942;border-radius:10px;padding:14px;font-family:Segoe UI,sans-serif;font-size:13px;z-index:2147483647;box-shadow:0 10px 40px rgba(0,0,0,.6)';
-box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>🤖 Envio Portal FT</b><button id="_ftX" style="background:none;border:none;color:#8696a0;font-size:18px;cursor:pointer">✕</button></div><div id="_ftS" style="color:#aebac1;margin:4px 0">Pronto — '+groups.length+' grupos, '+msg.length+' chars.</div><div style="height:6px;background:#202c33;border-radius:3px;overflow:hidden;margin:8px 0"><div id="_ftB" style="height:100%;background:#00a884;width:0%;transition:width .3s"></div></div><div id="_ftL" style="max-height:200px;overflow:auto;font-size:11px;color:#8696a0;background:#0b141a;padding:6px;border-radius:4px;margin:6px 0;font-family:monospace"></div><div style="display:flex;gap:6px"><button id="_ftGo" style="flex:1;padding:9px;background:#00a884;color:#111b21;border:none;border-radius:5px;font-weight:700;cursor:pointer">▶ Iniciar</button><button id="_ftP" style="flex:1;padding:9px;background:#202c33;color:#e9edef;border:1px solid #2a3942;border-radius:5px;cursor:pointer" disabled>⏸ Pausar</button><button id="_ftK" style="flex:1;padding:9px;background:#f15c6d;color:#111b21;border:none;border-radius:5px;font-weight:700;cursor:pointer" disabled>⏹ Parar</button></div>';
+box.style.cssText='position:fixed;bottom:20px;right:20px;width:380px;background:#111b21;color:#e9edef;border:1px solid #2a3942;border-radius:10px;padding:14px;font-family:Segoe UI,sans-serif;font-size:13px;z-index:2147483647;box-shadow:0 10px 40px rgba(0,0,0,.6)';
+box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>🤖 Encaminhador Portal FT</b><button id="_ftX" style="background:none;border:none;color:#8696a0;font-size:18px;cursor:pointer">✕</button></div><div id="_ftS" style="color:#aebac1;margin:4px 0">Pronto — '+total+' grupos pendentes</div><div style="height:6px;background:#202c33;border-radius:3px;overflow:hidden;margin:8px 0"><div id="_ftB" style="height:100%;background:#00a884;width:0%;transition:width .3s"></div></div><div id="_ftL" style="max-height:220px;overflow:auto;font-size:11px;color:#8696a0;background:#0b141a;padding:6px;border-radius:4px;margin:6px 0;font-family:monospace"></div><div style="display:flex;gap:6px"><button id="_ftGo" style="flex:1;padding:9px;background:#00a884;color:#111b21;border:none;border-radius:5px;font-weight:700;cursor:pointer">▶ Iniciar</button><button id="_ftP" style="flex:1;padding:9px;background:#202c33;color:#e9edef;border:1px solid #2a3942;border-radius:5px;cursor:pointer" disabled>⏸ Pausar</button><button id="_ftK" style="flex:1;padding:9px;background:#f15c6d;color:#111b21;border:none;border-radius:5px;font-weight:700;cursor:pointer" disabled>⏹ Parar</button></div>';
 document.body.appendChild(box);
 const $=id=>document.getElementById(id);
 const log=(t,c)=>{const L=$('_ftL');const d=document.createElement('div');d.textContent=new Date().toLocaleTimeString().slice(0,8)+' '+t;if(c==='e')d.style.color='#f15c6d';if(c==='o')d.style.color='#00d97e';L.appendChild(d);L.scrollTop=L.scrollHeight;};
 const st=t=>$('_ftS').textContent=t;
-const pr=p=>$('_ftB').style.width=p+'%';
+const pr=()=>$('_ftB').style.width=Math.round(((total-remaining.size)/total)*100)+'%';
 let state='idle';
 const pausable=async()=>{while(state==='paused')await sleep(300);};
-const isNativeInput=e=>e && (e.tagName==='INPUT' || e.tagName==='TEXTAREA');
-const attrsOf=e=>((e.getAttribute('aria-label')||'')+' '+(e.getAttribute('title')||'')+' '+(e.getAttribute('placeholder')||'')+' '+(e.getAttribute('data-placeholder')||'')).toLowerCase();
-const allFields=()=>document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"],[contenteditable="plaintext-only"],[contenteditable=""],[role="textbox"]');
-const findSearch=()=>{
-  let el=document.querySelector('input[data-tab="3"], [contenteditable][data-tab="3"], [role="textbox"][data-tab="3"]');if(el)return el;
-  const side=document.querySelector('#side, aside, [data-tab="4"]');
-  if(side){
-    for(const e of side.querySelectorAll('input:not([type="hidden"]),textarea,[contenteditable],[role="textbox"]')){
-      if(/pesquis|search|busca|nova conversa/i.test(attrsOf(e)))return e;
-    }
-    const firstInput=side.querySelector('input:not([type="hidden"]),textarea,[contenteditable],[role="textbox"]');
-    if(firstInput)return firstInput;
-  }
-  for(const e of allFields()){if(/pesquis|search|busca|nova conversa/i.test(attrsOf(e)))return e;}
+const setNativeValue=(el,val)=>{const proto=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value').set;setter.call(el,val);};
+const isNat=e=>e && (e.tagName==='INPUT' || e.tagName==='TEXTAREA');
+const clearField=el=>{el.focus();if(isNat(el)){setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}else{document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'deleteContentBackward'}));}};
+const typeField=(el,text)=>{el.focus();if(isNat(el)){setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));setNativeValue(el,text);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}else{document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);document.execCommand('insertText',false,text);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));}};
+const findModal=()=>{
+  const ds=document.querySelectorAll('[role="dialog"],[role="alertdialog"]');
+  for(const d of ds){const t=(d.textContent||'').toLowerCase();if(/encaminhar|forward|reencaminhar/.test(t))return d;}
+  const all=document.querySelectorAll('div');
+  for(const d of all){if(d.childElementCount>6)continue;const t=(d.textContent||'').trim().toLowerCase();if(t==='encaminhar atualizações para'||t==='encaminhar para'||t==='forward updates to'||t==='forward to'||t==='reencaminhar para'){let p=d;for(let i=0;i<10&&p;i++){if(p.querySelector&&p.querySelector('input,textarea,[contenteditable]'))return p;p=p.parentElement;}}}
   return null;
 };
-const findComposer=()=>{
-  let el=document.querySelector('[contenteditable][data-tab="10"], input[data-tab="10"], textarea[data-tab="10"]');if(el)return el;
-  const main=document.querySelector('#main, [data-tab="6"]');
-  if(main){
-    for(const e of main.querySelectorAll('[contenteditable],[role="textbox"]')){
-      if(!/pesquis|search/i.test(attrsOf(e)))return e;
-    }
-    for(const e of main.querySelectorAll('input:not([type="hidden"]),textarea')){
-      if(/mensagem|message|digite|type a message/i.test(attrsOf(e)))return e;
-    }
+const findModalSearch=m=>{if(!m)return null;for(const e of m.querySelectorAll('input:not([type="hidden"]),textarea,[contenteditable]:not([contenteditable="false"]),[role="textbox"]')){return e;}return null;};
+const findItems=m=>{if(!m)return[];let items=m.querySelectorAll('[role="listitem"],[role="row"],[role="option"]');if(items.length)return items;const grid=m.querySelector('[role="grid"],[role="list"],[role="listbox"]');if(grid)items=grid.children;return items||[];};
+const itemName=it=>{const t=it.querySelector('span[title],div[title]');if(t)return (t.getAttribute('title')||'').trim();return (it.textContent||'').trim().split('\\n')[0].slice(0,60);};
+const findSend=m=>{const scopes=[m,document];for(const sc of scopes){if(!sc)continue;for(const b of sc.querySelectorAll('button,[role="button"],div[aria-label]')){const l=((b.getAttribute('aria-label')||'')+' '+(b.getAttribute('title')||'')).toLowerCase();if(!l)continue;if(/^(enviar|send|reencaminhar|forward)/.test(l)){const r=b.getBoundingClientRect();if(r.width>0&&r.height>0)return b;}}const icon=sc.querySelector?sc.querySelector('span[data-icon="send"],span[data-icon="send-light"]'):null;if(icon){let p=icon;for(let i=0;i<6&&p;i++){if(p.getAttribute&&(p.getAttribute('role')==='button'||p.tagName==='BUTTON'))return p;p=p.parentElement;}return icon.parentElement;}}return null;};
+const markSb=async grupoId=>{if(!sb||!sb.url||!sb.key||!sb.slug)return false;try{const r=await fetch(sb.url+'/rest/v1/encaminhamentos',{method:'POST',headers:{'apikey':sb.key,'Authorization':'Bearer '+sb.key,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({materia_slug:sb.slug,grupo_id:grupoId,feito:true})});return r.ok;}catch(e){return false;}};
+const waitModal=async(maxMs=180000)=>{const t0=Date.now();while(Date.now()-t0<maxMs){if(state==='stopped')return null;await pausable();const m=findModal();if(m)return m;st('Aguardando você reabrir o "Encaminhar" (2 mensagens selecionadas)…');await sleep(1500);}return null;};
+const doBatch=async keyword=>{
+  const m=findModal();
+  if(!m)return {r:'no-modal'};
+  const s=findModalSearch(m);
+  if(!s){log('sem campo no modal','e');return {r:'no-search'};}
+  clearField(s);await sleep(250);typeField(s,keyword);await sleep(1300);
+  const items=findItems(findModal());
+  if(!items.length)return {r:'empty'};
+  const marks=[];const seen=new Set();
+  for(const it of items){
+    if(marks.length>=5)break;
+    const nm=normalize(itemName(it));if(!nm||seen.has(nm))continue;seen.add(nm);
+    let g=remaining.get(nm);
+    if(!g){for(const [k,v] of remaining){if(k.length>=4&&(nm.includes(k)||k.includes(nm))){g=v;break;}}}
+    if(!g)continue;
+    it.click();marks.push(g);await sleep(280);
   }
-  for(const e of allFields()){if(/mensagem|message|digite|type a message/i.test(attrsOf(e)))return e;}
-  const fs=document.querySelectorAll('footer');
-  for(const f of fs){const c=f.querySelector('[contenteditable],[role="textbox"],input:not([type="hidden"]),textarea');if(c)return c;}
-  return null;
-};
-const diag=()=>{
-  const inps=document.querySelectorAll('input:not([type="hidden"])');
-  const tas=document.querySelectorAll('textarea');
-  const ces=document.querySelectorAll('[contenteditable]');
-  log('DIAG inputs='+inps.length+' textareas='+tas.length+' contenteditable='+ces.length,'e');
-  [...inps,...tas,...ces].forEach((c,i)=>{log('  #'+i+' tag='+c.tagName+' tab='+c.getAttribute('data-tab')+' aria="'+(c.getAttribute('aria-label')||'').slice(0,40)+'" ph="'+(c.getAttribute('placeholder')||'').slice(0,40)+'"','e');});
-  const tabs=[...new Set([...document.querySelectorAll('[data-tab]')].map(e=>e.getAttribute('data-tab')))];
-  log('  data-tabs no doc: '+tabs.join(','),'e');
-};
-const setNativeValue=(el,val)=>{
-  const proto=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
-  const setter=Object.getOwnPropertyDescriptor(proto,'value').set;
-  setter.call(el,val);
-};
-const clearBox=el=>{
-  el.focus();
-  if(isNativeInput(el)){setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}
-  else{document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'deleteContentBackward'}));}
-};
-const pasteBox=(el,text)=>{
-  el.focus();
-  if(isNativeInput(el)){
-    setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));
-    setNativeValue(el,text);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));
-  }else{
-    document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);
-    const dt=new DataTransfer();dt.setData('text/plain',text);
-    const evt=new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:dt});
-    el.dispatchEvent(evt);
-    if(!el.textContent||el.textContent.length<3){document.execCommand('insertText',false,text);}
-    el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));
-  }
-};
-const pressEnter=el=>{['keydown','keypress','keyup'].forEach(t=>el.dispatchEvent(new KeyboardEvent(t,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true})));};
-const clickable=el=>{let p=el;for(let i=0;i<10&&p;i++){if(p.getAttribute){const r=p.getAttribute('role');if(r==='listitem'||r==='row'||r==='button'||r==='option')return p;}p=p.parentElement;}return el;};
-const findGroup=name=>{
-  const nl=name.toLowerCase().trim();
-  const spans=document.querySelectorAll('span[title], div[title]');
-  let exact=null,partial=null;
-  for(const s of spans){
-    const t=(s.getAttribute('title')||'').toLowerCase().trim();
-    if(!t)continue;
-    // Ignora títulos dentro do painel do chat aberto (right side)
-    if(s.closest('#main, [data-tab="6"]'))continue;
-    if(t===nl){exact=s;break;}
-    if(!partial&&t.includes(nl))partial=s;
-  }
-  const t=exact||partial;
-  if(!t)return null;
-  return clickable(t);
-};
-const diagList=()=>{
-  const spans=document.querySelectorAll('span[title], div[title]');
-  log('DIAG lista: '+spans.length+' elementos com title','e');
-  let i=0;for(const s of spans){if(i>=8)break;if(s.closest('#main, [data-tab="6"]'))continue;log('  L#'+i+' '+s.tagName+' title="'+(s.getAttribute('title')||'').slice(0,40)+'"','e');i++;}
-  log('  listitem='+document.querySelectorAll('[role="listitem"]').length+' row='+document.querySelectorAll('[role="row"]').length+' grid='+document.querySelectorAll('[role="grid"]').length,'e');
-};
-let _diagged=false;
-const sendOne=async name=>{
-  const s=findSearch();if(!s){log('sem campo de busca','e');if(!_diagged){diag();_diagged=true;}return false;}
-  clearBox(s);await sleep(200);pasteBox(s,name);await sleep(1100);
-  const t=await waitFor(()=>findGroup(name),7000);
-  if(!t){log('não achou: '+name,'e');if(!_diagged){diagList();_diagged=true;}clearBox(s);return false;}
-  t.click();await sleep(1000);
-  const c=await waitFor(findComposer,9000);
-  if(!c){log('sem composer p/ '+name,'e');return false;}
-  pasteBox(c,msg);await sleep(500);
-  pressEnter(c);await sleep(500);
-  log('✔ '+name,'o');return true;
+  if(!marks.length)return {r:'no-match'};
+  await sleep(500);
+  const btn=findSend(findModal());
+  if(!btn){log('não achou aviãozinho','e');return {r:'no-send',marks};}
+  btn.click();
+  await sleep(1500);
+  for(const g of marks){remaining.delete(normalize(g.nome));markSb(g.id).catch(()=>{});}
+  return {r:'sent',marks};
 };
 const run=async()=>{
   if(state==='running')return;state='running';
   $('_ftGo').disabled=true;$('_ftP').disabled=false;$('_ftK').disabled=false;
-  let ok=0,fail=0;const failed=[];
-  for(let i=0;i<groups.length;i++){
-    if(state==='stopped')break;
-    await pausable();
-    const g=groups[i];st('['+(i+1)+'/'+groups.length+'] '+g);
-    try{const r=await sendOne(g);if(r)ok++;else{fail++;failed.push(g);}}catch(e){log('erro: '+e.message,'e');fail++;failed.push(g);}
-    pr(Math.round(((i+1)/groups.length)*100));
-    if(i<groups.length-1&&state!=='stopped'){const w=delayMs+rnd(0,jitterMs);st('aguardando '+Math.round(w/1000)+'s…');await sleep(w);}
+  log('Início — '+total+' pendentes','o');
+  let sentCount=0;
+  const passKeywords=[...keywords];
+  while(remaining.size>0&&state!=='stopped'){
+    let anyThisRound=false;
+    for(const kw of passKeywords){
+      if(state==='stopped')break;
+      if(remaining.size===0)break;
+      await pausable();
+      if(!findModal()){const m=await waitModal();if(!m){log('cancelado','e');break;}}
+      st('Buscando "'+kw+'" — '+remaining.size+' faltam');
+      const res=await doBatch(kw);
+      if(res.r==='no-modal'){await waitModal();continue;}
+      if(res.r==='no-search'){log('parou: sem campo no modal','e');state='stopped';break;}
+      if(res.r==='no-send'){log('parou: sem aviãozinho','e');state='stopped';break;}
+      if(res.r==='sent'){
+        sentCount+=res.marks.length;anyThisRound=true;
+        log('  ✔ '+kw+' ('+res.marks.length+'): '+res.marks.map(g=>g.nome).join(', '),'o');
+        pr();
+        st(sentCount+' enviados — reabra o Encaminhar…');
+        const m=await waitModal();if(!m)break;
+        const w=delayMs+Math.random()*jitterMs;await sleep(w);
+      }
+    }
+    if(!anyThisRound){
+      log('varredura de palavras esgotou — tentando por nome cheio…','e');
+      const rem=[...remaining.values()];
+      for(const g of rem){
+        if(state==='stopped')break;
+        if(!findModal()){const m=await waitModal();if(!m)break;}
+        st('Nome cheio: '+g.nome);
+        const res=await doBatch(g.nome.slice(0,20));
+        if(res.r==='sent'){sentCount+=res.marks.length;log('  ✔ '+res.marks.map(x=>x.nome).join(', '),'o');pr();const m=await waitModal();if(!m)break;await sleep(delayMs);}
+        else{log('  ⚠ não achou: '+g.nome,'e');}
+      }
+      break;
+    }
   }
-  st('✔ Fim — '+ok+' ok, '+fail+' falha'+(fail!==1?'s':''));
-  if(failed.length)log('Falharam: '+failed.join(', '),'e');
+  st('✔ Fim — '+sentCount+' enviados, '+remaining.size+' faltam');
+  if(remaining.size)log('Faltaram: '+[...remaining.values()].map(g=>g.nome).join(', '),'e');
   $('_ftGo').disabled=false;$('_ftP').disabled=true;$('_ftK').disabled=true;state='idle';
 };
 $('_ftGo').onclick=run;
@@ -2708,34 +2661,11 @@ function autoGerarCodigo(payload){
 }
 
 function autoCopiarCodigo(btn){
-  const p=autoMontarPayload(false);if(!p)return;
+  const p=autoMontarPayload();if(!p)return;
   const code=autoGerarCodigo(p);
   navigator.clipboard.writeText(code).then(()=>{
     const o=btn.textContent;btn.textContent='✅ Copiado! Cole no Console do web.whatsapp.com';btn.classList.add('copied');
     setTimeout(()=>{btn.textContent=o;btn.classList.remove('copied');},4000);
-  });
-}
-
-function autoTestar1(btn){
-  const p=autoMontarPayload(true);if(!p)return;
-  const code=autoGerarCodigo(p);
-  navigator.clipboard.writeText(code).then(()=>{
-    const o=btn.textContent;btn.textContent='✅ Teste copiado (1 grupo)';
-    setTimeout(()=>{btn.textContent=o;},3500);
-  });
-}
-
-function autoCopiarBookmarklet(btn){
-  const p=autoMontarPayload(false);if(!p)return;
-  const code=autoGerarCodigo(p);
-  const bm='javascript:'+encodeURIComponent(code);
-  if(bm.length>60000){
-    alert('O pacote ficou grande demais para bookmarklet ('+bm.length+' chars). Use "Copiar código para o Console" — funciona igual e sem limite.');
-    return;
-  }
-  navigator.clipboard.writeText(bm).then(()=>{
-    const o=btn.textContent;btn.textContent='✅ Bookmarklet copiado — cole na barra de favoritos';
-    setTimeout(()=>{btn.textContent=o;},4000);
   });
 }
 
