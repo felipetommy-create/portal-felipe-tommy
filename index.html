@@ -2486,9 +2486,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.6.3';
+const PAINEL_VERSAO='2.6.4';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.6.4','19/09/2026','Auto-envio: busca de grupo na lista lateral não depende mais de #pane-side nem de role=listitem. Agora acha qualquer span/div com title do grupo fora do painel do chat aberto, e sobe pelo DOM até um clicável (listitem/row/button/option). DIAG lista imprime primeiros 8 candidatos.'],
   ['2.6.3','19/09/2026','Auto-envio: WhatsApp Web migrou o campo de busca para <input> HTML nativo (não é mais contenteditable). Runner reescrito para escrever via native value setter — jeito que o React reconhece — e para achar tanto input quanto textarea quanto contenteditable, tanto na busca quanto no composer. DIAG agora inclui inputs, textareas e contenteditable com placeholders e data-tab.'],
   ['2.6.0','19/09/2026','Layout novo: as abas saíram do topo e viraram menu lateral à esquerda, agrupado por seção (Produção, Distribuição, Editorial, Sistema). No celular vira gaveta que abre pelo botão ☰ no cabeçalho e fecha ao escolher a aba. Facilita andar pelo painel conforme ele cresce, sem rolar a lista de abas.'],
   ['2.5.0','19/09/2026','Aba nova "Auto-envio" nos grupos. Puxa o texto que já foi para o canal, deixa escolher quais grupos vão receber (padrão: os que ainda faltam) e gera um código para colar no Console do web.whatsapp.com (F12). Aparece um painel flutuante dentro do WhatsApp com Iniciar/Pausar/Parar, intervalo e jitter configuráveis, e teste em 1 grupo antes do disparo geral. Também exporta como bookmarklet para reutilizar. Zero token de IA: a automação roda no seu navegador.'],
@@ -2644,13 +2645,35 @@ const pasteBox=(el,text)=>{
   }
 };
 const pressEnter=el=>{['keydown','keypress','keyup'].forEach(t=>el.dispatchEvent(new KeyboardEvent(t,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true})));};
-const findGroup=name=>{const items=document.querySelectorAll('#pane-side div[role="listitem"], div[role="grid"] div[role="listitem"]');const nl=name.toLowerCase().trim();let exact=null,partial=null;for(const it of items){const t=it.querySelector('span[title]');if(!t)continue;const tt=t.getAttribute('title').toLowerCase().trim();if(tt===nl){exact=it;break;}if(!partial&&tt.includes(nl))partial=it;}return exact||partial;};
+const clickable=el=>{let p=el;for(let i=0;i<10&&p;i++){if(p.getAttribute){const r=p.getAttribute('role');if(r==='listitem'||r==='row'||r==='button'||r==='option')return p;}p=p.parentElement;}return el;};
+const findGroup=name=>{
+  const nl=name.toLowerCase().trim();
+  const spans=document.querySelectorAll('span[title], div[title]');
+  let exact=null,partial=null;
+  for(const s of spans){
+    const t=(s.getAttribute('title')||'').toLowerCase().trim();
+    if(!t)continue;
+    // Ignora títulos dentro do painel do chat aberto (right side)
+    if(s.closest('#main, [data-tab="6"]'))continue;
+    if(t===nl){exact=s;break;}
+    if(!partial&&t.includes(nl))partial=s;
+  }
+  const t=exact||partial;
+  if(!t)return null;
+  return clickable(t);
+};
+const diagList=()=>{
+  const spans=document.querySelectorAll('span[title], div[title]');
+  log('DIAG lista: '+spans.length+' elementos com title','e');
+  let i=0;for(const s of spans){if(i>=8)break;if(s.closest('#main, [data-tab="6"]'))continue;log('  L#'+i+' '+s.tagName+' title="'+(s.getAttribute('title')||'').slice(0,40)+'"','e');i++;}
+  log('  listitem='+document.querySelectorAll('[role="listitem"]').length+' row='+document.querySelectorAll('[role="row"]').length+' grid='+document.querySelectorAll('[role="grid"]').length,'e');
+};
 let _diagged=false;
 const sendOne=async name=>{
   const s=findSearch();if(!s){log('sem campo de busca','e');if(!_diagged){diag();_diagged=true;}return false;}
   clearBox(s);await sleep(200);pasteBox(s,name);await sleep(1100);
   const t=await waitFor(()=>findGroup(name),7000);
-  if(!t){log('não achou: '+name,'e');clearBox(s);return false;}
+  if(!t){log('não achou: '+name,'e');if(!_diagged){diagList();_diagged=true;}clearBox(s);return false;}
   t.click();await sleep(1000);
   const c=await waitFor(findComposer,9000);
   if(!c){log('sem composer p/ '+name,'e');return false;}
