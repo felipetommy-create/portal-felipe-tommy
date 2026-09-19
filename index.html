@@ -2556,9 +2556,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.4';
+const PAINEL_VERSAO='2.8.5';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.5','19/09/2026','Após cada bloco, o encaminhador volta a Canais e abre Portal Felipe Tommy antes de selecionar novamente a mesma matéria e enquete. Se a origem não reabrir, interrompe sem repetir o bloco confirmado. Testes simulam a permanência na conversa de destino após o envio.'],
   ['2.8.4','19/09/2026','Grupos agora permite editar o nome sem apagar cadastro nem histórico. O caso faixa foi conferido no WhatsApp: o cadastro FAIXA DE GAZA divergia de Faixa de Gaza - Modo Eleições. O encaminhador mantém a conferência por nome completo, mostra divergências encontradas na busca e inclui a versão correta no relatório.'],
   ['2.8.3','19/09/2026','O teste sem envio rodou dois ciclos completos pela primeira vez. No log, porém, palavra-chave que não encontrava ninguém passava em silêncio, e ficava impossível saber por que o robô tinha pulado de "picu" para "noticia". Agora cada palavra que termina sem nenhum grupo pendente escreve uma linha no log. Vale só para a lista de palavras-chave; a varredura final por nome de grupo continua silenciosa para não encher a tela com 130 linhas.'],
   ['2.8.2','19/09/2026','Corrigido o "O canal de origem não abriu", que parava o robô mesmo com o canal aberto na tela. Ele confirmava a abertura procurando o nome do canal dentro de um <button> do cabeçalho, mas o nome não fica em botão: os botões de lá são só os ícones (link, trocar conta, mais opções). Agora a confirmação lê o texto do próprio cabeçalho, conferido no WhatsApp real. O painel flutuante também passa a mostrar a versão que veio do painel, para não restar dúvida se o código colado está atualizado.'],
@@ -2917,7 +2918,18 @@ function ftWhatsAppRunner(P){
       let lotesDaPalavra=0;
       while(remaining.size){
         await checkpoint();
-        if(!modal())await selectPair();
+        if(!modal()){
+          // O envio pode deixar aberta a conversa de destino, não o canal.
+          // Reabre a origem em TODO novo bloco, inclusive no teste sem envio.
+          if(batches){
+            status('Voltando a Canais → '+channelName+'…');
+            log('Voltando ao canal para o próximo bloco.');
+            await navigate();
+            await wait(()=>source.ids.every(id=>messages().some(m=>m.getAttribute('data-id')===id)),
+              'A matéria e a enquete originais não reapareceram no canal. O bloco anterior foi preservado; nenhuma outra atualização será selecionada.');
+          }
+          await selectPair();
+        }
         status((dryRun?'TESTE · ':'')+keyword+' · '+remaining.size+' pendentes');
         const marks=await prepareBatch(keyword);
         // Sem esta linha, palavra que não acha nada some do log e a leitura do
