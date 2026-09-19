@@ -2107,8 +2107,24 @@ function renderGrupos(){
   document.getElementById('totalGrupos').textContent=grupos.length;
   const div=document.getElementById('listaGrupos');
   if(!grupos.length){div.innerHTML='<div class="empty-state">Nenhum grupo cadastrado ainda.</div>';renderProblemasGrupos();return;}
-  div.innerHTML=grupos.map((g,i)=>'<div class="group-item"><div class="group-num">'+(i+1)+'</div><span>'+esc(g.nome)+'</span><button class="btn-danger-sm" onclick="removerGrupo(\''+g.id+'\')">✕</button></div>').join('');
+  div.innerHTML=grupos.map((g,i)=>'<div class="group-item"><div class="group-num">'+(i+1)+'</div><span>'+esc(g.nome)+'</span><button class="btn-sm" onclick="editarNomeGrupo(\''+g.id+'\')">Editar nome</button><button class="btn-danger-sm" onclick="removerGrupo(\''+g.id+'\')">✕</button></div>').join('');
   renderProblemasGrupos();
+}
+
+async function editarNomeGrupo(id){
+  const grupo=grupos.find(g=>g.id===id);if(!grupo)return;
+  const resposta=prompt('Nome completo como aparece no WhatsApp. O histórico deste cadastro será mantido:',grupo.nome);
+  if(resposta===null)return;
+  const nome=resposta.trim();
+  if(!ftNormNome(nome)){alert('Informe um nome de grupo.');return;}
+  if(grupos.some(g=>g.id!==id&&ftNormNome(g.nome)===ftNormNome(nome))){alert('Já existe um cadastro com esse nome.');return;}
+  if(nome===grupo.nome)return;
+  try{
+    const rows=await sbFetch('grupos?id=eq.'+encodeURIComponent(id),'PATCH',{nome},{'Prefer':'return=representation'});
+    if(!Array.isArray(rows)||rows.length!==1||rows[0].id!==id)throw Error('O cadastro não foi encontrado para atualizar.');
+    grupo.nome=rows[0].nome;
+    renderGrupos();await renderAutoEnvio();await renderEncaminhar();buscarGrupos();
+  }catch(e){alert('Não foi possível atualizar o nome: '+e.message);}
 }
 
 // ── Duplicados e grupos sem nome ─────────────────────────────────────────
@@ -2540,9 +2556,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.3';
+const PAINEL_VERSAO='2.8.4';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.4','19/09/2026','Grupos agora permite editar o nome sem apagar cadastro nem histórico. O caso faixa foi conferido no WhatsApp: o cadastro FAIXA DE GAZA divergia de Faixa de Gaza - Modo Eleições. O encaminhador mantém a conferência por nome completo, mostra divergências encontradas na busca e inclui a versão correta no relatório.'],
   ['2.8.3','19/09/2026','O teste sem envio rodou dois ciclos completos pela primeira vez. No log, porém, palavra-chave que não encontrava ninguém passava em silêncio, e ficava impossível saber por que o robô tinha pulado de "picu" para "noticia". Agora cada palavra que termina sem nenhum grupo pendente escreve uma linha no log. Vale só para a lista de palavras-chave; a varredura final por nome de grupo continua silenciosa para não encher a tela com 130 linhas.'],
   ['2.8.2','19/09/2026','Corrigido o "O canal de origem não abriu", que parava o robô mesmo com o canal aberto na tela. Ele confirmava a abertura procurando o nome do canal dentro de um <button> do cabeçalho, mas o nome não fica em botão: os botões de lá são só os ícones (link, trocar conta, mais opções). Agora a confirmação lê o texto do próprio cabeçalho, conferido no WhatsApp real. O painel flutuante também passa a mostrar a versão que veio do painel, para não restar dúvida se o código colado está atualizado.'],
   ['2.8.1','19/09/2026','O encaminhador parava com o aviso "Há grupos sem identificação ou com nomes iguais" sem dizer quais eram. A causa é a lista: existem cadastros repetidos (três "Picunhão", por exemplo) e o robô não tem como saber qual marcar no WhatsApp. Agora a aba Grupos mostra o card "Problemas na lista", que aponta cada nome repetido e resolve em um clique, mantendo um cadastro e removendo os extras. A aba Auto-envio avisa antes de copiar o código e marca os repetidos com ⚠ na lista. A checagem usa a mesma normalização do robô, então o que o painel aprova o robô aceita.'],
@@ -2800,13 +2817,14 @@ function ftWhatsAppRunner(P){
   const prepareBatch=async keyword=>{
     await typeSearch(keyword);
     if(selectionCount()!==0)throw Error('Existem destinos selecionados de outro lote. Feche a janela antes de retomar.');
-    const marks=[],seen=new Set();
+    const marks=[],seen=new Set(),observedNames=new Set();
     for(let page=0;page<120&&marks.length<5;page++){
       const m=modal();if(!m)throw Error('Janela fechou durante a escolha dos destinos.');
       const currentRows=rows(m);
       for(const candidate of currentRows){
         await checkpoint();
         const n=norm(rowName(candidate));
+        if(n.includes(norm(keyword)))observedNames.add(rowName(candidate));
         if(!n||seen.has(n))continue;seen.add(n);
         const row=rows(modal()||m).find(r=>norm(rowName(r))===n);
         const g=remaining.get(n);
@@ -2829,6 +2847,12 @@ function ftWhatsAppRunner(P){
       if(page===119)throw Error('Busca longa demais; interrompida sem enviar este lote.');
     }
     if(marks.length&&selectionCount()!==marks.length)throw Error('Número de destinos não corresponde ao lote.');
+    if(!marks.length){
+      const expected=[...remaining.values()].filter(g=>norm(g.nome).includes(norm(keyword)));
+      if(expected.length&&observedNames.size){
+        log('Confira os nomes na aba Grupos. Cadastro: '+expected.slice(0,5).map(g=>g.nome).join(' | ')+'. WhatsApp: '+[...observedNames].slice(0,5).join(' | ')+'. Nenhum destino escolhido por semelhança.');
+      }
+    }
     return marks;
   };
   const request=async(path,options={})=>{
@@ -2878,6 +2902,7 @@ function ftWhatsAppRunner(P){
       log('WhatsApp aceitou '+marks.length+': '+marks.map(g=>g.nome).join(', '));
       await sync(); // Se falhar, para. O registro local impede reenvio.
     }
+    // No teste também avança a fila em memória, sem gravar envios no ledger.
     for(const g of marks)remaining.delete(norm(g.nome));
     progress();
   };
@@ -2935,7 +2960,7 @@ function ftWhatsAppRunner(P){
   ui('[data-act="stop"]').onclick=()=>{state='stopped';status('Parando; aguardando terminar a confirmação de eventual envio em andamento.');};
   ui('[data-act="close"]').onclick=()=>{closed=true;state='stopped';if(!busy){box.remove();window.__ftAuto=false;}else status('Encerrando…');};
   ui('[data-act="report"]').onclick=()=>{
-    const data={versao:'2.8.0',materia:sb.slug,teste:dryRun,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()]};
+    const data={versao,materia:sb.slug,teste:dryRun,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()]};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const a=document.createElement('a');a.href=url;a.download='encaminhamento-'+sb.slug.replace(/[^a-z0-9_-]/gi,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
