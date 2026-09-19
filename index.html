@@ -793,31 +793,22 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="step-badge">1</span> No WhatsApp Web (você faz uma vez)</div>
-    <ol style="font-size:13px;line-height:1.7;padding-left:20px;margin:0">
-      <li>Abra <a href="https://web.whatsapp.com" target="_blank" rel="noopener" style="color:var(--accent)">web.whatsapp.com</a>.</li>
-      <li>Vá em <strong>Canais</strong> → canal <strong>Portal Felipe Tommy</strong>.</li>
-      <li>Selecione a <strong>última matéria</strong> (menu ⋮ da mensagem → <em>Encaminhar</em>) e marque também a <strong>enquete</strong>. O rodapé mostra <strong>"2 selecionados"</strong>.</li>
-      <li>Clique na seta de <strong>encaminhar</strong> (canto inferior direito). Abre o modal <em>"Encaminhar atualizações para"</em>.</li>
-    </ol>
-  </div>
-
-  <div class="card">
-    <div class="card-title"><span class="step-badge">2</span> Cole o robô no Console</div>
+    <div class="card-title"><span class="step-badge">1</span> Cole o robô no Console do WhatsApp Web</div>
     <ol style="font-size:13px;line-height:1.7;padding-left:20px;margin:0 0 12px">
-      <li>F12 → aba <strong>Console</strong>.</li>
-      <li>Se pedir, digite <code>allow pasting</code> e Enter.</li>
-      <li>Aqui no painel FT: <strong>📋 Copiar código</strong>.</li>
-      <li>Volta no Console → Ctrl+V → Enter.</li>
-      <li>Aparece o painel flutuante no canto → clique <strong>▶ Iniciar</strong>.</li>
+      <li>Abra <a href="https://web.whatsapp.com" target="_blank" rel="noopener" style="color:var(--accent)">web.whatsapp.com</a> autenticado.</li>
+      <li>F12 → aba <strong>Console</strong>. Se pedir, digite <code>allow pasting</code> e Enter.</li>
+      <li>Aqui no painel FT: <strong>📋 Copiar código</strong> abaixo.</li>
+      <li>Volta no Console → Ctrl+V → Enter. Aparece o painel flutuante no canto.</li>
+      <li>Clique <strong>▶ Iniciar</strong>. O robô vai sozinho: <em>Canais → canal Portal Felipe Tommy → seleciona última matéria + enquete → clica Encaminhar → busca palavra-chave → marca 5 → aviãozinho → repete</em>.</li>
     </ol>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="autoCopiarCodigo(this)">📋 Copiar código para o Console</button>
     </div>
+    <p class="hint" style="margin-top:10px;color:var(--warn)">⚠️ Deixe o WhatsApp Web em janela grande e não mexa no mouse enquanto o robô trabalha. Pause/Pare a qualquer momento no painel flutuante.</p>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="step-badge">3</span> Grupos e ordem das palavras-chave</div>
+    <div class="card-title"><span class="step-badge">2</span> Grupos e ordem das palavras-chave</div>
     <p class="hint" style="margin-top:0">A ordem fixa das buscas (mesma do procedimento manual): <code>picu, faixa, noticia, amigo, parauapeba, caraja, politica, fora, unido, la vai, vs, fogo, jorja, portal</code>. O robô esgota cada uma antes de passar para a próxima e nunca marca grupo já enviado nesta matéria.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;align-items:center">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Pausa entre lotes:</span><input type="number" id="autoDelay" value="4" min="2" max="30" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
@@ -833,7 +824,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="step-badge">4</span> Depois que terminou</div>
+    <div class="card-title"><span class="step-badge">3</span> Depois que terminou</div>
     <p class="hint" style="margin-top:0">Se o robô não conseguir marcar sozinho no Supabase (ele tenta), volte aqui para bater tudo:</p>
     <button class="btn btn-primary" onclick="autoMarcarSelecionadosComoFeitos(this)">✅ Marcar os selecionados como feitos nesta matéria</button>
   </div>
@@ -2479,9 +2470,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.7.0';
+const PAINEL_VERSAO='2.7.1';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.7.1','19/09/2026','Auto-envio 100% automático: agora o robô também navega para Canais → canal Portal Felipe Tommy, seleciona a última matéria + enquete pelo menu ⋮, clica na seta Encaminhar, faz o lote de 5 grupos, envia, e sozinho refaz a seleção pra próximo lote. Felipe só cola o código no Console e aperta ▶ Iniciar. Nunca duplica grupo, marca tudo no Supabase.'],
   ['2.7.0','19/09/2026','Auto-envio agora replica o método manual do encaminhamento: você seleciona matéria + enquete no canal do WhatsApp, clica Encaminhar, e o robô cuida do resto — busca por palavra-chave na ordem fixa (picu, faixa, noticia, amigo, parauapeba, caraja, politica, fora, unido, etc), marca até 5 grupos pendentes por lote, clica no aviãozinho, aguarda você reabrir o modal, continua até a lista zerar. Marca no Supabase automaticamente e nunca duplica grupo.'],
   ['2.6.4','19/09/2026','Auto-envio: busca de grupo na lista lateral não depende mais de #pane-side nem de role=listitem. Agora acha qualquer span/div com title do grupo fora do painel do chat aberto, e sobe pelo DOM até um clicável (listitem/row/button/option). DIAG lista imprime primeiros 8 candidatos.'],
   ['2.6.3','19/09/2026','Auto-envio: WhatsApp Web migrou o campo de busca para <input> HTML nativo (não é mais contenteditable). Runner reescrito para escrever via native value setter — jeito que o React reconhece — e para achar tanto input quanto textarea quanto contenteditable, tanto na busca quanto no composer. DIAG agora inclui inputs, textareas e contenteditable com placeholders e data-tab.'],
@@ -2539,52 +2531,136 @@ function autoMontarPayload(){
   return {v:2,groups:gs,keywords:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug:slugAtual()}};
 }
 
-// Runner v2: usa o modal nativo "Encaminhar atualizações para" (5 grupos por vez)
+// Runner v3: totalmente automático — navega Canais → seleciona matéria+enquete → Encaminhar → busca+marca+envia → repete
 const AUTO_RUNNER_SRC=`(async function(){
 if(location.hostname!=='web.whatsapp.com'){alert('Cole este código apenas no console do web.whatsapp.com');return;}
 if(window.__ftAuto){alert('O encaminhador já está aberto.');return;}
 window.__ftAuto=true;
 const P=__FT_PAYLOAD__;
-const {groups,keywords,delayMs=4000,jitterMs=3000,sb}=P;
+const {groups,keywords,delayMs=4000,jitterMs=3000,sb,channelName='Portal Felipe Tommy'}=P;
 const total=groups.length;
 const remaining=new Map();
 const normalize=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim();
 for(const g of groups)remaining.set(normalize(g.nome),g);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const waitFor=async(fn,to=15000,st=250)=>{const t0=Date.now();while(Date.now()-t0<to){const v=fn();if(v)return v;await sleep(st);}return null;};
+const waitFor=async(fn,to=12000,st=250)=>{const t0=Date.now();while(Date.now()-t0<to){const v=fn();if(v)return v;await sleep(st);}return null;};
 const box=document.createElement('div');
 box.style.cssText='position:fixed;bottom:20px;right:20px;width:380px;background:#111b21;color:#e9edef;border:1px solid #2a3942;border-radius:10px;padding:14px;font-family:Segoe UI,sans-serif;font-size:13px;z-index:2147483647;box-shadow:0 10px 40px rgba(0,0,0,.6)';
-box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>🤖 Encaminhador Portal FT</b><button id="_ftX" style="background:none;border:none;color:#8696a0;font-size:18px;cursor:pointer">✕</button></div><div id="_ftS" style="color:#aebac1;margin:4px 0">Pronto — '+total+' grupos pendentes</div><div style="height:6px;background:#202c33;border-radius:3px;overflow:hidden;margin:8px 0"><div id="_ftB" style="height:100%;background:#00a884;width:0%;transition:width .3s"></div></div><div id="_ftL" style="max-height:220px;overflow:auto;font-size:11px;color:#8696a0;background:#0b141a;padding:6px;border-radius:4px;margin:6px 0;font-family:monospace"></div><div style="display:flex;gap:6px"><button id="_ftGo" style="flex:1;padding:9px;background:#00a884;color:#111b21;border:none;border-radius:5px;font-weight:700;cursor:pointer">▶ Iniciar</button><button id="_ftP" style="flex:1;padding:9px;background:#202c33;color:#e9edef;border:1px solid #2a3942;border-radius:5px;cursor:pointer" disabled>⏸ Pausar</button><button id="_ftK" style="flex:1;padding:9px;background:#f15c6d;color:#111b21;border:none;border-radius:5px;font-weight:700;cursor:pointer" disabled>⏹ Parar</button></div>';
+box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>🤖 Encaminhador Portal FT</b><button id="_ftX" style="background:none;border:none;color:#8696a0;font-size:18px;cursor:pointer">✕</button></div><div id="_ftS" style="color:#aebac1;margin:4px 0">Pronto — '+total+' grupos pendentes</div><div style="height:6px;background:#202c33;border-radius:3px;overflow:hidden;margin:8px 0"><div id="_ftB" style="height:100%;background:#00a884;width:0%;transition:width .3s"></div></div><div id="_ftL" style="max-height:240px;overflow:auto;font-size:11px;color:#8696a0;background:#0b141a;padding:6px;border-radius:4px;margin:6px 0;font-family:monospace"></div><div style="display:flex;gap:6px"><button id="_ftGo" style="flex:1;padding:9px;background:#00a884;color:#111b21;border:none;border-radius:5px;font-weight:700;cursor:pointer">▶ Iniciar</button><button id="_ftP" style="flex:1;padding:9px;background:#202c33;color:#e9edef;border:1px solid #2a3942;border-radius:5px;cursor:pointer" disabled>⏸ Pausar</button><button id="_ftK" style="flex:1;padding:9px;background:#f15c6d;color:#111b21;border:none;border-radius:5px;font-weight:700;cursor:pointer" disabled>⏹ Parar</button></div>';
 document.body.appendChild(box);
 const $=id=>document.getElementById(id);
-const log=(t,c)=>{const L=$('_ftL');const d=document.createElement('div');d.textContent=new Date().toLocaleTimeString().slice(0,8)+' '+t;if(c==='e')d.style.color='#f15c6d';if(c==='o')d.style.color='#00d97e';L.appendChild(d);L.scrollTop=L.scrollHeight;};
+const log=(t,c)=>{const L=$('_ftL');const d=document.createElement('div');d.textContent=new Date().toLocaleTimeString().slice(0,8)+' '+t;if(c==='e')d.style.color='#f15c6d';if(c==='o')d.style.color='#00d97e';if(c==='w')d.style.color='#f0c14b';L.appendChild(d);L.scrollTop=L.scrollHeight;};
 const st=t=>$('_ftS').textContent=t;
 const pr=()=>$('_ftB').style.width=Math.round(((total-remaining.size)/total)*100)+'%';
 let state='idle';
 const pausable=async()=>{while(state==='paused')await sleep(300);};
 const setNativeValue=(el,val)=>{const proto=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value').set;setter.call(el,val);};
-const isNat=e=>e && (e.tagName==='INPUT' || e.tagName==='TEXTAREA');
-const clearField=el=>{el.focus();if(isNat(el)){setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}else{document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'deleteContentBackward'}));}};
+const isNat=e=>e&&(e.tagName==='INPUT'||e.tagName==='TEXTAREA');
 const typeField=(el,text)=>{el.focus();if(isNat(el)){setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));setNativeValue(el,text);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}else{document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);document.execCommand('insertText',false,text);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));}};
+const clearField=el=>{el.focus();if(isNat(el)){setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}else{document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'deleteContentBackward'}));}};
+const visible=el=>{if(!el)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0;};
+const upClickable=el=>{let p=el;for(let i=0;i<10&&p;i++){if(p.getAttribute){const r=p.getAttribute('role');if(r==='button'||r==='menuitem'||r==='listitem'||r==='option'||p.tagName==='BUTTON')return p;}p=p.parentElement;}return el;};
+const clickIt=el=>{const t=upClickable(el);t.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));t.dispatchEvent(new MouseEvent('mouseup',{bubbles:true,cancelable:true}));t.click();};
+const byAriaText=re=>{for(const b of document.querySelectorAll('[aria-label],[title]')){const l=((b.getAttribute('aria-label')||'')+' '+(b.getAttribute('title')||'')).toLowerCase().trim();if(l&&re.test(l)&&visible(b))return b;}return null;};
+const byIcon=name=>{const i=document.querySelector('span[data-icon="'+name+'"]');if(i&&visible(i))return upClickable(i);return null;};
+
+// ── Navegação: aba Canais e canal Portal
+const goToChannels=async()=>{
+  let btn=byIcon('newsletter')||byIcon('newsletters')||byIcon('channel')||byIcon('channels');
+  if(!btn)btn=byAriaText(/^(canais|channels|newsletter)$/i);
+  if(!btn){log('não achei botão Canais','e');return false;}
+  clickIt(btn);await sleep(700);
+  return true;
+};
+const openChannel=async name=>{
+  const nl=normalize(name);
+  const target=await waitFor(()=>{
+    for(const s of document.querySelectorAll('span[title],div[title]')){
+      const t=normalize(s.getAttribute('title')||'');
+      if(t===nl&&visible(s))return upClickable(s);
+    }
+    return null;
+  },5000);
+  if(!target){log('não achei canal "'+name+'"','e');return false;}
+  clickIt(target);await sleep(900);
+  return true;
+};
+
+// ── Selecionar última matéria + enquete e clicar Encaminhar
+const selectLastTwoMessages=async()=>{
+  const main=await waitFor(()=>document.querySelector('#main'),5000);
+  if(!main){log('sem #main','e');return false;}
+  // Ache todas as bolhas de mensagem no chat
+  const msgs=main.querySelectorAll('[data-id]');
+  if(msgs.length<2){log('menos de 2 mensagens visíveis','e');return false;}
+  const last=msgs[msgs.length-1];
+  const penult=msgs[msgs.length-2];
+  // Hover na última pra revelar o menu ⋮
+  last.scrollIntoView({block:'center'});await sleep(400);
+  last.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
+  last.dispatchEvent(new MouseEvent('mouseenter',{bubbles:true}));
+  await sleep(500);
+  // O ⋮ é geralmente um botão com data-icon="down-context" ou aria-label contendo "menu"/"mensagem"
+  let ctx=last.querySelector('span[data-icon="down-context"],span[data-icon="chevron"],[aria-label*="ensagem"],[aria-label*="essage"]');
+  if(!ctx){
+    // procurar botão dentro da bolha
+    const bs=last.querySelectorAll('button,[role="button"]');for(const b of bs){const l=(b.getAttribute('aria-label')||'').toLowerCase();if(/mensagem|message|context|menu/.test(l)){ctx=b;break;}}
+  }
+  if(!ctx){log('sem ⋮ na última msg — tente hover manual','e');return false;}
+  clickIt(ctx);await sleep(500);
+  // Menu popup → item "Encaminhar"
+  const enc=await waitFor(()=>{
+    for(const el of document.querySelectorAll('[role="menuitem"],li,[role="button"]')){
+      const t=(el.textContent||'').trim().toLowerCase();
+      if(t==='encaminhar'||t==='forward')return el;
+    }
+    return null;
+  },3000);
+  if(!enc){log('sem opção Encaminhar no menu','e');return false;}
+  clickIt(enc);await sleep(700);
+  // Agora deve ter checkbox nas mensagens; a última pode já estar marcada; marcar a penúltima também
+  const pcb=penult.querySelector('input[type="checkbox"],[role="checkbox"]');
+  if(pcb){clickIt(pcb);}else{clickIt(penult);}
+  await sleep(500);
+  return true;
+};
+const clickForwardArrow=async()=>{
+  const btn=await waitFor(()=>{
+    let b=byIcon('forward-refreshed')||byIcon('forward');
+    if(b)return b;
+    b=byAriaText(/^(encaminhar|forward|encaminhar mensagens|forward messages)( selecionad| selected)?/);
+    if(b)return b;
+    // fallback: procurar botão flutuante no canto inferior direito
+    const cands=document.querySelectorAll('button,[role="button"]');let best=null,bestX=0,bestY=0;for(const c of cands){if(!visible(c))continue;const r=c.getBoundingClientRect();if(r.right>window.innerWidth-120&&r.bottom>window.innerHeight-160){if(r.right+r.bottom>bestX+bestY){best=c;bestX=r.right;bestY=r.bottom;}}}
+    return best;
+  },5000);
+  if(!btn){log('sem botão Encaminhar (seta)','e');return false;}
+  clickIt(btn);await sleep(900);
+  return true;
+};
+const reopenForward=async()=>{
+  // Depois do envio, o modal fecha e volta ao canal. Se ainda estamos no canal, refazer seleção.
+  const ok1=await selectLastTwoMessages();if(!ok1)return false;
+  const ok2=await clickForwardArrow();if(!ok2)return false;
+  return true;
+};
+
+// ── Modal "Encaminhar atualizações para"
 const findModal=()=>{
   const ds=document.querySelectorAll('[role="dialog"],[role="alertdialog"]');
   for(const d of ds){const t=(d.textContent||'').toLowerCase();if(/encaminhar|forward|reencaminhar/.test(t))return d;}
-  const all=document.querySelectorAll('div');
-  for(const d of all){if(d.childElementCount>6)continue;const t=(d.textContent||'').trim().toLowerCase();if(t==='encaminhar atualizações para'||t==='encaminhar para'||t==='forward updates to'||t==='forward to'||t==='reencaminhar para'){let p=d;for(let i=0;i<10&&p;i++){if(p.querySelector&&p.querySelector('input,textarea,[contenteditable]'))return p;p=p.parentElement;}}}
   return null;
 };
 const findModalSearch=m=>{if(!m)return null;for(const e of m.querySelectorAll('input:not([type="hidden"]),textarea,[contenteditable]:not([contenteditable="false"]),[role="textbox"]')){return e;}return null;};
-const findItems=m=>{if(!m)return[];let items=m.querySelectorAll('[role="listitem"],[role="row"],[role="option"]');if(items.length)return items;const grid=m.querySelector('[role="grid"],[role="list"],[role="listbox"]');if(grid)items=grid.children;return items||[];};
-const itemName=it=>{const t=it.querySelector('span[title],div[title]');if(t)return (t.getAttribute('title')||'').trim();return (it.textContent||'').trim().split('\\n')[0].slice(0,60);};
-const findSend=m=>{const scopes=[m,document];for(const sc of scopes){if(!sc)continue;for(const b of sc.querySelectorAll('button,[role="button"],div[aria-label]')){const l=((b.getAttribute('aria-label')||'')+' '+(b.getAttribute('title')||'')).toLowerCase();if(!l)continue;if(/^(enviar|send|reencaminhar|forward)/.test(l)){const r=b.getBoundingClientRect();if(r.width>0&&r.height>0)return b;}}const icon=sc.querySelector?sc.querySelector('span[data-icon="send"],span[data-icon="send-light"]'):null;if(icon){let p=icon;for(let i=0;i<6&&p;i++){if(p.getAttribute&&(p.getAttribute('role')==='button'||p.tagName==='BUTTON'))return p;p=p.parentElement;}return icon.parentElement;}}return null;};
+const findItems=m=>{if(!m)return[];let items=m.querySelectorAll('[role="listitem"],[role="row"],[role="option"]');if(items.length)return items;return[];};
+const itemName=it=>{const t=it.querySelector('span[title],div[title]');if(t)return (t.getAttribute('title')||'').trim();return (it.textContent||'').trim().split('\\n')[0].slice(0,80);};
+const findSend=m=>{const scopes=[m,document];for(const sc of scopes){if(!sc)continue;for(const b of sc.querySelectorAll('button,[role="button"],div[aria-label]')){const l=((b.getAttribute('aria-label')||'')+' '+(b.getAttribute('title')||'')).toLowerCase();if(!l)continue;if(/^(enviar|send|reencaminhar|forward)/.test(l)&&visible(b))return b;}const icon=sc.querySelector?sc.querySelector('span[data-icon="send"],span[data-icon="send-light"]'):null;if(icon)return upClickable(icon);}return null;};
 const markSb=async grupoId=>{if(!sb||!sb.url||!sb.key||!sb.slug)return false;try{const r=await fetch(sb.url+'/rest/v1/encaminhamentos',{method:'POST',headers:{'apikey':sb.key,'Authorization':'Bearer '+sb.key,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({materia_slug:sb.slug,grupo_id:grupoId,feito:true})});return r.ok;}catch(e){return false;}};
-const waitModal=async(maxMs=180000)=>{const t0=Date.now();while(Date.now()-t0<maxMs){if(state==='stopped')return null;await pausable();const m=findModal();if(m)return m;st('Aguardando você reabrir o "Encaminhar" (2 mensagens selecionadas)…');await sleep(1500);}return null;};
+
 const doBatch=async keyword=>{
-  const m=findModal();
-  if(!m)return {r:'no-modal'};
-  const s=findModalSearch(m);
-  if(!s){log('sem campo no modal','e');return {r:'no-search'};}
-  clearField(s);await sleep(250);typeField(s,keyword);await sleep(1300);
+  const m=findModal();if(!m)return {r:'no-modal'};
+  const s=findModalSearch(m);if(!s){return {r:'no-search'};}
+  clearField(s);await sleep(300);typeField(s,keyword);await sleep(1400);
   const items=findItems(findModal());
   if(!items.length)return {r:'empty'};
   const marks=[];const seen=new Set();
@@ -2594,60 +2670,77 @@ const doBatch=async keyword=>{
     let g=remaining.get(nm);
     if(!g){for(const [k,v] of remaining){if(k.length>=4&&(nm.includes(k)||k.includes(nm))){g=v;break;}}}
     if(!g)continue;
-    it.click();marks.push(g);await sleep(280);
+    clickIt(it);marks.push(g);await sleep(320);
   }
   if(!marks.length)return {r:'no-match'};
   await sleep(500);
   const btn=findSend(findModal());
-  if(!btn){log('não achou aviãozinho','e');return {r:'no-send',marks};}
-  btn.click();
-  await sleep(1500);
+  if(!btn)return {r:'no-send',marks};
+  clickIt(btn);
+  await sleep(1800);
   for(const g of marks){remaining.delete(normalize(g.nome));markSb(g.id).catch(()=>{});}
   return {r:'sent',marks};
 };
+
 const run=async()=>{
   if(state==='running')return;state='running';
   $('_ftGo').disabled=true;$('_ftP').disabled=false;$('_ftK').disabled=false;
   log('Início — '+total+' pendentes','o');
   let sentCount=0;
-  const passKeywords=[...keywords];
+  // Se ainda não há modal, navegue
+  if(!findModal()){
+    st('Indo para Canais…');
+    const ok1=await goToChannels();if(!ok1){log('parou: sem Canais','e');state='idle';return;}
+    st('Abrindo canal…');
+    const ok2=await openChannel(channelName);if(!ok2){log('parou: sem canal','e');state='idle';return;}
+    st('Selecionando matéria + enquete…');
+    const ok3=await selectLastTwoMessages();if(!ok3){log('parou: seleção falhou','e');state='idle';return;}
+    st('Abrindo Encaminhar…');
+    const ok4=await clickForwardArrow();if(!ok4){log('parou: sem seta','e');state='idle';return;}
+    await sleep(600);
+  }
+  // Loop de palavras-chave, repetindo até esgotar
   while(remaining.size>0&&state!=='stopped'){
-    let anyThisRound=false;
-    for(const kw of passKeywords){
+    let anyRound=false;
+    for(const kw of keywords){
       if(state==='stopped')break;
       if(remaining.size===0)break;
       await pausable();
-      if(!findModal()){const m=await waitModal();if(!m){log('cancelado','e');break;}}
-      st('Buscando "'+kw+'" — '+remaining.size+' faltam');
+      if(!findModal()){
+        st('Reabrindo Encaminhar…');
+        const ok=await reopenForward();if(!ok){log('não consegui reabrir — pare e verifique','e');state='stopped';break;}
+      }
+      st('"'+kw+'" — '+remaining.size+' faltam');
       const res=await doBatch(kw);
-      if(res.r==='no-modal'){await waitModal();continue;}
-      if(res.r==='no-search'){log('parou: sem campo no modal','e');state='stopped';break;}
-      if(res.r==='no-send'){log('parou: sem aviãozinho','e');state='stopped';break;}
+      if(res.r==='no-modal'){continue;}
+      if(res.r==='no-search'){log('sem campo no modal','e');state='stopped';break;}
+      if(res.r==='no-send'&&res.marks){log('sem aviãozinho apesar de marcar '+res.marks.length,'e');state='stopped';break;}
       if(res.r==='sent'){
-        sentCount+=res.marks.length;anyThisRound=true;
-        log('  ✔ '+kw+' ('+res.marks.length+'): '+res.marks.map(g=>g.nome).join(', '),'o');
+        sentCount+=res.marks.length;anyRound=true;
+        log('✔ '+kw+' ('+res.marks.length+'): '+res.marks.map(g=>g.nome).join(', '),'o');
         pr();
-        st(sentCount+' enviados — reabra o Encaminhar…');
-        const m=await waitModal();if(!m)break;
+        st('Reabrindo após envio…');
         const w=delayMs+Math.random()*jitterMs;await sleep(w);
+        const ok=await reopenForward();
+        if(!ok){log('não conseguiu reabrir modal — parou','w');state='stopped';break;}
       }
     }
-    if(!anyThisRound){
-      log('varredura de palavras esgotou — tentando por nome cheio…','e');
-      const rem=[...remaining.values()];
-      for(const g of rem){
+    if(!anyRound){
+      log('varredura terminou — tentando nome cheio…','w');
+      for(const g of [...remaining.values()]){
         if(state==='stopped')break;
-        if(!findModal()){const m=await waitModal();if(!m)break;}
-        st('Nome cheio: '+g.nome);
-        const res=await doBatch(g.nome.slice(0,20));
-        if(res.r==='sent'){sentCount+=res.marks.length;log('  ✔ '+res.marks.map(x=>x.nome).join(', '),'o');pr();const m=await waitModal();if(!m)break;await sleep(delayMs);}
-        else{log('  ⚠ não achou: '+g.nome,'e');}
+        if(!findModal()){const ok=await reopenForward();if(!ok)break;}
+        st('nome cheio: '+g.nome);
+        const kw=normalize(g.nome).split(' ').filter(w=>w.length>=4)[0]||g.nome.slice(0,10);
+        const res=await doBatch(kw);
+        if(res.r==='sent'){sentCount+=res.marks.length;log('✔ '+res.marks.map(x=>x.nome).join(', '),'o');pr();await sleep(delayMs);await reopenForward();}
+        else{log('⚠ não achou: '+g.nome,'e');}
       }
       break;
     }
   }
   st('✔ Fim — '+sentCount+' enviados, '+remaining.size+' faltam');
-  if(remaining.size)log('Faltaram: '+[...remaining.values()].map(g=>g.nome).join(', '),'e');
+  if(remaining.size)log('Faltaram: '+[...remaining.values()].map(g=>g.nome).join(', '),'w');
   $('_ftGo').disabled=false;$('_ftP').disabled=true;$('_ftK').disabled=true;state='idle';
 };
 $('_ftGo').onclick=run;
