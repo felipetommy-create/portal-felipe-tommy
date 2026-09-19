@@ -2540,9 +2540,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.2';
+const PAINEL_VERSAO='2.8.3';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.3','19/09/2026','O teste sem envio rodou dois ciclos completos pela primeira vez. No log, porém, palavra-chave que não encontrava ninguém passava em silêncio, e ficava impossível saber por que o robô tinha pulado de "picu" para "noticia". Agora cada palavra que termina sem nenhum grupo pendente escreve uma linha no log. Vale só para a lista de palavras-chave; a varredura final por nome de grupo continua silenciosa para não encher a tela com 130 linhas.'],
   ['2.8.2','19/09/2026','Corrigido o "O canal de origem não abriu", que parava o robô mesmo com o canal aberto na tela. Ele confirmava a abertura procurando o nome do canal dentro de um <button> do cabeçalho, mas o nome não fica em botão: os botões de lá são só os ícones (link, trocar conta, mais opções). Agora a confirmação lê o texto do próprio cabeçalho, conferido no WhatsApp real. O painel flutuante também passa a mostrar a versão que veio do painel, para não restar dúvida se o código colado está atualizado.'],
   ['2.8.1','19/09/2026','O encaminhador parava com o aviso "Há grupos sem identificação ou com nomes iguais" sem dizer quais eram. A causa é a lista: existem cadastros repetidos (três "Picunhão", por exemplo) e o robô não tem como saber qual marcar no WhatsApp. Agora a aba Grupos mostra o card "Problemas na lista", que aponta cada nome repetido e resolve em um clique, mantendo um cadastro e removendo os extras. A aba Auto-envio avisa antes de copiar o código e marca os repetidos com ⚠ na lista. A checagem usa a mesma normalização do robô, então o que o painel aprova o robô aceita.'],
   ['2.8.0','19/09/2026','Encaminhador refeito a partir da skill e dos controles reais do WhatsApp: matéria + enquete fixadas por ID, conferência de 2 itens, grupos por nome completo, lotes de até 5 e repetição por palavra-chave. Progresso persistente, proteção contra duas abas, pausa/parada verificadas e teste de dois ciclos sem envio.'],
@@ -2886,13 +2887,19 @@ function ftWhatsAppRunner(P){
     await navigate();await pinSource();
     let batches=0;
     const jobs=[...keywords,...groups.map(g=>g.nome)];
-    for(const keyword of jobs){
+    for(let ji=0;ji<jobs.length;ji++){
+      const keyword=jobs[ji];
+      let lotesDaPalavra=0;
       while(remaining.size){
         await checkpoint();
         if(!modal())await selectPair();
         status((dryRun?'TESTE · ':'')+keyword+' · '+remaining.size+' pendentes');
         const marks=await prepareBatch(keyword);
-        if(!marks.length)break;
+        // Sem esta linha, palavra que não acha nada some do log e a leitura do
+        // resultado vira adivinhação. Só para a lista de palavras-chave: a varredura
+        // final por nome de grupo tem 130 itens e encheria o log.
+        if(!marks.length){if(ji<keywords.length&&!lotesDaPalavra)log('"'+keyword+'": nenhum pendente localizado.');break;}
+        lotesDaPalavra++;
         await sendBatch(marks);batches++;
         // Teste percorre também o retorno ao canal, sem tocar no progresso real.
         if(dryRun&&batches>=2){status('Teste concluído: dois ciclos completos, nenhum envio.');return;}
