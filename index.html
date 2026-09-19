@@ -2486,10 +2486,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.6.2';
+const PAINEL_VERSAO='2.6.3';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
-  ['2.6.2','19/09/2026','Auto-envio: seletores do WhatsApp Web ainda mais tolerantes (aceita contenteditable em qualquer forma, busca por texto do placeholder, cai no #side). Log de DIAG imprime todo contenteditable + todos os data-tab do documento para eu ajustar caso o WhatsApp mude o layout de novo.'],
+  ['2.6.3','19/09/2026','Auto-envio: WhatsApp Web migrou o campo de busca para <input> HTML nativo (não é mais contenteditable). Runner reescrito para escrever via native value setter — jeito que o React reconhece — e para achar tanto input quanto textarea quanto contenteditable, tanto na busca quanto no composer. DIAG agora inclui inputs, textareas e contenteditable com placeholders e data-tab.'],
   ['2.6.0','19/09/2026','Layout novo: as abas saíram do topo e viraram menu lateral à esquerda, agrupado por seção (Produção, Distribuição, Editorial, Sistema). No celular vira gaveta que abre pelo botão ☰ no cabeçalho e fecha ao escolher a aba. Facilita andar pelo painel conforme ele cresce, sem rolar a lista de abas.'],
   ['2.5.0','19/09/2026','Aba nova "Auto-envio" nos grupos. Puxa o texto que já foi para o canal, deixa escolher quais grupos vão receber (padrão: os que ainda faltam) e gera um código para colar no Console do web.whatsapp.com (F12). Aparece um painel flutuante dentro do WhatsApp com Iniciar/Pausar/Parar, intervalo e jitter configuráveis, e teste em 1 grupo antes do disparo geral. Também exporta como bookmarklet para reutilizar. Zero token de IA: a automação roda no seu navegador.'],
   ['2.4.0','01/09/2026','A aba Publicar ganhou o campo "Atualizar matéria existente". Vazio, publica matéria nova como sempre. Preenchido com o ID ou o link, atualiza aquela matéria e mantém a URL, a data e as visualizações, em vez de criar uma segunda com slug duplicado. Ao atualizar, o slug não é trocado e o status só muda se você escolher Publicar imediatamente, para o padrão Rascunho nunca tirar do ar uma matéria publicada.'],
@@ -2578,46 +2578,71 @@ const st=t=>$('_ftS').textContent=t;
 const pr=p=>$('_ftB').style.width=p+'%';
 let state='idle';
 const pausable=async()=>{while(state==='paused')await sleep(300);};
-const editables=()=>document.querySelectorAll('[contenteditable="true"],[contenteditable="plaintext-only"],[contenteditable=""],[role="textbox"]');
-const attrsOf=e=>((e.getAttribute?e.getAttribute('aria-label')||'':'')+' '+(e.getAttribute?e.getAttribute('title')||'':'')+' '+(e.getAttribute?e.getAttribute('placeholder')||'':'')+' '+(e.getAttribute?e.getAttribute('data-placeholder')||'':'')).toLowerCase();
-const findByPlaceholderText=re=>{
-  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_ELEMENT);
-  let n;while(n=walker.nextNode()){
-    if(n.childElementCount>0)continue;
-    const t=(n.textContent||'').trim();
-    if(!t||t.length>60)continue;
-    if(re.test(t)){let p=n;for(let i=0;i<10&&p;i++){if(p.getAttribute&&(p.getAttribute('contenteditable')!==null||p.getAttribute('role')==='textbox'||p.tagName==='INPUT'||p.tagName==='TEXTAREA'))return p;p=p.parentElement;}return n;}
-  }
-  return null;
-};
+const isNativeInput=e=>e && (e.tagName==='INPUT' || e.tagName==='TEXTAREA');
+const attrsOf=e=>((e.getAttribute('aria-label')||'')+' '+(e.getAttribute('title')||'')+' '+(e.getAttribute('placeholder')||'')+' '+(e.getAttribute('data-placeholder')||'')).toLowerCase();
+const allFields=()=>document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"],[contenteditable="plaintext-only"],[contenteditable=""],[role="textbox"]');
 const findSearch=()=>{
-  let el=document.querySelector('div[contenteditable="true"][data-tab="3"]');if(el)return el;
-  el=document.querySelector('[contenteditable][data-tab="3"]');if(el)return el;
-  for(const e of editables()){if(/pesquis|search|busca|nova conversa/i.test(attrsOf(e)))return e;}
+  let el=document.querySelector('input[data-tab="3"], [contenteditable][data-tab="3"], [role="textbox"][data-tab="3"]');if(el)return el;
   const side=document.querySelector('#side, aside, [data-tab="4"]');
-  if(side){for(const e of side.querySelectorAll('[contenteditable],[role="textbox"],input,textarea')){return e;}}
-  el=findByPlaceholderText(/^(pesquisar|search|buscar).{0,40}$/i);if(el)return el;
+  if(side){
+    for(const e of side.querySelectorAll('input:not([type="hidden"]),textarea,[contenteditable],[role="textbox"]')){
+      if(/pesquis|search|busca|nova conversa/i.test(attrsOf(e)))return e;
+    }
+    const firstInput=side.querySelector('input:not([type="hidden"]),textarea,[contenteditable],[role="textbox"]');
+    if(firstInput)return firstInput;
+  }
+  for(const e of allFields()){if(/pesquis|search|busca|nova conversa/i.test(attrsOf(e)))return e;}
   return null;
 };
 const findComposer=()=>{
-  let el=document.querySelector('div[contenteditable="true"][data-tab="10"]');if(el)return el;
-  el=document.querySelector('[contenteditable][data-tab="10"]');if(el)return el;
+  let el=document.querySelector('[contenteditable][data-tab="10"], input[data-tab="10"], textarea[data-tab="10"]');if(el)return el;
   const main=document.querySelector('#main, [data-tab="6"]');
-  if(main){for(const e of main.querySelectorAll('[contenteditable],[role="textbox"]')){if(!/pesquis|search/i.test(attrsOf(e)))return e;}}
-  for(const e of editables()){if(/mensagem|message|digite|type a message/i.test(attrsOf(e)))return e;}
+  if(main){
+    for(const e of main.querySelectorAll('[contenteditable],[role="textbox"]')){
+      if(!/pesquis|search/i.test(attrsOf(e)))return e;
+    }
+    for(const e of main.querySelectorAll('input:not([type="hidden"]),textarea')){
+      if(/mensagem|message|digite|type a message/i.test(attrsOf(e)))return e;
+    }
+  }
+  for(const e of allFields()){if(/mensagem|message|digite|type a message/i.test(attrsOf(e)))return e;}
   const fs=document.querySelectorAll('footer');
-  for(const f of fs){const c=f.querySelector('[contenteditable],[role="textbox"]');if(c)return c;}
+  for(const f of fs){const c=f.querySelector('[contenteditable],[role="textbox"],input:not([type="hidden"]),textarea');if(c)return c;}
   return null;
 };
 const diag=()=>{
-  const eds=editables();
-  log('DIAG editables='+eds.length+' inputs='+document.querySelectorAll('input').length+' textareas='+document.querySelectorAll('textarea').length,'e');
-  eds.forEach((c,i)=>{log('  ed#'+i+' tag='+c.tagName+' tab='+c.getAttribute('data-tab')+' ce='+c.getAttribute('contenteditable')+' role='+c.getAttribute('role')+' aria="'+(c.getAttribute('aria-label')||'').slice(0,40)+'"','e');});
-  const tabs=[...document.querySelectorAll('[data-tab]')].map(e=>e.getAttribute('data-tab'));
-  log('  data-tabs no doc: '+[...new Set(tabs)].join(','),'e');
+  const inps=document.querySelectorAll('input:not([type="hidden"])');
+  const tas=document.querySelectorAll('textarea');
+  const ces=document.querySelectorAll('[contenteditable]');
+  log('DIAG inputs='+inps.length+' textareas='+tas.length+' contenteditable='+ces.length,'e');
+  [...inps,...tas,...ces].forEach((c,i)=>{log('  #'+i+' tag='+c.tagName+' tab='+c.getAttribute('data-tab')+' aria="'+(c.getAttribute('aria-label')||'').slice(0,40)+'" ph="'+(c.getAttribute('placeholder')||'').slice(0,40)+'"','e');});
+  const tabs=[...new Set([...document.querySelectorAll('[data-tab]')].map(e=>e.getAttribute('data-tab')))];
+  log('  data-tabs no doc: '+tabs.join(','),'e');
 };
-const clearBox=el=>{el.focus();document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'deleteContentBackward'}));};
-const pasteBox=(el,text)=>{el.focus();document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);const dt=new DataTransfer();dt.setData('text/plain',text);const evt=new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:dt});el.dispatchEvent(evt);if(!el.textContent||el.textContent.length<3){document.execCommand('insertText',false,text);}el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));};
+const setNativeValue=(el,val)=>{
+  const proto=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
+  const setter=Object.getOwnPropertyDescriptor(proto,'value').set;
+  setter.call(el,val);
+};
+const clearBox=el=>{
+  el.focus();
+  if(isNativeInput(el)){setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}
+  else{document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'deleteContentBackward'}));}
+};
+const pasteBox=(el,text)=>{
+  el.focus();
+  if(isNativeInput(el)){
+    setNativeValue(el,'');el.dispatchEvent(new Event('input',{bubbles:true}));
+    setNativeValue(el,text);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));
+  }else{
+    document.execCommand('selectAll',false,null);document.execCommand('delete',false,null);
+    const dt=new DataTransfer();dt.setData('text/plain',text);
+    const evt=new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:dt});
+    el.dispatchEvent(evt);
+    if(!el.textContent||el.textContent.length<3){document.execCommand('insertText',false,text);}
+    el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));
+  }
+};
 const pressEnter=el=>{['keydown','keypress','keyup'].forEach(t=>el.dispatchEvent(new KeyboardEvent(t,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true})));};
 const findGroup=name=>{const items=document.querySelectorAll('#pane-side div[role="listitem"], div[role="grid"] div[role="listitem"]');const nl=name.toLowerCase().trim();let exact=null,partial=null;for(const it of items){const t=it.querySelector('span[title]');if(!t)continue;const tt=t.getAttribute('title').toLowerCase().trim();if(tt===nl){exact=it;break;}if(!partial&&tt.includes(nl))partial=it;}return exact||partial;};
 let _diagged=false;
