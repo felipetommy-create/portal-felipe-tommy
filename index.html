@@ -18,15 +18,29 @@
   .sync-dot.online .dot{background:var(--accent);}
   .sync-dot.error .dot{background:var(--danger);}
   .sync-dot.syncing .dot{background:var(--warn);}
+  .menu-toggle{display:none;background:var(--surface2);border:1px solid var(--border);color:var(--text);width:38px;height:38px;border-radius:8px;font-size:18px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;}
+  .menu-toggle:hover{border-color:var(--accent);color:var(--accent);}
 
-  nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 8px;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;position:sticky;top:58px;z-index:19;}
-  nav::-webkit-scrollbar{display:none;}
-  .tab{padding:12px 14px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap;flex-shrink:0;}
-  .tab:hover{color:var(--text);}
-  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  nav{display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--border);padding:14px 10px;gap:3px;overflow-y:auto;-webkit-overflow-scrolling:touch;position:fixed;top:64px;bottom:0;left:0;width:220px;z-index:19;transition:transform .25s ease;}
+  nav::-webkit-scrollbar{width:6px;}
+  nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  .nav-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:10px 12px 4px;}
+  .tab{padding:10px 12px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:1px solid transparent;border-left:3px solid transparent;border-radius:8px;transition:all .15s;background:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tab:hover{color:var(--text);background:var(--surface2);}
+  .tab.active{color:var(--accent);background:var(--accent-glow);border-left-color:var(--accent);}
+  .nav-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:18;}
+  body.nav-open .nav-backdrop{display:block;}
 
   .page{display:none;padding:18px;max-width:860px;margin:0 auto;}
   .page.active{display:block;}
+  @media(min-width:900px){
+    body{padding-left:220px;}
+  }
+  @media(max-width:899px){
+    nav{transform:translateX(-100%);top:60px;width:240px;box-shadow:2px 0 20px rgba(0,0,0,.4);}
+    body.nav-open nav{transform:translateX(0);}
+    .menu-toggle{display:inline-flex;}
+  }
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
   .card-title{font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;display:flex;align-items:center;gap:8px;justify-content:space-between;}
   label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
@@ -136,22 +150,28 @@
 </div>
 
 <header>
+  <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">☰</button>
   <div class="logo">📰</div>
   <div><h1>Portal Felipe Tommy</h1><p>Painel Unificado — Publicação &amp; Distribuição <span id="hd-ver" style="opacity:.75"></span></p></div>
   <div class="sync-dot" id="syncDot"><span class="dot"></span><span id="syncTxt">—</span></div>
 </header>
 
+<div class="nav-backdrop" onclick="closeNav()"></div>
 <nav>
+  <div class="nav-label">Produção</div>
   <button class="tab active" onclick="showTab('comousar',this)">📖 Como usar</button>
   <button class="tab" onclick="showTab('publicar',this)">🌐 Publicar</button>
   <button class="tab" onclick="showTab('colunistas',this)">✍️ Colunistas</button>
   <button class="tab" onclick="showTab('redes',this)">🎬 Redes Sociais</button>
+  <div class="nav-label">Distribuição</div>
   <button class="tab" onclick="showTab('whatsapp',this)">📤 WhatsApp</button>
-  <button class="tab" onclick="showTab('modulox',this)">𝕏 Módulo X</button>
-  <button class="tab" onclick="showTab('analise',this)">🎤 Análise</button>
   <button class="tab" onclick="showTab('grupos',this)">👥 Grupos</button>
   <button class="tab" onclick="showTab('encaminhar',this)">🚀 Encaminhar</button>
   <button class="tab" onclick="showTab('autoenvio',this)">🤖 Auto-envio</button>
+  <div class="nav-label">Editorial</div>
+  <button class="tab" onclick="showTab('modulox',this)">𝕏 Módulo X</button>
+  <button class="tab" onclick="showTab('analise',this)">🎤 Análise</button>
+  <div class="nav-label">Sistema</div>
   <button class="tab" onclick="showTab('config',this)">⚙️ Config</button>
 </nav>
 
@@ -1141,7 +1161,10 @@ function showTab(id,el){
   if(id==='colunistas'){const sel=document.getElementById('coluna-autor');if(sel&&sel.options.length<=1)carregarColunistas();}
   if(id==='modulox')renderHistX();
   if(id==='analise')renderHistAn();
+  closeNav();
 }
+function toggleNav(){document.body.classList.toggle('nav-open');}
+function closeNav(){document.body.classList.remove('nav-open');}
 
 function cp(id){
   const el=document.getElementById(id);
@@ -2463,9 +2486,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.5.0';
+const PAINEL_VERSAO='2.6.0';
 const PAINEL_DATA='19/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.6.0','19/09/2026','Layout novo: as abas saíram do topo e viraram menu lateral à esquerda, agrupado por seção (Produção, Distribuição, Editorial, Sistema). No celular vira gaveta que abre pelo botão ☰ no cabeçalho e fecha ao escolher a aba. Facilita andar pelo painel conforme ele cresce, sem rolar a lista de abas.'],
   ['2.5.0','19/09/2026','Aba nova "Auto-envio" nos grupos. Puxa o texto que já foi para o canal, deixa escolher quais grupos vão receber (padrão: os que ainda faltam) e gera um código para colar no Console do web.whatsapp.com (F12). Aparece um painel flutuante dentro do WhatsApp com Iniciar/Pausar/Parar, intervalo e jitter configuráveis, e teste em 1 grupo antes do disparo geral. Também exporta como bookmarklet para reutilizar. Zero token de IA: a automação roda no seu navegador.'],
   ['2.4.0','01/09/2026','A aba Publicar ganhou o campo "Atualizar matéria existente". Vazio, publica matéria nova como sempre. Preenchido com o ID ou o link, atualiza aquela matéria e mantém a URL, a data e as visualizações, em vez de criar uma segunda com slug duplicado. Ao atualizar, o slug não é trocado e o status só muda se você escolher Publicar imediatamente, para o padrão Rascunho nunca tirar do ar uma matéria publicada.'],
   ['2.3.0','27/08/2026','Bloco do YouTube na aba Redes Sociais: título do Short com hashtags e contador de 100 caracteres, descrição curta do Short já com o link da matéria, e o texto do post na Comunidade. Tudo sai do mesmo JSON. A arte da Comunidade sai junto com o card, na pasta 05-REDACAO/cards, com sufixo -youtube.'],
