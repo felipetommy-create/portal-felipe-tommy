@@ -805,13 +805,15 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
       <li>F12 → aba <strong>Console</strong>. Se pedir, digite <code>allow pasting</code> e Enter.</li>
       <li>Aqui no painel FT: <strong>📋 Copiar código</strong> abaixo.</li>
       <li>Volta no Console → Ctrl+V → Enter. Aparece o painel flutuante no canto.</li>
-      <li>Clique <strong>▶ Iniciar</strong>. O robô vai sozinho: <em>Canais → canal Portal Felipe Tommy → seleciona última matéria + enquete → clica Encaminhar → busca palavra-chave → marca 5 → aviãozinho → repete</em>.</li>
+      <li>Clique <strong>▶ Iniciar</strong>. O robô faz: <em>Canais → Portal Felipe Tommy → seleciona matéria + enquete → confere 2 itens → Encaminhar → busca → marca até 5 destinos → Enviar → volta a Canais → Portal Felipe Tommy</em>. Repete até esgotar os grupos selecionados (inclusive listas de 130 grupos). O último bloco também termina no canal.</li>
     </ol>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="autoCopiarCodigo(this)">📋 Copiar código para o Console</button>
       <button class="btn btn-secondary" onclick="autoCopiarCodigo(this,true)">🧪 Copiar teste sem enviar</button>
+      <button class="btn btn-secondary" onclick="autoCopiarCodigo(this,false,true)">📲 Copiar ciclo para Revisão (envia)</button>
     </div>
     <p class="hint" style="margin-top:10px">O teste prepara até dois lotes e volta ao canal sozinho, sem enviar e sem marcar progresso. Deixe a aba aberta. Use Pausar antes de mexer no WhatsApp.</p>
+    <p class="hint"><strong>Ciclo para Revisão (envia):</strong> ignora a seleção dos grupos e encaminha somente para <strong>Revisão para Publicação 📲</strong>, volta ao canal e encerra. Não precisa cadastrar esse destino e não altera o progresso da distribuição. Um envio por matéria, com controle privado separado para evitar repetição ao clicar Iniciar novamente.</p>
   </div>
 
   <div class="card">
@@ -2556,9 +2558,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.5';
-const PAINEL_DATA='19/09/2026';
+const PAINEL_VERSAO='2.8.6';
+const PAINEL_DATA='20/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.6','20/09/2026','Rota documentada a partir do ciclo real: retorno ao canal após TODOS os lotes, inclusive o último ou destino único. Controles por nome/role, espera das atualizações carregadas e seleção por IDs. Botão dedicado gera ciclo real somente para Revisão para Publicação 📲, sem alterar o progresso dos grupos. Validação no WhatsApp desta versão fica com Felipe.'],
   ['2.8.5','19/09/2026','Após cada bloco, o encaminhador volta a Canais e abre Portal Felipe Tommy antes de selecionar novamente a mesma matéria e enquete. Se a origem não reabrir, interrompe sem repetir o bloco confirmado. Testes simulam a permanência na conversa de destino após o envio.'],
   ['2.8.4','19/09/2026','Grupos agora permite editar o nome sem apagar cadastro nem histórico. O caso faixa foi conferido no WhatsApp: o cadastro FAIXA DE GAZA divergia de Faixa de Gaza - Modo Eleições. O encaminhador mantém a conferência por nome completo, mostra divergências encontradas na busca e inclui a versão correta no relatório.'],
   ['2.8.3','19/09/2026','O teste sem envio rodou dois ciclos completos pela primeira vez. No log, porém, palavra-chave que não encontrava ninguém passava em silêncio, e ficava impossível saber por que o robô tinha pulado de "picu" para "noticia". Agora cada palavra que termina sem nenhum grupo pendente escreve uma linha no log. Vale só para a lista de palavras-chave; a varredura final por nome de grupo continua silenciosa para não encher a tela com 130 linhas.'],
@@ -2639,9 +2642,9 @@ function autoMarcarTodosPendentes(){autoSelIds=new Set(grupos.filter(g=>!doneIds
 function autoMarcarTodos(){autoSelIds=new Set(grupos.map(g=>g.id));renderAutoEnvio();}
 function autoDesmarcarTodos(){autoSelIds=new Set();renderAutoEnvio();}
 
-function autoMontarPayload(dryRun=false){
+function autoMontarPayload(dryRun=false,reviewOnly=false){
   const ids=[...autoSelIds];
-  const gs=grupos.filter(g=>g.ativo!==false&&ids.includes(g.id)).map(g=>({id:g.id,nome:g.nome}));
+  const gs=reviewOnly?[{id:'ft-private-review',nome:'Revisão para Publicação 📲'}]:grupos.filter(g=>g.ativo!==false&&ids.includes(g.id)).map(g=>({id:g.id,nome:g.nome}));
   if(!gs.length){alert('Selecione pelo menos 1 grupo.');return null;}
   const vistos=new Map(),repetidos=new Set(),vazios=[];
   for(const g of gs){
@@ -2663,7 +2666,7 @@ function autoMontarPayload(dryRun=false){
   const articleTitle=document.getElementById('tituloCurto').value.trim();
   const articleLinks=[document.getElementById('linkMateria').value,document.getElementById('outputLinkCurto').textContent].map(s=>s.trim()).filter(s=>/^https:\/\/felipetommy\.com\.br\//i.test(s));
   if(!SB||slug==='sem-slug'||!articleLinks.length){alert('Carregue a matéria e seu link na aba WhatsApp antes de encaminhar.');return null;}
-  return {v:4,dryRun,versao:PAINEL_VERSAO,articleTitle,articleLinks,groups:gs,keywords:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug}};
+  return {v:4,dryRun,reviewOnly,versao:PAINEL_VERSAO,articleTitle,articleLinks,groups:gs,keywords:reviewOnly?['Revisão para Publicação']:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug}};
 }
 
 // Encaminhamento nativo. Seletores conferidos no DOM do WhatsApp em 19/09/2026.
@@ -2673,7 +2676,8 @@ function ftWhatsAppRunner(P){
   if(location.hostname!=='web.whatsapp.com'){alert('Abra este código no WhatsApp Web.');return;}
   if(window.__ftAuto){alert('Feche o encaminhador anterior antes de abrir outro.');return;}
   const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
-  const {groups,keywords=[],sb,channelName='Portal Felipe Tommy',dryRun=false,versao='?'}=P;
+  const {groups,keywords=[],sb,channelName='Portal Felipe Tommy',dryRun=false,reviewOnly=false,versao='?'}=P;
+  if(reviewOnly&&(groups?.length!==1||groups[0].id!=='ft-private-review'||groups[0].nome!=='Revisão para Publicação 📲')){alert('Ciclo privado inválido: só Revisão para Publicação 📲 é permitida.');return;}
   if(!Array.isArray(groups)||!groups.length||!sb?.slug||sb.slug==='sem-slug'){alert('Carregue a matéria e selecione os grupos no painel.');return;}
   const byName=new Map();
   for(const g of groups){
@@ -2681,7 +2685,7 @@ function ftWhatsAppRunner(P){
     if(!g.id||!name||byName.has(name)){alert('Há grupos sem identificação ou com nomes iguais. Corrija a lista no painel.');return;}
     byName.set(name,g);
   }
-  const key='ft_forward_v4:'+sb.url+':'+sb.slug;
+  const key='ft_forward_v4:'+sb.url+':'+sb.slug+(reviewOnly?':review':'');
   let ledger;
   try{
     ledger=JSON.parse(localStorage.getItem(key)||'null')||{sent:{},pending:[],source:null};
@@ -2700,7 +2704,7 @@ function ftWhatsAppRunner(P){
   const ui=s=>box.querySelector(s),status=t=>{ui('[data-status]').textContent=t;};
   const log=t=>{const line=document.createElement('div');line.textContent=new Date().toLocaleTimeString()+' '+t;ui('[data-log]').appendChild(line);ui('[data-log]').scrollTop=ui('[data-log]').scrollHeight;};
   const progress=()=>{ui('progress').value=100*(groups.length-remaining.size)/groups.length;};
-  status(dryRun?'Teste sem envio: prepara dois lotes e cancela.':groups.length+' grupos selecionados. Pronto para iniciar.');
+  status(dryRun?'Teste sem envio: prepara dois lotes e cancela.':reviewOnly?'ENVIO REAL: somente Revisão para Publicação 📲; volta ao canal e encerra.':groups.length+' grupos selecionados. Pronto para iniciar.');
   const rawSleep=ms=>new Promise(r=>setTimeout(r,ms));
   const checkpoint=async()=>{
     while(state==='paused'&&!closed)await rawSleep(150);
@@ -2714,11 +2718,11 @@ function ftWhatsAppRunner(P){
   };
   const visible=e=>!!e?.isConnected&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';
   const enabled=e=>visible(e)&&!e.disabled&&e.getAttribute('aria-disabled')!=='true';
-  const all=(s,root=document)=>[...root.querySelectorAll(s)];
+  const all=(s,root=document)=>root?[...root.querySelectorAll(s)]:[];
   const labeled=(root,label)=>all('button,[role="button"]',root).find(e=>norm(e.getAttribute('aria-label'))===norm(label)&&enabled(e));
   const click=async e=>{await checkpoint();if(!enabled(e))throw Error('Controle ausente ou desabilitado.');e.click();};
   const main=()=>document.getElementById('main');
-  const selectedBox=m=>all('input[type="checkbox"]',m).find(e=>/^caixa de selecao|^select (message|update)/.test(norm(e.getAttribute('aria-label'))));
+  const selectedBox=m=>m?all('input[type="checkbox"]',m).find(e=>/^caixa de selecao|^select (message|update)/.test(norm(e.getAttribute('aria-label')))):null;
   const checked=e=>!!e&&(e.checked===true||e.getAttribute('aria-checked')==='true');
   const messages=()=>all('[data-id][data-testid^="conv-msg-"]',main()||document);
   const modal=()=>all('[role="dialog"]').find(d=>visible(d)&&all('h2,[role="heading"]',d).some(h=>norm(h.textContent)==='encaminhar atualizacoes para'));
@@ -2741,7 +2745,7 @@ function ftWhatsAppRunner(P){
   const navigate=async()=>{
     if(modal())await closeModal();
     if(main())await cancelSelection();
-    const channels=labeled(document,'Canais');
+    const channels=await wait(()=>labeled(document,'Canais'),'Aguarde o WhatsApp carregar: botão Canais indisponível.',30000);
     await click(channels);
     const channel=await wait(()=>all('button,[role="button"]').find(e=>visible(e)&&norm(e.getAttribute('aria-label'))===norm('Canal '+channelName)),'Canal Portal Felipe Tommy não encontrado na lista.');
     await click(channel);
@@ -2759,13 +2763,16 @@ function ftWhatsAppRunner(P){
     // Chega ao fim antes de escolher a dupla. Mantém os IDs em todos os lotes.
     for(let i=0;i<8;i++){
       const ms=messages(),last=ms.at(-1);
-      if(!last)throw Error('Nenhuma atualização carregada no canal.');
+      if(!last){await wait(()=>messages().length,'Nenhuma atualização carregada no canal.',30000);continue;}
       const sc=scrollParent(last,main());
       if(!sc||sc.scrollTop+sc.clientHeight>=sc.scrollHeight-4)break;
       sc.scrollTop=sc.scrollHeight;await sleep(600);
       if(i===7)throw Error('Não consegui confirmar o fim do canal.');
     }
-    await wait(()=>messages().length>=2,'Aguarde carregar a matéria e a enquete.');
+    await wait(()=>{
+      const ms=messages(),a=ms.at(-2),p=ms.at(-1);
+      return a&&p&&a.textContent.trim()&&p.textContent.trim()&&a.querySelector('a[href]')&&p.querySelector('input[id*="-option-"]');
+    },'Aguarde carregar a matéria e a enquete completas no canal.',30000);
     const ms=messages(),poll=ms.at(-1),article=ms.at(-2);
     const isPoll=el=>!!el.querySelector('input[id*="-option-"]');
     const links=all('a[href]',article).map(a=>a.href).filter(h=>{try{return new URL(h).hostname==='felipetommy.com.br';}catch{return false;}});
@@ -2783,15 +2790,16 @@ function ftWhatsAppRunner(P){
   const selectPair=async()=>{
     await cancelSelection();
     // Mesmo modo nativo de seleção da skill, aberto pelo menu sempre visível.
-    const menu=all('header button[aria-haspopup="menu"]',main()).find(enabled);
+    const menu=await wait(()=>labeled(main()?.querySelector('header')||null,'Mais opções'),'Menu Mais opções do canal indisponível.');
     await click(menu);
-    const option=await wait(()=>all('[role="menu"] span').find(e=>visible(e)&&norm(e.textContent)==='selecionar atualizacoes'),'Opção Selecionar atualizações não encontrada.');
+    const option=await wait(()=>all('[role="menu"] [role="menuitem"],[role="menu"] span').find(e=>visible(e)&&norm(e.textContent)==='selecionar atualizacoes'),'Opção Selecionar atualizações não encontrada.');
     await click(option);
     await wait(()=>labeled(main(),'Cancelar seleção'),'O WhatsApp não entrou em modo de seleção.');
     for(const id of source.ids){
       const m=messages().find(e=>e.getAttribute('data-id')===id);
       if(!m)throw Error('Uma das atualizações de origem saiu da tela. Nenhuma outra será selecionada.');
-      const cb=await wait(()=>selectedBox(m),'Caixa de seleção da atualização não encontrada.');
+      m.scrollIntoView({block:'nearest'});
+      const cb=await wait(()=>selectedBox(messages().find(e=>e.getAttribute('data-id')===id)),'Caixa de seleção da atualização não encontrada.');
       if(!checked(cb))await click(cb);
       await wait(()=>checked(selectedBox(messages().find(e=>e.getAttribute('data-id')===id)||m)),'A atualização não foi selecionada.');
     }
@@ -2862,6 +2870,7 @@ function ftWhatsAppRunner(P){
     return r;
   };
   const sync=async()=>{
+    if(reviewOnly)return; // O teste privado nunca marca grupos de distribuição.
     const ids=Object.keys(ledger.sent).filter(id=>!synced.has(id));
     if(!ids.length)return;
     await request('encaminhamentos?on_conflict=materia_slug,grupo_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(ids.map(id=>({materia_slug:sb.slug,grupo_id:id,feito:true})))});
@@ -2872,6 +2881,10 @@ function ftWhatsAppRunner(P){
     // Outra aba pode ter terminado enquanto este painel aguardava Iniciar.
     ledger=JSON.parse(localStorage.getItem(key));source=ledger.source;
     if(ledger.pending.length)throw Error('Há um lote com resultado incerto. Confira os grupos indicados no relatório antes de retomar.');
+    if(reviewOnly){
+      for(const [name,g] of remaining)if(ledger.sent[g.id])remaining.delete(name);
+      progress();return;
+    }
     const data=await (await request('encaminhamentos?select=grupo_id&feito=eq.true&materia_slug=eq.'+encodeURIComponent(sb.slug))).json();
     for(const row of data)synced.add(row.grupo_id);
     for(const [name,g] of remaining)if(synced.has(g.id)||ledger.sent[g.id])remaining.delete(name);
@@ -2909,7 +2922,7 @@ function ftWhatsAppRunner(P){
   };
   const execute=async()=>{
     await loadProgress();
-    if(!remaining.size){status('Concluído: todos os grupos selecionados já constam no progresso.');return;}
+    if(!remaining.size){await navigate();status('Concluído: grupos já registrados; retorno ao canal confirmado. Nenhum reenvio.');return;}
     await navigate();await pinSource();
     let batches=0;
     const jobs=[...keywords,...groups.map(g=>g.nome)];
@@ -2918,18 +2931,7 @@ function ftWhatsAppRunner(P){
       let lotesDaPalavra=0;
       while(remaining.size){
         await checkpoint();
-        if(!modal()){
-          // O envio pode deixar aberta a conversa de destino, não o canal.
-          // Reabre a origem em TODO novo bloco, inclusive no teste sem envio.
-          if(batches){
-            status('Voltando a Canais → '+channelName+'…');
-            log('Voltando ao canal para o próximo bloco.');
-            await navigate();
-            await wait(()=>source.ids.every(id=>messages().some(m=>m.getAttribute('data-id')===id)),
-              'A matéria e a enquete originais não reapareceram no canal. O bloco anterior foi preservado; nenhuma outra atualização será selecionada.');
-          }
-          await selectPair();
-        }
+        if(!modal())await selectPair();
         status((dryRun?'TESTE · ':'')+keyword+' · '+remaining.size+' pendentes');
         const marks=await prepareBatch(keyword);
         // Sem esta linha, palavra que não acha nada some do log e a leitura do
@@ -2938,6 +2940,13 @@ function ftWhatsAppRunner(P){
         if(!marks.length){if(ji<keywords.length&&!lotesDaPalavra)log('"'+keyword+'": nenhum pendente localizado.');break;}
         lotesDaPalavra++;
         await sendBatch(marks);batches++;
+        // O ciclo só termina ao VOLTAR: inclusive um teste de destino único
+        // ou o último bloco da lista de 130. Registros de envio já estão salvos.
+        status('Bloco '+batches+' · voltando a Canais → '+channelName+'…');
+        await navigate();
+        await wait(()=>source.ids.every(id=>messages().some(m=>m.getAttribute('data-id')===id&&m.textContent.trim())),
+          'O bloco foi processado, mas a origem não reapareceu. Progresso preservado; nenhuma outra atualização será selecionada.',30000);
+        log('Ciclo '+batches+' completo: retorno ao canal confirmado; '+remaining.size+' de '+groups.length+' pendentes.');
         // Teste percorre também o retorno ao canal, sem tocar no progresso real.
         if(dryRun&&batches>=2){status('Teste concluído: dois ciclos completos, nenhum envio.');return;}
         if(!remaining.size)break;
@@ -2972,7 +2981,7 @@ function ftWhatsAppRunner(P){
   ui('[data-act="stop"]').onclick=()=>{state='stopped';status('Parando; aguardando terminar a confirmação de eventual envio em andamento.');};
   ui('[data-act="close"]').onclick=()=>{closed=true;state='stopped';if(!busy){box.remove();window.__ftAuto=false;}else status('Encerrando…');};
   ui('[data-act="report"]').onclick=()=>{
-    const data={versao,materia:sb.slug,teste:dryRun,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()]};
+    const data={versao,materia:sb.slug,teste:dryRun,cicloPrivado:reviewOnly,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()]};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const a=document.createElement('a');a.href=url;a.download='encaminhamento-'+sb.slug.replace(/[^a-z0-9_-]/gi,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
@@ -2982,8 +2991,9 @@ function autoGerarCodigo(payload){
   return AUTO_RUNNER_SRC.replace('__FT_PAYLOAD__',()=>JSON.stringify(payload));
 }
 
-function autoCopiarCodigo(btn,dryRun=false){
-  const p=autoMontarPayload(dryRun);if(!p)return;
+function autoCopiarCodigo(btn,dryRun=false,reviewOnly=false){
+  const p=autoMontarPayload(dryRun,reviewOnly);if(!p)return;
+  if(reviewOnly&&!confirm('Este código fará UM envio real de matéria + enquete somente para Revisão para Publicação 📲, depois voltará ao canal. Não envia aos demais grupos nem altera seu progresso. Gerar o código?'))return;
   const code=autoGerarCodigo(p);
   navigator.clipboard.writeText(code).then(()=>{
     const o=btn.textContent;btn.textContent='✅ Copiado! Cole no Console do web.whatsapp.com';btn.classList.add('copied');
