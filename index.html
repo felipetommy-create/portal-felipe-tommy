@@ -806,6 +806,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
       <li>Aqui no painel FT: <strong>📋 Copiar código</strong> abaixo.</li>
       <li>Volta no Console → Ctrl+V → Enter. Aparece o painel flutuante no canto.</li>
       <li>Clique <strong>▶ Iniciar</strong>. O robô faz: <em>Canais → Portal Felipe Tommy → seleciona matéria + enquete → confere 2 itens → Encaminhar → busca → marca até 5 destinos → Enviar → volta a Canais → Portal Felipe Tommy</em>. Repete até esgotar os grupos selecionados (inclusive listas de 130 grupos). O último bloco também termina no canal.</li>
+      <li>Nos envios para grupos, Iniciar abre uma pequena <strong>janela de sincronização do painel</strong>. Deixe-a aberta e volte à aba do WhatsApp. Ela consulta e salva o progresso sem desativar as proteções do navegador. Se não abrir ou não conseguir sincronizar, o robô para sem iniciar novos envios.</li>
     </ol>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="autoCopiarCodigo(this)">📋 Copiar código para o Console</button>
@@ -2562,9 +2563,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.8';
+const PAINEL_VERSAO='2.8.9';
 const PAINEL_DATA='20/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.9','20/09/2026','Sincronização feita por janela do painel via mensagens entre janelas, sem fetch para Supabase dentro do WhatsApp (bloqueado pela política de segurança). Consulta de progresso antes de enviar e salvamento após cada bloco preservados. Sem extensões ou desativação de proteções.'],
   ['2.8.8','20/09/2026','Botões do robô com alto contraste: Iniciar verde, Pausar amarelo, Parar vermelho e Relatório azul; estados desabilitado e foco visíveis. Teste real restrito a exatamente 5 ou 10 grupos selecionados, com conferência dos nomes e progresso normal preservado. O Console continua nesta etapa.'],
   ['2.8.7','20/09/2026','Retorno ativa a área interna do canal, com tentativas limitadas e conferência do cabeçalho. Matéria e enquete identificadas diretamente no canal, sem carregar link no painel. Progresso por IDs das atualizações, migração dos registros locais anteriores e preservação de envios já confirmados.'],
   ['2.8.6','20/09/2026','Rota documentada a partir do ciclo real: retorno ao canal após TODOS os lotes, inclusive o último ou destino único. Controles por nome/role, espera das atualizações carregadas e seleção por IDs. Botão dedicado gera ciclo real somente para Revisão para Publicação 📲, sem alterar o progresso dos grupos. Validação no WhatsApp desta versão fica com Felipe.'],
@@ -2673,7 +2675,7 @@ function autoMontarPayload(dryRun=false,reviewOnly=false){
   const delayMs=Math.max(2,parseInt(document.getElementById('autoDelay').value||'4',10))*1000;
   const jitterMs=Math.max(0,parseInt(document.getElementById('autoJitter').value||'3',10))*1000;
   if(!SB?.url||!SB?.key){alert('Conecte o painel ao Supabase para carregar os grupos.');return null;}
-  return {v:5,autoSource:true,dryRun,reviewOnly,versao:PAINEL_VERSAO,articleTitle:'',articleLinks:[],groups:gs,keywords:reviewOnly?['Revisão para Publicação']:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug:'auto-canal'}};
+  return {v:5,autoSource:true,dryRun,reviewOnly,versao:PAINEL_VERSAO,bridgeUrl:new URL('encaminhador-bridge.html',location.href).href,articleTitle:'',articleLinks:[],groups:gs,keywords:reviewOnly?['Revisão para Publicação']:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,slug:'auto-canal'}};
 }
 
 // Encaminhamento nativo. Seletores conferidos no DOM do WhatsApp em 19/09/2026.
@@ -2945,16 +2947,50 @@ function ftWhatsAppRunner(P){
     if(marks.length!==targets.length)throw Error('Teste interrompido: contador do bloco divergente.');
     return marks;
   };
-  const request=async(path,options={})=>{
-    const r=await fetch(sb.url+'/rest/v1/'+path,{...options,signal:AbortSignal.timeout(12000),headers:{apikey:sb.key,Authorization:'Bearer '+sb.key,'Content-Type':'application/json',...options.headers}});
-    if(!r.ok)throw Error('Sincronização indisponível (HTTP '+r.status+').');
-    return r;
+  // O WhatsApp bloqueia fetch ao Supabase por CSP. Apenas o painel acessa o banco.
+  const protocol='ft-forward-bridge-v1',bridgeToken=crypto.randomUUID(),bridgeRequests=new Map();
+  let bridgeWindow=null,bridgeReady=false,bridgeOrigin='',bridgeSeq=0;
+  const onBridgeMessage=event=>{
+    const m=event.data;
+    if(event.origin!==bridgeOrigin||event.source!==bridgeWindow||m?.protocol!==protocol||m.token!==bridgeToken)return;
+    if(m.kind==='ready'){bridgeReady=true;return;}
+    if(m.kind==='result'){
+      const req=bridgeRequests.get(m.id);if(!req)return;
+      clearTimeout(req.timer);bridgeRequests.delete(m.id);
+      m.ok?req.resolve(m.rows||[]):req.reject(Error(m.error||'A sincronização do painel falhou.'));
+    }
+  };
+  window.addEventListener('message',onBridgeMessage);
+  const openBridge=()=>{
+    if(dryRun||reviewOnly)return;
+    if(bridgeWindow&&!bridgeWindow.closed)return;
+    if(!P.bridgeUrl)throw Error('Copie um código novo da versão atual do painel.');
+    const url=new URL(P.bridgeUrl);
+    if(url.protocol!=='https:')throw Error('Abra o painel publicado em HTTPS e copie o código novamente.');
+    bridgeOrigin=url.origin;url.hash='token='+bridgeToken;bridgeReady=false;
+    // Chamado diretamente em Iniciar, antes de qualquer await (gesto do usuário).
+    bridgeWindow=window.open(url.href,'ft-forward-sync-'+bridgeToken,'popup,width=520,height=430');
+    if(!bridgeWindow)throw Error('A janela de sincronização não abriu. Permita a janela do painel e clique Iniciar novamente. Nenhum envio iniciado.');
+  };
+  const bridgeRequest=async(kind,ids)=>{
+    if(!bridgeWindow||bridgeWindow.closed)throw Error('A janela de sincronização foi fechada. Clique Iniciar para reabri-la; o progresso local foi preservado.');
+    status('Sincronizando pelo painel…');
+    for(let n=0;n<100&&!bridgeReady;n++){
+      bridgeWindow.postMessage({protocol,token:bridgeToken,kind:'ping'},bridgeOrigin);await sleep(200);
+    }
+    if(!bridgeReady)throw Error('A janela do painel não respondeu. Confira se ela abriu e se a versão foi atualizada; nenhum reenvio automático.');
+    return new Promise((resolve,reject)=>{
+      const id=String(++bridgeSeq);
+      const timer=setTimeout(()=>{bridgeRequests.delete(id);reject(Error('Sincronização sem resposta. Progresso local preservado; clique Iniciar para tentar novamente.'));},20000);
+      bridgeRequests.set(id,{resolve,reject,timer});
+      bridgeWindow.postMessage({protocol,token:bridgeToken,id,kind,project:sb.url,slug:sb.slug,ids},bridgeOrigin);
+    });
   };
   const sync=async()=>{
     if(reviewOnly)return; // O teste privado nunca marca grupos de distribuição.
     const ids=Object.keys(ledger.sent).filter(id=>!synced.has(id));
     if(!ids.length)return;
-    await request('encaminhamentos?on_conflict=materia_slug,grupo_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(ids.map(id=>({materia_slug:sb.slug,grupo_id:id,feito:true})))});
+    await bridgeRequest('sync',ids);
     ids.forEach(id=>synced.add(id));
   };
   const loadProgress=async()=>{
@@ -2966,7 +3002,7 @@ function ftWhatsAppRunner(P){
       for(const [name,g] of remaining)if(ledger.sent[g.id])remaining.delete(name);
       progress();return;
     }
-    const data=await (await request('encaminhamentos?select=grupo_id&feito=eq.true&materia_slug=eq.'+encodeURIComponent(sb.slug))).json();
+    const data=await bridgeRequest('load');
     for(const row of data)synced.add(row.grupo_id);
     for(const [name,g] of remaining)if(synced.has(g.id)||ledger.sent[g.id])remaining.delete(name);
     await sync();progress();
@@ -3046,6 +3082,7 @@ function ftWhatsAppRunner(P){
     busy=true;state='running';remaining=new Map(byName);synced=new Set();
     ui('[data-act="start"]').disabled=true;ui('[data-act="pause"]').disabled=false;ui('[data-act="stop"]').disabled=false;
     try{
+      openBridge();
       if(!navigator.locks)throw Error('Este navegador não oferece trava para impedir duas rodadas simultâneas.');
       await navigator.locks.request(lockKey,{ifAvailable:true},async lock=>{
         if(!lock)throw Error('Esta matéria já está rodando em outra aba.');
@@ -3055,13 +3092,13 @@ function ftWhatsAppRunner(P){
     finally{
       state='idle';busy=false;
       ui('[data-act="start"]').disabled=false;ui('[data-act="pause"]').disabled=true;ui('[data-act="stop"]').disabled=true;ui('[data-act="pause"]').textContent='⏸ Pausar';
-      if(closed){box.remove();window.__ftAuto=false;}
+      if(closed){window.removeEventListener('message',onBridgeMessage);if(bridgeWindow&&!bridgeWindow.closed)bridgeWindow.close();box.remove();window.__ftAuto=false;}
     }
   };
   ui('[data-act="start"]').onclick=run;
   ui('[data-act="pause"]').onclick=()=>{state=state==='paused'?'running':'paused';ui('[data-act="pause"]').textContent=state==='paused'?'▶ Retomar':'⏸ Pausar';};
   ui('[data-act="stop"]').onclick=()=>{state='stopped';status('Parando; aguardando terminar a confirmação de eventual envio em andamento.');};
-  ui('[data-act="close"]').onclick=()=>{closed=true;state='stopped';if(!busy){box.remove();window.__ftAuto=false;}else status('Encerrando…');};
+  ui('[data-act="close"]').onclick=()=>{closed=true;state='stopped';if(!busy){window.removeEventListener('message',onBridgeMessage);if(bridgeWindow&&!bridgeWindow.closed)bridgeWindow.close();box.remove();window.__ftAuto=false;}else status('Encerrando…');};
   ui('[data-act="report"]').onclick=()=>{
     const data={versao,materia:sb.slug,teste:dryRun,testeReal:!!P.testBatch,cicloPrivado:reviewOnly,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()]};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
