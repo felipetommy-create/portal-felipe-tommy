@@ -794,7 +794,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
   <div class="card">
     <div class="card-title">🤖 Encaminhador automático</div>
     <p class="hint" style="margin-top:0">O robô abre o canal Portal Felipe Tommy, seleciona a última matéria e a enquete juntas, encaminha para até 5 grupos e repete o ciclo. Tudo roda no navegador, sem chamadas de IA.</p>
-    <p class="hint" style="margin-top:8px">Confira a matéria carregada e os grupos abaixo. O progresso é salvo por matéria; um lote com resultado incerto fica separado para conferência.</p>
+    <p class="hint" style="margin-top:8px">Publique a matéria e a enquete no canal e selecione os grupos abaixo. Não precisa carregar matéria nem link no painel. O robô identifica as duas últimas atualizações do canal e salva o progresso por esse par; um lote incerto bloqueia reenvio.</p>
     <div id="autoAviso" style="display:none;margin-top:12px;padding:12px 14px;background:rgba(245,158,11,.12);border:1px solid var(--warn);border-radius:8px;font-size:13px;line-height:1.6;color:var(--text)"></div>
   </div>
 
@@ -824,7 +824,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
       <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Jitter:</span><input type="number" id="autoJitter" value="3" min="0" max="15" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-      <button class="btn-sm" onclick="autoMarcarTodosPendentes()">☑ Só os que faltam</button>
+      <button class="btn-sm" onclick="autoMarcarTodosPendentes()">☑ Ativos (robô pula enviados)</button>
       <button class="btn-sm" onclick="autoMarcarTodos()">☑ Todos os grupos</button>
       <button class="btn-sm" onclick="autoDesmarcarTodos()">☐ Nenhum</button>
     </div>
@@ -835,7 +835,8 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
   <div class="card">
     <div class="card-title"><span class="step-badge">3</span> Depois que terminou</div>
     <p class="hint" style="margin-top:0">Os envios aceitos pelo WhatsApp são sincronizados automaticamente. Se a sincronização falhar, a rodada para e preserva o registro local. Use Iniciar para sincronizar e continuar. O botão Relatório no robô separa enviados, incertos e pendentes.</p>
-    <button class="btn btn-secondary" onclick="renderAutoEnvio()">↻ Atualizar progresso dos grupos</button>
+    <button class="btn btn-secondary" onclick="renderAutoEnvio()">↻ Atualizar lista de grupos</button>
+    <p class="hint">O progresso da matéria identificada no canal aparece no robô e no botão Relatório. Iniciar novamente consulta o progresso local e da nuvem e pula os destinos já enviados. A lista abaixo não usa mais a matéria carregada na aba WhatsApp.</p>
   </div>
 </div>
 
@@ -2558,9 +2559,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.6';
+const PAINEL_VERSAO='2.8.7';
 const PAINEL_DATA='20/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.7','20/09/2026','Retorno ativa a área interna do canal, com tentativas limitadas e conferência do cabeçalho. Matéria e enquete identificadas diretamente no canal, sem carregar link no painel. Progresso por IDs das atualizações, migração dos registros locais anteriores e preservação de envios já confirmados.'],
   ['2.8.6','20/09/2026','Rota documentada a partir do ciclo real: retorno ao canal após TODOS os lotes, inclusive o último ou destino único. Controles por nome/role, espera das atualizações carregadas e seleção por IDs. Botão dedicado gera ciclo real somente para Revisão para Publicação 📲, sem alterar o progresso dos grupos. Validação no WhatsApp desta versão fica com Felipe.'],
   ['2.8.5','19/09/2026','Após cada bloco, o encaminhador volta a Canais e abre Portal Felipe Tommy antes de selecionar novamente a mesma matéria e enquete. Se a origem não reabrir, interrompe sem repetir o bloco confirmado. Testes simulam a permanência na conversa de destino após o envio.'],
   ['2.8.4','19/09/2026','Grupos agora permite editar o nome sem apagar cadastro nem histórico. O caso faixa foi conferido no WhatsApp: o cadastro FAIXA DE GAZA divergia de Faixa de Gaza - Modo Eleições. O encaminhador mantém a conferência por nome completo, mostra divergências encontradas na busca e inclui a versão correta no relatório.'],
@@ -2604,14 +2606,13 @@ let autoSelSlug=null;
 const AUTO_KEYWORDS=['picu','faixa','noticia','amigo','parauapeba','caraja','politica','fora','unido','la vai','vs','fogo','jorja','portal'];
 
 async function renderAutoEnvio(){
-  await carregarDone();
   const div=document.getElementById('autoListaGrupos');
   if(!grupos.length){div.innerHTML='<div class="empty-state">Cadastre grupos na aba Grupos.</div>';renderAutoAviso();return;}
-  if(autoSelSlug!==slugAtual()){autoSelSlug=slugAtual();autoSelIds=new Set(grupos.filter(g=>g.ativo!==false&&!doneIds.has(g.id)).map(g=>g.id));}
+  if(autoSelSlug!=='canal'){autoSelSlug='canal';autoSelIds=new Set(grupos.filter(g=>g.ativo!==false).map(g=>g.id));}
   const {dupes}=detectarProblemasGrupos();
   const nomesDup=new Set(dupes.map(d=>d.norm));
   div.innerHTML=grupos.map((g,i)=>{
-    const f=doneIds.has(g.id);
+    const f=false; // A origem só será conhecida no WhatsApp; não usar progresso de outra matéria.
     const sel=autoSelIds.has(g.id);
     const dup=nomesDup.has(ftNormNome(g.nome));
     return '<label class="kgroup-item" style="cursor:pointer;'+(f?'opacity:.55;':'')+(dup?'border-color:var(--warn);':'')+'"><input type="checkbox" '+(sel?'checked':'')+' onchange="autoToggle(\''+g.id+'\',this.checked)" style="margin-right:8px"/><div class="group-num">'+(i+1)+'</div><span class="name">'+esc(g.nome)+'</span>'+(dup?'<span class="done-tag" style="background:rgba(245,158,11,.15);color:var(--warn)">⚠ repetido</span>':'')+(f?'<span class="done-tag">✓ Já feito</span>':'')+'</label>';
@@ -2638,7 +2639,7 @@ function irParaGrupos(){
 }
 function autoToggle(id,checked){if(checked)autoSelIds.add(id);else autoSelIds.delete(id);autoAtualizarContagem();}
 function autoAtualizarContagem(){document.getElementById('autoContagem').textContent=autoSelIds.size+' grupo(s) selecionado(s) de '+grupos.length+' cadastrados.';}
-function autoMarcarTodosPendentes(){autoSelIds=new Set(grupos.filter(g=>!doneIds.has(g.id)).map(g=>g.id));renderAutoEnvio();}
+function autoMarcarTodosPendentes(){autoSelIds=new Set(grupos.filter(g=>g.ativo!==false).map(g=>g.id));renderAutoEnvio();}
 function autoMarcarTodos(){autoSelIds=new Set(grupos.map(g=>g.id));renderAutoEnvio();}
 function autoDesmarcarTodos(){autoSelIds=new Set();renderAutoEnvio();}
 
@@ -2662,11 +2663,8 @@ function autoMontarPayload(dryRun=false,reviewOnly=false){
   }
   const delayMs=Math.max(2,parseInt(document.getElementById('autoDelay').value||'4',10))*1000;
   const jitterMs=Math.max(0,parseInt(document.getElementById('autoJitter').value||'3',10))*1000;
-  const slug=slugAtual();
-  const articleTitle=document.getElementById('tituloCurto').value.trim();
-  const articleLinks=[document.getElementById('linkMateria').value,document.getElementById('outputLinkCurto').textContent].map(s=>s.trim()).filter(s=>/^https:\/\/felipetommy\.com\.br\//i.test(s));
-  if(!SB||slug==='sem-slug'||!articleLinks.length){alert('Carregue a matéria e seu link na aba WhatsApp antes de encaminhar.');return null;}
-  return {v:4,dryRun,reviewOnly,versao:PAINEL_VERSAO,articleTitle,articleLinks,groups:gs,keywords:reviewOnly?['Revisão para Publicação']:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug}};
+  if(!SB?.url||!SB?.key){alert('Conecte o painel ao Supabase para carregar os grupos.');return null;}
+  return {v:5,autoSource:true,dryRun,reviewOnly,versao:PAINEL_VERSAO,articleTitle:'',articleLinks:[],groups:gs,keywords:reviewOnly?['Revisão para Publicação']:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,key:SB.key,slug:'auto-canal'}};
 }
 
 // Encaminhamento nativo. Seletores conferidos no DOM do WhatsApp em 19/09/2026.
@@ -2685,12 +2683,13 @@ function ftWhatsAppRunner(P){
     if(!g.id||!name||byName.has(name)){alert('Há grupos sem identificação ou com nomes iguais. Corrija a lista no painel.');return;}
     byName.set(name,g);
   }
-  const key='ft_forward_v4:'+sb.url+':'+sb.slug+(reviewOnly?':review':'');
+  let key='ft_forward_v4:'+sb.url+':'+sb.slug+(reviewOnly?':review':'');
+  const lockKey=P.autoSource?'ft_forward_channel:'+sb.url+':'+norm(channelName):key;
   let ledger;
   try{
-    ledger=JSON.parse(localStorage.getItem(key)||'null')||{sent:{},pending:[],source:null};
+    ledger=P.autoSource?{sent:{},pending:[],source:null}:JSON.parse(localStorage.getItem(key)||'null')||{sent:{},pending:[],source:null};
     if(!ledger.sent||!Array.isArray(ledger.pending))throw Error();
-    localStorage.setItem(key,JSON.stringify(ledger));
+    if(!P.autoSource)localStorage.setItem(key,JSON.stringify(ledger));
   }catch{alert('Não foi possível abrir o controle desta matéria no navegador. Nenhum envio iniciado.');return;}
   const save=()=>localStorage.setItem(key,JSON.stringify(ledger));
   let state='idle',busy=false,closed=false,source=ledger.source;
@@ -2748,7 +2747,30 @@ function ftWhatsAppRunner(P){
     const channels=await wait(()=>labeled(document,'Canais'),'Aguarde o WhatsApp carregar: botão Canais indisponível.',30000);
     await click(channels);
     const channel=await wait(()=>all('button,[role="button"]').find(e=>visible(e)&&norm(e.getAttribute('aria-label'))===norm('Canal '+channelName)),'Canal Portal Felipe Tommy não encontrado na lista.');
-    await click(channel);
+    // O wrapper role=button não aciona necessariamente os handlers internos.
+    // DOM real: newsletter-tab-newsletter-cell → cell-frame-container → title.
+    const originOpen=()=>{
+      const h=main()?.querySelector('header');
+      return !!h&&norm(h.textContent).startsWith(norm(channelName));
+    };
+    for(let attempt=0;attempt<3;attempt++){
+      const row=all('[role="button"],button').find(e=>visible(e)&&norm(e.getAttribute('aria-label'))===norm('Canal '+channelName));
+      if(!row)throw Error('Canal de origem saiu da lista. Nenhum envio repetido.');
+      const title=all('[data-testid="cell-frame-title"] [title]',row).find(e=>norm(e.getAttribute('title'))===norm(channelName));
+      const target=title||row.querySelector('[data-testid="cell-frame-container"]')||row;
+      target.scrollIntoView({block:'center'});await sleep(250);await checkpoint();
+      if(attempt){
+        const r=target.getBoundingClientRect(),opts={bubbles:true,cancelable:true,view:window,clientX:r.left+r.width/2,clientY:r.top+r.height/2,button:0};
+        target.dispatchEvent(new PointerEvent('pointerdown',{...opts,pointerId:1,pointerType:'mouse',isPrimary:true,buttons:1}));
+        target.dispatchEvent(new MouseEvent('mousedown',{...opts,buttons:1}));
+        target.dispatchEvent(new PointerEvent('pointerup',{...opts,pointerId:1,pointerType:'mouse',isPrimary:true,buttons:0}));
+        target.dispatchEvent(new MouseEvent('mouseup',{...opts,buttons:0}));
+      }
+      await click(target);
+      for(let n=0;n<20&&!originOpen();n++)await sleep(200);
+      if(originOpen())break;
+      log('Retorno ao canal: tentativa '+(attempt+1)+' não confirmou abertura.');
+    }
     // O nome do canal nao fica num <button>: em 19/09/2026 os <button> do header eram
     // ic-link, ic-switch-account e ic-more-vert. O titulo abre o texto do proprio header.
     await wait(()=>{
@@ -2771,21 +2793,43 @@ function ftWhatsAppRunner(P){
     }
     await wait(()=>{
       const ms=messages(),a=ms.at(-2),p=ms.at(-1);
-      return a&&p&&a.textContent.trim()&&p.textContent.trim()&&a.querySelector('a[href]')&&p.querySelector('input[id*="-option-"]');
+      return a&&p&&a.textContent.trim()&&p.textContent.trim()&&(P.autoSource||a.querySelector('a[href]'))&&p.querySelector('input[id*="-option-"]');
     },'Aguarde carregar a matéria e a enquete completas no canal.',30000);
     const ms=messages(),poll=ms.at(-1),article=ms.at(-2);
     const isPoll=el=>!!el.querySelector('input[id*="-option-"]');
     const links=all('a[href]',article).map(a=>a.href).filter(h=>{try{return new URL(h).hostname==='felipetommy.com.br';}catch{return false;}});
-    if(!isPoll(poll)||isPoll(article)||!links.length)throw Error('As duas últimas atualizações não são matéria do portal + enquete. Confira o canal.');
+    if(!isPoll(poll)||isPoll(article)||(!P.autoSource&&!links.length))throw Error('As duas últimas atualizações não são matéria + enquete. Confira o canal.');
     if(P.articleLinks?.length&&!P.articleLinks.some(h=>links.some(l=>l.replace(/\/$/,'')===h.replace(/\/$/,'')))){
       const title=norm(P.articleTitle);
       if(!title||!norm(article.textContent).includes(title))throw Error('A última matéria do canal não corresponde à carregada no painel.');
     }
     const current=[article.getAttribute('data-id'),poll.getAttribute('data-id')];
     if(source&&JSON.stringify(source.ids)!==JSON.stringify(current))throw Error('O par de atualizações mudou para esta matéria. Confira o conteúdo e o progresso antes de continuar.');
-    source={ids:current,links,title:P.articleTitle||links[0]};
-    if(!dryRun){ledger.source=source;save();}
-    log('Origem fixada: '+links[0]+' + enquete.');
+    source={ids:current,links,title:P.articleTitle||links[0]||article.textContent.trim().slice(0,160)};
+    if(!dryRun&&!P.autoSource){ledger.source=source;save();}
+    log('Origem fixada no canal: '+(links[0]||source.title)+' + enquete.');
+  };
+  const identifyProgress=()=>{
+    // Identidade determinística do conteúdo, igual entre dispositivos.
+    const ids=JSON.stringify(source.ids);
+    sb.slug='canal-'+source.ids.map(id=>encodeURIComponent(id)).join('-');
+    key='ft_forward_v5:'+sb.url+':'+sb.slug+(reviewOnly?':review':'');
+    const stored=JSON.parse(localStorage.getItem(key)||'null');
+    ledger=stored||{sent:{},pending:[],source};
+    if(!ledger.sent||!Array.isArray(ledger.pending)||JSON.stringify(ledger.source?.ids)!==ids)throw Error('Registro de progresso incompatível com as atualizações do canal.');
+    // Importa, sem apagar, os envios da v2.8.6 quando o par é EXATAMENTE igual.
+    const prefix='ft_forward_v4:'+sb.url+':';
+    for(let i=0;i<localStorage.length;i++){
+      const oldKey=localStorage.key(i);
+      if(!oldKey?.startsWith(prefix)||oldKey.endsWith(':review')!==reviewOnly)continue;
+      let old;try{old=JSON.parse(localStorage.getItem(oldKey));}catch{throw Error('Registro antigo ilegível: confira o progresso antes de enviar.');}
+      if(JSON.stringify(old?.source?.ids)!==ids)continue;
+      if(!old.sent||!Array.isArray(old.pending))throw Error('Registro antigo de envio inválido.');
+      Object.assign(ledger.sent,old.sent);
+      for(const g of old.pending)if(!ledger.pending.some(p=>p.id===g.id))ledger.pending.push(g);
+    }
+    ledger.source=source;
+    if(!dryRun)save();
   };
   const selectPair=async()=>{
     await cancelSelection();
@@ -2921,9 +2965,10 @@ function ftWhatsAppRunner(P){
     progress();
   };
   const execute=async()=>{
+    if(P.autoSource){await navigate();await pinSource();identifyProgress();}
     await loadProgress();
     if(!remaining.size){await navigate();status('Concluído: grupos já registrados; retorno ao canal confirmado. Nenhum reenvio.');return;}
-    await navigate();await pinSource();
+    if(!P.autoSource){await navigate();await pinSource();}
     let batches=0;
     const jobs=[...keywords,...groups.map(g=>g.nome)];
     for(let ji=0;ji<jobs.length;ji++){
@@ -2965,7 +3010,7 @@ function ftWhatsAppRunner(P){
     ui('[data-act="start"]').disabled=true;ui('[data-act="pause"]').disabled=false;ui('[data-act="stop"]').disabled=false;
     try{
       if(!navigator.locks)throw Error('Este navegador não oferece trava para impedir duas rodadas simultâneas.');
-      await navigator.locks.request(key,{ifAvailable:true},async lock=>{
+      await navigator.locks.request(lockKey,{ifAvailable:true},async lock=>{
         if(!lock)throw Error('Esta matéria já está rodando em outra aba.');
         await execute();
       });
