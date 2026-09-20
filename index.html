@@ -811,9 +811,11 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
       <button class="btn btn-primary" onclick="autoCopiarCodigo(this)">📋 Copiar código para o Console</button>
       <button class="btn btn-secondary" onclick="autoCopiarCodigo(this,true)">🧪 Copiar teste sem enviar</button>
       <button class="btn btn-secondary" onclick="autoCopiarCodigo(this,false,true)">📲 Copiar ciclo para Revisão (envia)</button>
+      <button class="btn btn-secondary" onclick="autoCopiarCodigo(this,false,false,true)">🧪 Copiar teste real · 5 ou 10 grupos</button>
     </div>
     <p class="hint" style="margin-top:10px">O teste prepara até dois lotes e volta ao canal sozinho, sem enviar e sem marcar progresso. Deixe a aba aberta. Use Pausar antes de mexer no WhatsApp.</p>
     <p class="hint"><strong>Ciclo para Revisão (envia):</strong> ignora a seleção dos grupos e encaminha somente para <strong>Revisão para Publicação 📲</strong>, volta ao canal e encerra. Não precisa cadastrar esse destino e não altera o progresso da distribuição. Um envio por matéria, com controle privado separado para evitar repetição ao clicar Iniciar novamente.</p>
+    <p class="hint"><strong>Teste real:</strong> use Selecionar primeiros 10 abaixo, ou marque exatamente 5 ou 10 grupos. Confira os nomes ao copiar. O robô identifica a última matéria + enquete quando você clicar Iniciar, reúne cinco destinos por bloco, envia e volta ao canal. Se algum destino não for localizado, para sem enviar o bloco incompleto. Já enviados são pulados.</p>
   </div>
 
   <div class="card">
@@ -825,6 +827,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <button class="btn-sm" onclick="autoMarcarTodosPendentes()">☑ Ativos (robô pula enviados)</button>
+      <button class="btn-sm" onclick="autoSelecionarPrimeirosDez()">🧪 Selecionar primeiros 10</button>
       <button class="btn-sm" onclick="autoMarcarTodos()">☑ Todos os grupos</button>
       <button class="btn-sm" onclick="autoDesmarcarTodos()">☐ Nenhum</button>
     </div>
@@ -2559,9 +2562,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.7';
+const PAINEL_VERSAO='2.8.8';
 const PAINEL_DATA='20/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.8','20/09/2026','Botões do robô com alto contraste: Iniciar verde, Pausar amarelo, Parar vermelho e Relatório azul; estados desabilitado e foco visíveis. Teste real restrito a exatamente 5 ou 10 grupos selecionados, com conferência dos nomes e progresso normal preservado. O Console continua nesta etapa.'],
   ['2.8.7','20/09/2026','Retorno ativa a área interna do canal, com tentativas limitadas e conferência do cabeçalho. Matéria e enquete identificadas diretamente no canal, sem carregar link no painel. Progresso por IDs das atualizações, migração dos registros locais anteriores e preservação de envios já confirmados.'],
   ['2.8.6','20/09/2026','Rota documentada a partir do ciclo real: retorno ao canal após TODOS os lotes, inclusive o último ou destino único. Controles por nome/role, espera das atualizações carregadas e seleção por IDs. Botão dedicado gera ciclo real somente para Revisão para Publicação 📲, sem alterar o progresso dos grupos. Validação no WhatsApp desta versão fica com Felipe.'],
   ['2.8.5','19/09/2026','Após cada bloco, o encaminhador volta a Canais e abre Portal Felipe Tommy antes de selecionar novamente a mesma matéria e enquete. Se a origem não reabrir, interrompe sem repetir o bloco confirmado. Testes simulam a permanência na conversa de destino após o envio.'],
@@ -2641,6 +2645,11 @@ function autoToggle(id,checked){if(checked)autoSelIds.add(id);else autoSelIds.de
 function autoAtualizarContagem(){document.getElementById('autoContagem').textContent=autoSelIds.size+' grupo(s) selecionado(s) de '+grupos.length+' cadastrados.';}
 function autoMarcarTodosPendentes(){autoSelIds=new Set(grupos.filter(g=>g.ativo!==false).map(g=>g.id));renderAutoEnvio();}
 function autoMarcarTodos(){autoSelIds=new Set(grupos.map(g=>g.id));renderAutoEnvio();}
+function autoSelecionarPrimeirosDez(){
+  const primeiros=grupos.slice(0,10);
+  if(primeiros.length!==10||primeiros.some(g=>g.ativo===false)){alert('Os primeiros 10 da lista precisam estar cadastrados e ativos. Confira antes do teste.');return;}
+  autoSelSlug='canal';autoSelIds=new Set(primeiros.map(g=>g.id));renderAutoEnvio();
+}
 function autoDesmarcarTodos(){autoSelIds=new Set();renderAutoEnvio();}
 
 function autoMontarPayload(dryRun=false,reviewOnly=false){
@@ -2675,6 +2684,7 @@ function ftWhatsAppRunner(P){
   if(window.__ftAuto){alert('Feche o encaminhador anterior antes de abrir outro.');return;}
   const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
   const {groups,keywords=[],sb,channelName='Portal Felipe Tommy',dryRun=false,reviewOnly=false,versao='?'}=P;
+  if(P.testBatch&&(reviewOnly||dryRun||![5,10].includes(groups?.length))){alert('Teste real limitado a 5 ou 10 grupos. Gere novamente o código após selecionar os destinos.');return;}
   if(reviewOnly&&(groups?.length!==1||groups[0].id!=='ft-private-review'||groups[0].nome!=='Revisão para Publicação 📲')){alert('Ciclo privado inválido: só Revisão para Publicação 📲 é permitida.');return;}
   if(!Array.isArray(groups)||!groups.length||!sb?.slug||sb.slug==='sem-slug'){alert('Carregue a matéria e selecione os grupos no painel.');return;}
   const byName=new Map();
@@ -2698,6 +2708,19 @@ function ftWhatsAppRunner(P){
   box.id='_ftForward';
   box.style.cssText='position:fixed;top:16px;right:16px;width:min(370px,94vw);background:#111b21;color:#e9edef;border:1px solid #40545e;border-radius:12px;padding:14px;font:13px Segoe UI,sans-serif;z-index:2147483647;box-shadow:0 8px 30px #0008';
   box.innerHTML='<div style="display:flex;justify-content:space-between"><b>Encaminhador FT · v'+versao+'</b><button data-act="close" aria-label="Fechar encaminhador">✕</button></div><p data-status aria-live="polite"></p><progress max="100" value="0" style="width:100%;accent-color:#00a884"></progress><div data-log style="max-height:160px;overflow:auto;font-size:12px;margin:10px 0"></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button data-act="start">▶ Iniciar</button><button data-act="pause" disabled>⏸ Pausar</button><button data-act="stop" disabled>■ Parar</button><button data-act="report">↓ Relatório</button></div>';
+  const buttonStyles=document.createElement('style');
+  buttonStyles.textContent=`
+    #_ftForward button[data-act]{background:var(--ft-button-bg,#9fd7ff)!important;color:#101820!important;border:2px solid transparent!important;border-radius:7px!important;padding:9px 12px!important;min-height:40px!important;font:700 13px/1.2 "Segoe UI",sans-serif!important;cursor:pointer!important;opacity:1!important;box-shadow:none!important;text-shadow:none!important}
+    #_ftForward button[data-act="start"]{--ft-button-bg:#50dfb4}
+    #_ftForward button[data-act="pause"]{--ft-button-bg:#ffda75}
+    #_ftForward button[data-act="stop"]{--ft-button-bg:#ff929c}
+    #_ftForward button[data-act="report"]{--ft-button-bg:#9fd7ff}
+    #_ftForward button[data-act="close"]{--ft-button-bg:#dce6ef;min-width:40px!important}
+    #_ftForward button[data-act]:disabled{background:#344957!important;color:#d9e4ec!important;border-color:#637c8d!important;cursor:not-allowed!important}
+    #_ftForward button[data-act]:not(:disabled):hover{border-color:#fff!important}
+    #_ftForward button[data-act]:focus-visible{outline:3px solid #fff!important;outline-offset:3px!important}
+  `;
+  box.appendChild(buttonStyles);
   document.body.appendChild(box);
   window.__ftAuto=true;
   const ui=s=>box.querySelector(s),status=t=>{ui('[data-status]').textContent=t;};
@@ -2867,10 +2890,10 @@ function ftWhatsAppRunner(P){
     const el=modal()?.querySelector('[aria-live="polite"][aria-label^="Você selecionou"]');
     return el?Number((el.getAttribute('aria-label').match(/\d+/)||[])[0]):0;
   };
-  const prepareBatch=async keyword=>{
+  const prepareBatch=async(keyword,already=[],allowedIds=null)=>{
     await typeSearch(keyword);
-    if(selectionCount()!==0)throw Error('Existem destinos selecionados de outro lote. Feche a janela antes de retomar.');
-    const marks=[],seen=new Set(),observedNames=new Set();
+    if(selectionCount()!==already.length)throw Error('Existem destinos selecionados fora deste lote. Feche a janela antes de retomar.');
+    const marks=[...already],seen=new Set(already.map(g=>norm(g.nome))),observedNames=new Set();
     for(let page=0;page<120&&marks.length<5;page++){
       const m=modal();if(!m)throw Error('Janela fechou durante a escolha dos destinos.');
       const currentRows=rows(m);
@@ -2878,11 +2901,12 @@ function ftWhatsAppRunner(P){
         await checkpoint();
         const n=norm(rowName(candidate));
         if(n.includes(norm(keyword)))observedNames.add(rowName(candidate));
+        if(!n.includes(norm(keyword)))continue; // Não consumir resultados da busca anterior.
         if(!n||seen.has(n))continue;seen.add(n);
         const row=rows(modal()||m).find(r=>norm(rowName(r))===n);
         const g=remaining.get(n);
         // Só nomes completos da lista autorizada. Nunca correspondência parcial.
-        if(!g||marks.some(x=>x.id===g.id)||!enabled(row))continue;
+        if(!g||(allowedIds&&!allowedIds.has(g.id))||marks.some(x=>x.id===g.id)||!enabled(row))continue;
         if(rows(m).filter(r=>norm(rowName(r))===n).length!==1)throw Error('Nome de grupo ambíguo: '+g.nome);
         if(checked(row))throw Error('Destino já marcado fora do controle: '+g.nome);
         await click(row);
@@ -2906,6 +2930,19 @@ function ftWhatsAppRunner(P){
         log('Confira os nomes na aba Grupos. Cadastro: '+expected.slice(0,5).map(g=>g.nome).join(' | ')+'. WhatsApp: '+[...observedNames].slice(0,5).join(' | ')+'. Nenhum destino escolhido por semelhança.');
       }
     }
+    return marks;
+  };
+  const prepareLimitedBatch=async()=>{
+    const targets=[...remaining.values()].slice(0,5);
+    const allowedIds=new Set(targets.map(g=>g.id));
+    let marks=[];
+    for(const g of targets){
+      if(marks.some(m=>m.id===g.id))continue;
+      // Preserva os marcados enquanto pesquisa o próximo nome no mesmo modal.
+      marks=await prepareBatch(g.nome,marks,allowedIds);
+      if(!marks.some(m=>m.id===g.id))throw Error('Teste interrompido sem enviar este bloco: não localizei '+g.nome+'. Confira o nome na aba Grupos.');
+    }
+    if(marks.length!==targets.length)throw Error('Teste interrompido: contador do bloco divergente.');
     return marks;
   };
   const request=async(path,options={})=>{
@@ -2970,7 +3007,7 @@ function ftWhatsAppRunner(P){
     if(!remaining.size){await navigate();status('Concluído: grupos já registrados; retorno ao canal confirmado. Nenhum reenvio.');return;}
     if(!P.autoSource){await navigate();await pinSource();}
     let batches=0;
-    const jobs=[...keywords,...groups.map(g=>g.nome)];
+    const jobs=P.testBatch?['teste real']: [...keywords,...groups.map(g=>g.nome)];
     for(let ji=0;ji<jobs.length;ji++){
       const keyword=jobs[ji];
       let lotesDaPalavra=0;
@@ -2978,7 +3015,7 @@ function ftWhatsAppRunner(P){
         await checkpoint();
         if(!modal())await selectPair();
         status((dryRun?'TESTE · ':'')+keyword+' · '+remaining.size+' pendentes');
-        const marks=await prepareBatch(keyword);
+        const marks=P.testBatch?await prepareLimitedBatch():await prepareBatch(keyword);
         // Sem esta linha, palavra que não acha nada some do log e a leitura do
         // resultado vira adivinhação. Só para a lista de palavras-chave: a varredura
         // final por nome de grupo tem 130 itens e encheria o log.
@@ -3026,7 +3063,7 @@ function ftWhatsAppRunner(P){
   ui('[data-act="stop"]').onclick=()=>{state='stopped';status('Parando; aguardando terminar a confirmação de eventual envio em andamento.');};
   ui('[data-act="close"]').onclick=()=>{closed=true;state='stopped';if(!busy){box.remove();window.__ftAuto=false;}else status('Encerrando…');};
   ui('[data-act="report"]').onclick=()=>{
-    const data={versao,materia:sb.slug,teste:dryRun,cicloPrivado:reviewOnly,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()]};
+    const data={versao,materia:sb.slug,teste:dryRun,testeReal:!!P.testBatch,cicloPrivado:reviewOnly,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()]};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const a=document.createElement('a');a.href=url;a.download='encaminhamento-'+sb.slug.replace(/[^a-z0-9_-]/gi,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
@@ -3036,8 +3073,13 @@ function autoGerarCodigo(payload){
   return AUTO_RUNNER_SRC.replace('__FT_PAYLOAD__',()=>JSON.stringify(payload));
 }
 
-function autoCopiarCodigo(btn,dryRun=false,reviewOnly=false){
+function autoCopiarCodigo(btn,dryRun=false,reviewOnly=false,testBatch=false){
   const p=autoMontarPayload(dryRun,reviewOnly);if(!p)return;
+  if(testBatch){
+    if(dryRun||reviewOnly||![5,10].includes(p.groups.length)){alert('Para o teste real, clique em Nenhum e selecione exatamente 5 ou 10 grupos. Nenhum código foi copiado.');return;}
+    if(!confirm('ENVIO REAL para estes '+p.groups.length+' grupos:\n\n'+p.groups.map(g=>'• '+g.nome).join('\n')+'\n\nO robô usa a última matéria + enquete do canal, em blocos de até 5, e volta ao canal após cada bloco. Já enviados serão pulados. Gerar código?'))return;
+    p.testBatch=true;
+  }
   if(reviewOnly&&!confirm('Este código fará UM envio real de matéria + enquete somente para Revisão para Publicação 📲, depois voltará ao canal. Não envia aos demais grupos nem altera seu progresso. Gerar o código?'))return;
   const code=autoGerarCodigo(p);
   navigator.clipboard.writeText(code).then(()=>{
