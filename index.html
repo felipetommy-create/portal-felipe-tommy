@@ -821,7 +821,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
 
   <div class="card">
     <div class="card-title"><span class="step-badge">2</span> Grupos e ordem das palavras-chave</div>
-    <p class="hint" style="margin-top:0">Ordem das buscas: <code>picu, faixa, cavalgada, noticia, amigo, parauapeba, caraja, politica, fora, unido, la vai, vs, fogo, jorja, portal</code>; depois, outras palavras dos nomes cadastrados, sem emojis nem nomes completos na busca. Esgota cada palavra antes da próxima, seleciona somente correspondentes da lista e nunca repete grupo já enviado nesta matéria. Nomes diferentes, como ano 2025 no cadastro e 2026 no WhatsApp, precisam ser corrigidos em Grupos.</p>
+    <p class="hint" style="margin-top:0">Ordem das buscas: <code>picu, faixa, cavalgada, noticia, amigo, parauapeba, caraja, politica, fora, unido, la vai, fogo, jorja, portal</code>; depois, uma palavra principal por grupo, como <code>mobiliza, equipe, braz, darci</code>, antes das alternativas. Somente palavras com quatro ou mais letras (ou a expressão “la vai”), sem sílabas, números ou emojis. Busca extensa passa à próxima palavra sem perder os marcados. O relatório inclui o plano de palavras por grupo. Nomes diferentes, como ano 2025 no cadastro e 2026 no WhatsApp, precisam ser corrigidos em Grupos. Nunca repete grupo já enviado nesta matéria.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;align-items:center">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Pausa entre lotes:</span><input type="number" id="autoDelay" value="4" min="2" max="30" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Jitter:</span><input type="number" id="autoJitter" value="3" min="0" max="15" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
@@ -2563,9 +2563,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.10';
+const PAINEL_VERSAO='2.8.11';
 const PAINEL_DATA='21/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.11','21/09/2026','Palavras-chave escolhidas por grupo: mínimo de quatro letras, sem sílabas, números ou emojis. Prioriza a primeira palavra útil (mobiliza, equipe, braz, darci). Buscas extensas são limitadas e passam à próxima palavra sem perder marcados nem abortar a rodada. Relatório inclui plano de busca e termos limitados. Envios anteriores preservados.'],
   ['2.8.10','21/09/2026','Busca por palavras-chave em todos os modos, inclusive teste de 5/10 grupos. Completa cada lote com até cinco grupos da lista, preserva selecionados entre buscas e retorna ao canal após enviar. Não pesquisa nomes completos com emojis. Nomes divergentes ficam pendentes, sem escolha por semelhança.'],
   ['2.8.9','20/09/2026','Sincronização feita por janela do painel via mensagens entre janelas, sem fetch para Supabase dentro do WhatsApp (bloqueado pela política de segurança). Consulta de progresso antes de enviar e salvamento após cada bloco preservados. Sem extensões ou desativação de proteções.'],
   ['2.8.8','20/09/2026','Botões do robô com alto contraste: Iniciar verde, Pausar amarelo, Parar vermelho e Relatório azul; estados desabilitado e foco visíveis. Teste real restrito a exatamente 5 ou 10 grupos selecionados, com conferência dos nomes e progresso normal preservado. O Console continua nesta etapa.'],
@@ -2610,7 +2611,7 @@ async function boot(){
 // ───────────────────────── AUTO-ENVIO NOS GRUPOS ─────────────────────────
 let autoSelIds=new Set();
 let autoSelSlug=null;
-const AUTO_KEYWORDS=['picu','faixa','cavalgada','noticia','amigo','parauapeba','caraja','politica','fora','unido','la vai','vs','fogo','jorja','portal'];
+const AUTO_KEYWORDS=['picu','faixa','cavalgada','noticia','amigo','parauapeba','caraja','politica','fora','unido','la vai','fogo','jorja','portal'];
 
 async function renderAutoEnvio(){
   const div=document.getElementById('autoListaGrupos');
@@ -2893,14 +2894,16 @@ function ftWhatsAppRunner(P){
     const el=modal()?.querySelector('[aria-live="polite"][aria-label^="Você selecionou"]');
     return el?Number((el.getAttribute('aria-label').match(/\d+/)||[])[0]):0;
   };
+  const limitedSearches=new Set();
   const prepareBatch=async(keyword,already=[],allowedIds=null)=>{
     await typeSearch(keyword);
     if(selectionCount()!==already.length)throw Error('Existem destinos selecionados fora deste lote. Feche a janela antes de retomar.');
     const marks=[...already],seen=new Set(already.map(g=>norm(g.nome))),observedNames=new Set();
-    for(let page=0;page<120&&marks.length<5;page++){
+    for(let page=0;page<20&&marks.length<5;page++){
       const m=modal();if(!m)throw Error('Janela fechou durante a escolha dos destinos.');
       const currentRows=rows(m);
       for(const candidate of currentRows){
+        if(seen.size>=200)break;
         await checkpoint();
         const n=norm(rowName(candidate));
         if(n.includes(norm(keyword)))observedNames.add(rowName(candidate));
@@ -2919,12 +2922,17 @@ function ftWhatsAppRunner(P){
         if(marks.length===5)break;
       }
       if(marks.length===5)break;
+      if(![...remaining.values()].some(g=>norm(g.nome).includes(norm(keyword))&&!marks.some(x=>x.id===g.id)))break;
       const sc=scrollParent(rows(modal()||m).at(-1),m);
+      if(seen.size>=200||(page===19&&sc&&sc.scrollTop+sc.clientHeight<sc.scrollHeight-3)){
+        limitedSearches.add(keyword);
+        log('"'+keyword+'": busca extensa; mantendo os marcados e tentando outras palavras. Destinos não localizados ficam pendentes.');
+        break;
+      }
       if(!sc||sc.scrollTop+sc.clientHeight>=sc.scrollHeight-3)break;
       const before=sc.scrollTop;sc.scrollTop+=Math.max(100,sc.clientHeight*0.8);
       await sleep(450);
       if(sc.scrollTop===before)break;
-      if(page===119)throw Error('Busca longa demais; interrompida sem enviar este lote.');
     }
     if(marks.length&&selectionCount()!==marks.length)throw Error('Número de destinos não corresponde ao lote.');
     if(marks.length===already.length){
@@ -2937,17 +2945,20 @@ function ftWhatsAppRunner(P){
   };
   // Busca e identidade são coisas diferentes: pesquisa curta, nome completo
   // conferido no resultado. Não transforma um nome parecido em destino autorizado.
-  const searchWords=name=>(norm(name).match(/[a-z0-9]+/g)||[]).filter(w=>/[a-z]/.test(w)&&w.length>=2);
-  const commonWords=new Set(['de','da','do','das','dos','em','no','na','nos','nas','com','por','para','pelo','pela','os','as','um','uma','grupo','grupos']);
-  const extraWords=[...new Set(groups.flatMap(g=>searchWords(g.nome)))].filter(w=>!commonWords.has(w)).sort((a,b)=>b.length-a.length);
-  const searchJobs=[...new Set([...keywords.map(k=>searchWords(k).join(' ')).filter(Boolean),...extraWords])];
+  const commonWords=new Set(['para','pelo','pela','pelos','pelas','grupo','grupos','todos','todas','somos']);
+  const searchWords=name=>[...new Set((norm(name).match(/[a-z]+/g)||[]).filter(w=>w.length>=4&&!commonWords.has(w)))];
+  // Uma palavra principal por grupo antes das alternativas. Nunca "to", "br",
+  // "vs", números ou fragmentos de emojis. "la vai" é uma expressão explícita.
+  const groupSearchPlan=groups.map(g=>({id:g.id,nome:g.nome,palavras:searchWords(g.nome).slice(0,3)}));
+  const preferred=keywords.map(norm).filter(k=>k==='la vai'||(/^[a-z]{4,}$/.test(k)&&!commonWords.has(k)));
+  const searchJobs=[...new Set([...preferred,...groupSearchPlan.flatMap(g=>g.palavras.slice(0,1)),...groupSearchPlan.flatMap(g=>g.palavras.slice(1))])];
   const prepareKeywordBatch=async cursor=>{
     let marks=[];
     while(cursor.index<searchJobs.length&&marks.length<5){
       const keyword=searchJobs[cursor.index];
       // Após esgotar uma busca, completa o MESMO lote com a palavra seguinte.
       // Não busca palavras sem nenhum destino pendente ainda por marcar.
-      const expected=[...remaining.values()].some(g=>!marks.some(m=>m.id===g.id)&&norm(g.nome).includes(keyword));
+      const expected=[...remaining.values()].some(g=>!marks.some(m=>m.id===g.id)&&(keyword==='la vai'?norm(g.nome).includes(keyword):searchWords(g.nome).some(w=>w.startsWith(keyword))));
       if(!expected){cursor.index++;continue;}
       status((dryRun?'TESTE · ':'')+keyword+' · '+remaining.size+' pendentes · '+marks.length+'/5 marcados');
       const before=marks.length;
@@ -3101,7 +3112,7 @@ function ftWhatsAppRunner(P){
   ui('[data-act="stop"]').onclick=()=>{state='stopped';status('Parando; aguardando terminar a confirmação de eventual envio em andamento.');};
   ui('[data-act="close"]').onclick=()=>{closed=true;state='stopped';if(!busy){window.removeEventListener('message',onBridgeMessage);if(bridgeWindow&&!bridgeWindow.closed)bridgeWindow.close();box.remove();window.__ftAuto=false;}else status('Encerrando…');};
   ui('[data-act="report"]').onclick=()=>{
-    const data={versao,materia:sb.slug,teste:dryRun,testeReal:!!P.testBatch,cicloPrivado:reviewOnly,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()]};
+    const data={versao,materia:sb.slug,teste:dryRun,testeReal:!!P.testBatch,cicloPrivado:reviewOnly,origem:source,enviados:dryRun?[]:Object.keys(ledger.sent).map(id=>({id,...ledger.sent[id]})),incertos:ledger.pending,pendentes:[...remaining.values()],planoBuscas:groupSearchPlan,buscasLimitadas:[...limitedSearches]};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const a=document.createElement('a');a.href=url;a.download='encaminhamento-'+sb.slug.replace(/[^a-z0-9_-]/gi,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
