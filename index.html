@@ -816,12 +816,12 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
     </div>
     <p class="hint" style="margin-top:10px">O teste prepara até dois lotes e volta ao canal sozinho, sem enviar e sem marcar progresso. Deixe a aba aberta. Use Pausar antes de mexer no WhatsApp.</p>
     <p class="hint"><strong>Ciclo para Revisão (envia):</strong> ignora a seleção dos grupos e encaminha somente para <strong>Revisão para Publicação 📲</strong>, volta ao canal e encerra. Não precisa cadastrar esse destino e não altera o progresso da distribuição. Um envio por matéria, com controle privado separado para evitar repetição ao clicar Iniciar novamente.</p>
-    <p class="hint"><strong>Teste real:</strong> use Selecionar primeiros 10 abaixo, ou marque exatamente 5 ou 10 grupos. Confira os nomes ao copiar. O robô identifica a última matéria + enquete quando você clicar Iniciar, reúne cinco destinos por bloco, envia e volta ao canal. Se algum destino não for localizado, para sem enviar o bloco incompleto. Já enviados são pulados.</p>
+    <p class="hint"><strong>Teste real:</strong> use Selecionar primeiros 10 abaixo, ou marque exatamente 5 ou 10 grupos. Confira os nomes ao copiar. O robô identifica a última matéria + enquete quando você clicar Iniciar, busca por palavras-chave e confere os nomes completos nos resultados. Mantém os marcados ao trocar a busca, reúne até cinco por bloco, envia e volta ao canal. Não encontrados ficam pendentes no relatório; os demais continuam. Já enviados são pulados.</p>
   </div>
 
   <div class="card">
     <div class="card-title"><span class="step-badge">2</span> Grupos e ordem das palavras-chave</div>
-    <p class="hint" style="margin-top:0">A ordem fixa das buscas (mesma do procedimento manual): <code>picu, faixa, noticia, amigo, parauapeba, caraja, politica, fora, unido, la vai, vs, fogo, jorja, portal</code>. O robô esgota cada uma antes de passar para a próxima e nunca marca grupo já enviado nesta matéria.</p>
+    <p class="hint" style="margin-top:0">Ordem das buscas: <code>picu, faixa, cavalgada, noticia, amigo, parauapeba, caraja, politica, fora, unido, la vai, vs, fogo, jorja, portal</code>; depois, outras palavras dos nomes cadastrados, sem emojis nem nomes completos na busca. Esgota cada palavra antes da próxima, seleciona somente correspondentes da lista e nunca repete grupo já enviado nesta matéria. Nomes diferentes, como ano 2025 no cadastro e 2026 no WhatsApp, precisam ser corrigidos em Grupos.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;align-items:center">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Pausa entre lotes:</span><input type="number" id="autoDelay" value="4" min="2" max="30" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Jitter:</span><input type="number" id="autoJitter" value="3" min="0" max="15" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
@@ -2563,9 +2563,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.9';
-const PAINEL_DATA='20/09/2026';
+const PAINEL_VERSAO='2.8.10';
+const PAINEL_DATA='21/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.10','21/09/2026','Busca por palavras-chave em todos os modos, inclusive teste de 5/10 grupos. Completa cada lote com até cinco grupos da lista, preserva selecionados entre buscas e retorna ao canal após enviar. Não pesquisa nomes completos com emojis. Nomes divergentes ficam pendentes, sem escolha por semelhança.'],
   ['2.8.9','20/09/2026','Sincronização feita por janela do painel via mensagens entre janelas, sem fetch para Supabase dentro do WhatsApp (bloqueado pela política de segurança). Consulta de progresso antes de enviar e salvamento após cada bloco preservados. Sem extensões ou desativação de proteções.'],
   ['2.8.8','20/09/2026','Botões do robô com alto contraste: Iniciar verde, Pausar amarelo, Parar vermelho e Relatório azul; estados desabilitado e foco visíveis. Teste real restrito a exatamente 5 ou 10 grupos selecionados, com conferência dos nomes e progresso normal preservado. O Console continua nesta etapa.'],
   ['2.8.7','20/09/2026','Retorno ativa a área interna do canal, com tentativas limitadas e conferência do cabeçalho. Matéria e enquete identificadas diretamente no canal, sem carregar link no painel. Progresso por IDs das atualizações, migração dos registros locais anteriores e preservação de envios já confirmados.'],
@@ -2609,7 +2610,7 @@ async function boot(){
 // ───────────────────────── AUTO-ENVIO NOS GRUPOS ─────────────────────────
 let autoSelIds=new Set();
 let autoSelSlug=null;
-const AUTO_KEYWORDS=['picu','faixa','noticia','amigo','parauapeba','caraja','politica','fora','unido','la vai','vs','fogo','jorja','portal'];
+const AUTO_KEYWORDS=['picu','faixa','cavalgada','noticia','amigo','parauapeba','caraja','politica','fora','unido','la vai','vs','fogo','jorja','portal'];
 
 async function renderAutoEnvio(){
   const div=document.getElementById('autoListaGrupos');
@@ -2926,7 +2927,7 @@ function ftWhatsAppRunner(P){
       if(page===119)throw Error('Busca longa demais; interrompida sem enviar este lote.');
     }
     if(marks.length&&selectionCount()!==marks.length)throw Error('Número de destinos não corresponde ao lote.');
-    if(!marks.length){
+    if(marks.length===already.length){
       const expected=[...remaining.values()].filter(g=>norm(g.nome).includes(norm(keyword)));
       if(expected.length&&observedNames.size){
         log('Confira os nomes na aba Grupos. Cadastro: '+expected.slice(0,5).map(g=>g.nome).join(' | ')+'. WhatsApp: '+[...observedNames].slice(0,5).join(' | ')+'. Nenhum destino escolhido por semelhança.');
@@ -2934,17 +2935,27 @@ function ftWhatsAppRunner(P){
     }
     return marks;
   };
-  const prepareLimitedBatch=async()=>{
-    const targets=[...remaining.values()].slice(0,5);
-    const allowedIds=new Set(targets.map(g=>g.id));
+  // Busca e identidade são coisas diferentes: pesquisa curta, nome completo
+  // conferido no resultado. Não transforma um nome parecido em destino autorizado.
+  const searchWords=name=>(norm(name).match(/[a-z0-9]+/g)||[]).filter(w=>/[a-z]/.test(w)&&w.length>=2);
+  const commonWords=new Set(['de','da','do','das','dos','em','no','na','nos','nas','com','por','para','pelo','pela','os','as','um','uma','grupo','grupos']);
+  const extraWords=[...new Set(groups.flatMap(g=>searchWords(g.nome)))].filter(w=>!commonWords.has(w)).sort((a,b)=>b.length-a.length);
+  const searchJobs=[...new Set([...keywords.map(k=>searchWords(k).join(' ')).filter(Boolean),...extraWords])];
+  const prepareKeywordBatch=async cursor=>{
     let marks=[];
-    for(const g of targets){
-      if(marks.some(m=>m.id===g.id))continue;
-      // Preserva os marcados enquanto pesquisa o próximo nome no mesmo modal.
-      marks=await prepareBatch(g.nome,marks,allowedIds);
-      if(!marks.some(m=>m.id===g.id))throw Error('Teste interrompido sem enviar este bloco: não localizei '+g.nome+'. Confira o nome na aba Grupos.');
+    while(cursor.index<searchJobs.length&&marks.length<5){
+      const keyword=searchJobs[cursor.index];
+      // Após esgotar uma busca, completa o MESMO lote com a palavra seguinte.
+      // Não busca palavras sem nenhum destino pendente ainda por marcar.
+      const expected=[...remaining.values()].some(g=>!marks.some(m=>m.id===g.id)&&norm(g.nome).includes(keyword));
+      if(!expected){cursor.index++;continue;}
+      status((dryRun?'TESTE · ':'')+keyword+' · '+remaining.size+' pendentes · '+marks.length+'/5 marcados');
+      const before=marks.length;
+      marks=await prepareBatch(keyword,marks);
+      if(marks.length===before)log('"'+keyword+'": nenhum pendente correspondente localizado; seguindo a busca.');
+      // Se encheu, repete a mesma palavra no próximo ciclo para pegar os demais.
+      if(marks.length<5)cursor.index++;
     }
-    if(marks.length!==targets.length)throw Error('Teste interrompido: contador do bloco divergente.');
     return marks;
   };
   // O WhatsApp bloqueia fetch ao Supabase por CSP. Apenas o painel acessa o banco.
@@ -3043,20 +3054,12 @@ function ftWhatsAppRunner(P){
     if(!remaining.size){await navigate();status('Concluído: grupos já registrados; retorno ao canal confirmado. Nenhum reenvio.');return;}
     if(!P.autoSource){await navigate();await pinSource();}
     let batches=0;
-    const jobs=P.testBatch?['teste real']: [...keywords,...groups.map(g=>g.nome)];
-    for(let ji=0;ji<jobs.length;ji++){
-      const keyword=jobs[ji];
-      let lotesDaPalavra=0;
-      while(remaining.size){
+    const cursor={index:0};
+      while(remaining.size&&cursor.index<searchJobs.length){
         await checkpoint();
         if(!modal())await selectPair();
-        status((dryRun?'TESTE · ':'')+keyword+' · '+remaining.size+' pendentes');
-        const marks=P.testBatch?await prepareLimitedBatch():await prepareBatch(keyword);
-        // Sem esta linha, palavra que não acha nada some do log e a leitura do
-        // resultado vira adivinhação. Só para a lista de palavras-chave: a varredura
-        // final por nome de grupo tem 130 itens e encheria o log.
-        if(!marks.length){if(ji<keywords.length&&!lotesDaPalavra)log('"'+keyword+'": nenhum pendente localizado.');break;}
-        lotesDaPalavra++;
+        const marks=await prepareKeywordBatch(cursor);
+        if(!marks.length)break;
         await sendBatch(marks);batches++;
         // O ciclo só termina ao VOLTAR: inclusive um teste de destino único
         // ou o último bloco da lista de 130. Registros de envio já estão salvos.
@@ -3070,8 +3073,6 @@ function ftWhatsAppRunner(P){
         if(!remaining.size)break;
         await sleep(Math.max(4000,Number(P.delayMs)||4000)+Math.random()*Math.max(0,Number(P.jitterMs)||0));
       }
-      if(!remaining.size)break;
-    }
     if(modal())await closeModal();
     await cancelSelection();
     status(dryRun?'Teste concluído: '+batches+' lote(s) preparado(s), nenhum envio.':remaining.size?'Parcial: '+remaining.size+' grupo(s) não localizado(s). Veja o relatório.':'Concluído: todos os grupos selecionados foram encaminhados.');
