@@ -127,6 +127,14 @@
   #teleFlip{height:100%;}
   #teleFlip.mirror{transform:scaleX(-1);}
   #teleText{padding:36vh 7vw 80vh;color:#fff;font-weight:600;line-height:1.65;font-size:46px;white-space:pre-wrap;will-change:transform;cursor:pointer;}
+  #teleOverlay.claro{background:#fff;}
+  #teleOverlay.claro #teleText{color:#000;}
+  #teleOverlay.claro .tele-bar{background:linear-gradient(rgba(255,255,255,.92),transparent);}
+  #teleOverlay.claro .tele-bar button{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.3);color:#000;}
+  #teleOverlay.claro .tele-bar button:hover{background:rgba(0,0,0,.14);}
+  #teleOverlay.claro .tele-info{color:#444;}
+  #teleOverlay.claro .tele-marker{border-top-color:rgba(20,140,60,.7);}
+  #teleOverlay.claro .tele-marker::before{color:#148c3c;}
 
   #setupScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
   .setup-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;}
@@ -1088,6 +1096,7 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
     <button onclick="mudarFonteTele(-4)">A−</button>
     <button onclick="mudarFonteTele(4)">A+</button>
     <button onclick="espelharTele()">🪞 Espelhar</button>
+    <button id="tele-tema" onclick="temaTele()">☀️ Fundo branco</button>
     <button onclick="fecharTeleprompter()">✕ Fechar</button>
   </div>
   <div class="tele-marker"></div>
@@ -2508,6 +2517,7 @@ function abrirTeleprompter(){
   document.body.style.overflow='hidden';
   tele.font=parseInt(localStorage.getItem('ft_tele_font')||'46',10);
   aplicarFonteTele();
+  aplicarTemaTele(localStorage.getItem('ft_tele_tema')||'escuro');
   tele.y=0;tele.playing=false;aplicarPosTele();
   document.getElementById('tele-play').textContent='▶ Iniciar';
   // Velocidade automática: rolar o texto inteiro no tempo estimado de fala.
@@ -2551,6 +2561,13 @@ function atualizarVelTele(){document.getElementById('tele-vel').textContent=tele
 function mudarFonteTele(d){tele.font=Math.max(24,Math.min(90,tele.font+d));aplicarFonteTele();localStorage.setItem('ft_tele_font',tele.font);}
 function aplicarFonteTele(){document.getElementById('teleText').style.fontSize=tele.font+'px';}
 function espelharTele(){document.getElementById('teleFlip').classList.toggle('mirror');}
+function aplicarTemaTele(t){
+  const ov=document.getElementById('teleOverlay');
+  ov.classList.toggle('claro',t==='claro');
+  document.getElementById('tele-tema').textContent=t==='claro'?'🌙 Fundo preto':'☀️ Fundo branco';
+  localStorage.setItem('ft_tele_tema',t);
+}
+function temaTele(){aplicarTemaTele(document.getElementById('teleOverlay').classList.contains('claro')?'escuro':'claro');}
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('teleOverlay').classList.contains('on'))return;
   if(e.code==='Space'){e.preventDefault();toggleTele();}
@@ -2563,9 +2580,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.11';
-const PAINEL_DATA='21/09/2026';
+const PAINEL_VERSAO='2.8.12';
+const PAINEL_DATA='22/09/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.12','22/09/2026','Teleprompter com dois modos de tela: fundo preto com letras brancas (padrão) ou fundo branco com letras pretas. Botão ☀️/🌙 na barra alterna e a escolha fica salva no aparelho.'],
   ['2.8.11','21/09/2026','Palavras-chave escolhidas por grupo: mínimo de quatro letras, sem sílabas, números ou emojis. Prioriza a primeira palavra útil (mobiliza, equipe, braz, darci). Buscas extensas são limitadas e passam à próxima palavra sem perder marcados nem abortar a rodada. Relatório inclui plano de busca e termos limitados. Envios anteriores preservados.'],
   ['2.8.10','21/09/2026','Busca por palavras-chave em todos os modos, inclusive teste de 5/10 grupos. Completa cada lote com até cinco grupos da lista, preserva selecionados entre buscas e retorna ao canal após enviar. Não pesquisa nomes completos com emojis. Nomes divergentes ficam pendentes, sem escolha por semelhança.'],
   ['2.8.9','20/09/2026','Sincronização feita por janela do painel via mensagens entre janelas, sem fetch para Supabase dentro do WhatsApp (bloqueado pela política de segurança). Consulta de progresso antes de enviar e salvamento após cada bloco preservados. Sem extensões ou desativação de proteções.'],
