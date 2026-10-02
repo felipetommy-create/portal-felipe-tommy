@@ -829,10 +829,16 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
 
   <div class="card">
     <div class="card-title"><span class="step-badge">2</span> Grupos e ordem das palavras-chave</div>
-    <p class="hint" style="margin-top:0">Ordem das buscas: <code>picu, faixa, cavalgada, noticia, amigo, parauapeba, caraja, politica, fora, unido, la vai, fogo, jorja, portal</code>; depois, uma palavra principal por grupo, como <code>mobiliza, equipe, braz, darci</code>, antes das alternativas. Somente palavras com quatro ou mais letras (ou a expressão “la vai”), sem sílabas, números ou emojis. Busca extensa passa à próxima palavra sem perder os marcados. O relatório inclui o plano de palavras por grupo. Nomes diferentes, como ano 2025 no cadastro e 2026 no WhatsApp, precisam ser corrigidos em Grupos. Nunca repete grupo já enviado nesta matéria.</p>
+    <p class="hint" style="margin-top:0">Ordem das buscas: <code>picu, faixa, cavalgada, noticia, amigo, parauapeba, caraja, politica, fora, unido, la vai, fogo, jorja, portal</code>; depois, uma palavra principal por grupo, como <code>mobiliza, equipe, braz, darci</code>, antes das alternativas. Somente palavras com quatro ou mais letras (ou a expressão “la vai”), sem sílabas, números ou emojis. Busca extensa passa à próxima palavra sem perder os marcados. O relatório inclui o plano de palavras por grupo. Nomes diferentes, como ano 2025 no cadastro e 2026 no WhatsApp, precisam ser corrigidos em Grupos. Nunca repete grupo já enviado nesta matéria. Use a busca abaixo para achar grupo pelo nome e marcar ou desmarcar só os encontrados: quem está marcado fora da busca continua no envio.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;align-items:center">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Pausa entre lotes:</span><input type="number" id="autoDelay" value="4" min="2" max="30" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span>Jitter:</span><input type="number" id="autoJitter" value="3" min="0" max="15" style="width:60px;padding:6px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px"/>s</label>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
+      <input type="text" id="autoBusca" placeholder="🔍 Pesquisar grupo pelo nome…" oninput="autoBuscar(this.value)" onkeydown="if(event.key==='Escape')autoLimparBusca()" style="flex:1;min-width:220px;padding:8px 10px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:6px;font-size:13px"/>
+      <button class="btn-sm" onclick="autoMarcarFiltrados(true)">☑ Marcar os encontrados</button>
+      <button class="btn-sm" onclick="autoMarcarFiltrados(false)">☐ Desmarcar os encontrados</button>
+      <button class="btn-sm" onclick="autoLimparBusca()">✕ Limpar busca</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <button class="btn-sm" onclick="autoMarcarTodosPendentes()">☑ Ativos (robô pula enviados)</button>
@@ -2580,9 +2586,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.12';
-const PAINEL_DATA='22/09/2026';
+const PAINEL_VERSAO='2.8.13';
+const PAINEL_DATA='02/10/2026';
 const PAINEL_CHANGELOG=[
+  ['2.8.13','02/10/2026','Auto-envio: campo de busca na lista de grupos. Digite parte do nome para filtrar e use Marcar os encontrados / Desmarcar os encontrados para incluir ou tirar só aqueles do disparo. O filtro é só visual: grupo marcado continua marcado e continua indo no envio mesmo escondido pela busca. Esc ou Limpar busca mostra a lista inteira de novo.'],
   ['2.8.12','22/09/2026','Teleprompter com dois modos de tela: fundo preto com letras brancas (padrão) ou fundo branco com letras pretas. Botão ☀️/🌙 na barra alterna e a escolha fica salva no aparelho.'],
   ['2.8.11','21/09/2026','Palavras-chave escolhidas por grupo: mínimo de quatro letras, sem sílabas, números ou emojis. Prioriza a primeira palavra útil (mobiliza, equipe, braz, darci). Buscas extensas são limitadas e passam à próxima palavra sem perder marcados nem abortar a rodada. Relatório inclui plano de busca e termos limitados. Envios anteriores preservados.'],
   ['2.8.10','21/09/2026','Busca por palavras-chave em todos os modos, inclusive teste de 5/10 grupos. Completa cada lote com até cinco grupos da lista, preserva selecionados entre buscas e retorna ao canal após enviar. Não pesquisa nomes completos com emojis. Nomes divergentes ficam pendentes, sem escolha por semelhança.'],
@@ -2629,6 +2636,7 @@ async function boot(){
 // ───────────────────────── AUTO-ENVIO NOS GRUPOS ─────────────────────────
 let autoSelIds=new Set();
 let autoSelSlug=null;
+let autoFiltro='';
 const AUTO_KEYWORDS=['picu','faixa','cavalgada','noticia','amigo','parauapeba','caraja','politica','fora','unido','la vai','fogo','jorja','portal'];
 
 async function renderAutoEnvio(){
@@ -2637,7 +2645,9 @@ async function renderAutoEnvio(){
   if(autoSelSlug!=='canal'){autoSelSlug='canal';autoSelIds=new Set(grupos.filter(g=>g.ativo!==false).map(g=>g.id));}
   const {dupes}=detectarProblemasGrupos();
   const nomesDup=new Set(dupes.map(d=>d.norm));
-  div.innerHTML=grupos.map((g,i)=>{
+  const visiveis=autoGruposFiltrados();
+  if(!visiveis.length){div.innerHTML='<div class="empty-state">Nenhum grupo com “'+esc(autoFiltro.trim())+'”. Quem já estava marcado continua selecionado.</div>';autoAtualizarContagem();renderAutoAviso();return;}
+  div.innerHTML=visiveis.map(({g,i})=>{
     const f=false; // A origem só será conhecida no WhatsApp; não usar progresso de outra matéria.
     const sel=autoSelIds.has(g.id);
     const dup=nomesDup.has(ftNormNome(g.nome));
@@ -2664,7 +2674,35 @@ function irParaGrupos(){
   if(btn)showTab('grupos',btn);
 }
 function autoToggle(id,checked){if(checked)autoSelIds.add(id);else autoSelIds.delete(id);autoAtualizarContagem();}
-function autoAtualizarContagem(){document.getElementById('autoContagem').textContent=autoSelIds.size+' grupo(s) selecionado(s) de '+grupos.length+' cadastrados.';}
+// Busca por nome. O filtro mexe só no que aparece na lista: grupo marcado continua
+// marcado e continua indo no envio, mesmo escondido pela busca.
+function autoGruposFiltrados(){
+  const termo=ftNormNome(autoFiltro);
+  const todos=grupos.map((g,i)=>({g,i}));
+  if(!termo)return todos;
+  return todos.filter(({g})=>ftNormNome(g.nome).includes(termo));
+}
+function autoBuscar(v){autoFiltro=v||'';renderAutoEnvio();}
+function autoLimparBusca(){autoFiltro='';const el=document.getElementById('autoBusca');if(el)el.value='';renderAutoEnvio();}
+function autoMarcarFiltrados(marcar){
+  const visiveis=autoGruposFiltrados();
+  if(!visiveis.length){alert('A busca não encontrou nenhum grupo.');return;}
+  for(const {g} of visiveis){
+    if(marcar){if(g.ativo!==false)autoSelIds.add(g.id);}
+    else autoSelIds.delete(g.id);
+  }
+  renderAutoEnvio();
+}
+function autoAtualizarContagem(){
+  const el=document.getElementById('autoContagem');if(!el)return;
+  let txt=autoSelIds.size+' grupo(s) selecionado(s) de '+grupos.length+' cadastrados.';
+  if(ftNormNome(autoFiltro)){
+    const visiveis=autoGruposFiltrados();
+    const marcados=visiveis.filter(({g})=>autoSelIds.has(g.id)).length;
+    txt+=' Busca “'+autoFiltro.trim()+'”: '+visiveis.length+' encontrado(s), '+marcados+' marcado(s). Os marcados fora da busca continuam no envio.';
+  }
+  el.textContent=txt;
+}
 function autoMarcarTodosPendentes(){autoSelIds=new Set(grupos.filter(g=>g.ativo!==false).map(g=>g.id));renderAutoEnvio();}
 function autoMarcarTodos(){autoSelIds=new Set(grupos.map(g=>g.id));renderAutoEnvio();}
 function autoSelecionarPrimeirosDez(){
