@@ -295,7 +295,7 @@ Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAME
   "slug": "slug curto com 3 a 5 palavras baseado na frase-chave, sem conectores",
   "meta_descricao": "meta descrição chamativa com a frase-chave, até 155 caracteres",
   "resumo": "resumo em 2-3 frases curtas",
-  "tags": "tag1, tag2, ..., tag10 — palavras simples, NUNCA use o caractere #",
+  "tags": "de 4 a 10 tags, SÓ nomes que aparecem NESTA matéria: pessoas, cargos, órgãos, bairros, cidades, leis, operações. Cada tag com no máximo 4 palavras. NUNCA complete a lista para chegar a 10 e NUNCA repita tag de outra matéria. NUNCA use o caractere #",
   "corpo_html": "texto completo em HTML seguindo TODAS as regras de legibilidade abaixo",
   "leia_tambem": "bloco HTML pronto do Leia também, com 3 links REAIS de matérias já publicadas em felipetommy.com.br relacionadas ao tema e aos nomes citados. Formato exato: &lt;p&gt;&lt;strong&gt;Leia também:&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=\"URL\"&gt;Título da matéria&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;. NUNCA invente URL: só entra link confirmado no site (busque em felipetommy.com.br pelos nomes próprios da matéria). Se não achar nada relacionado, devolva string vazia.",
   "email_ascom": "e-mail formal para ASCOM informando a publicação, solicitando contraditório e com perguntas pontuais",
@@ -445,6 +445,8 @@ REGRAS GERAIS:
 - Português brasileiro correto, com todos os acentos e cedilhas.
 - NUNCA use o caractere — (travessão).
 - NUNCA use # no campo tags.
+- TAGS: só nomes que estão escritos na matéria, no máximo 4 palavras cada. Menos de 10 é
+  correto. Nunca complete a lista com termos genéricos nem com tags de outra matéria.
 
 TEXTO DA MATÉRIA:
 "Cole aqui o texto da matéria"</div>
@@ -602,7 +604,7 @@ Gere OBRIGATORIAMENTE um JSON válido com EXATAMENTE estas chaves (nada fora do 
   "slug": "slug de 3 a 5 palavras da frase-chave, sem conectores",
   "meta_descricao": "até 155 caracteres, com a frase-chave",
   "resumo": "2-3 frases curtas descrevendo a coluna",
-  "tags": "tag1, tag2, ..., tag10 — sem #",
+  "tags": "de 4 a 10 tags, SÓ nomes citados NESTA coluna, no máximo 4 palavras cada. Não complete para chegar a 10. Sem #",
   "corpo_html": "O TEXTO ORIGINAL do colunista, apenas com ortografia corrigida, em HTML: cada parágrafo em &lt;p&gt;. Pode inserir &lt;h2&gt; como subtítulos a cada 2-3 parágrafos, usando ideias do próprio texto, sem inventar. Comece com &lt;p&gt;. Insira LEIA_TAMBEM_AQUI entre o 2º e 3º &lt;h2&gt; e LINK_WHATSAPP_AQUI num &lt;p&gt; isolado no meio.",
   "leia_tambem": "bloco HTML pronto do Leia também com 3 links REAIS de matérias já publicadas em felipetommy.com.br sobre o tema da coluna. Formato: &lt;p&gt;&lt;strong&gt;Leia também:&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=\"URL\"&gt;Título&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;. NUNCA invente URL. Sem link confirmado, devolva string vazia.",
   "roteiro_video": "roteiro de vídeo de 1 min baseado na coluna, sem travessão",
