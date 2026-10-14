@@ -1057,12 +1057,26 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
     <label>URL do site</label><input type="url" id="cfg-url" value="https://felipetommy.com.br">
     <label>Usuário WordPress</label><input type="text" id="cfg-user" placeholder="felipetommyreal">
     <label>Senha de aplicativo</label><input type="password" id="cfg-pass" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx">
-    <label>URL do banner WhatsApp (GIF, opcional)</label><input type="url" id="cfg-banner" placeholder="https://...banner.gif">
     <div style="display:flex;gap:8px">
       <button class="btn-sm" onclick="testarWP()"><span class="spin" id="sp-test" style="display:none"></span>🔌 Testar conexão</button>
       <button class="btn btn-primary" onclick="salvarCfgWP()" style="flex:1">💾 Salvar credenciais WordPress</button>
     </div>
     <div id="st-cfg" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💼 Publicidade dentro da matéria</div>
+    <p class="hint" style="margin-top:0">Este bloco entra <strong>no meio do texto</strong>, onde antes ficava o botão verde do WhatsApp (o botão passou para o fim da matéria). Sai com a etiqueta "Publicidade" por cima, como manda a regra: leitor tem que saber que é anúncio. <strong>Sem o link preenchido, nenhum anúncio é publicado.</strong></p>
+    <label>Link do anunciante (deixe vazio para não publicar anúncio)</label><input type="url" id="cfg-publi-link" placeholder="https://...">
+    <label>Título</label><input type="text" id="cfg-publi-titulo" placeholder="Conta global Nomad">
+    <label>Linha de apoio</label><input type="text" id="cfg-publi-texto" placeholder="Conta e cartão em dólar, direto do celular.">
+    <label>Texto do botão</label><input type="text" id="cfg-publi-botao" placeholder="Abrir conta">
+    <button class="btn btn-primary" onclick="salvarCfgPubli()" style="width:100%">💾 Salvar publicidade</button>
+    <div id="st-cfg-publi" class="status" style="margin-top:10px;display:none"></div>
+    <div class="ob" style="margin-top:12px">
+      <div class="ob-label">Como vai ficar</div>
+      <div class="ob-text" style="max-height:none" id="publi-preview"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -1214,9 +1228,27 @@ function salvarCfgWP(){
   c.url=document.getElementById('cfg-url').value.trim().replace(/\/$/,'');
   c.user=document.getElementById('cfg-user').value.trim();
   c.pass=document.getElementById('cfg-pass').value.trim();
-  c.banner=document.getElementById('cfg-banner').value.trim();
   localStorage.setItem('ft_cfg',JSON.stringify(c));
   showSt('st-cfg','ok','✅ Configurações salvas neste dispositivo.');
+}
+function salvarCfgPubli(){
+  const c=getCfg();
+  c.publiLink=document.getElementById('cfg-publi-link').value.trim();
+  c.publiTitulo=document.getElementById('cfg-publi-titulo').value.trim();
+  c.publiTexto=document.getElementById('cfg-publi-texto').value.trim();
+  c.publiBotao=document.getElementById('cfg-publi-botao').value.trim();
+  localStorage.setItem('ft_cfg',JSON.stringify(c));
+  renderPubliPreview();
+  showSt('st-cfg-publi','ok',c.publiLink
+    ?'✅ Publicidade salva. Ela entra no meio das próximas matérias publicadas.'
+    :'✅ Publicidade desligada. As matérias saem sem anúncio no meio do texto.');
+}
+// Mostra na aba Config o mesmo bloco que vai para dentro da matéria.
+function renderPubliPreview(){
+  const el=document.getElementById('publi-preview');
+  if(!el)return;
+  const html=blocoPublicidade();
+  el.innerHTML=html||'<span style="opacity:.7">Sem link preenchido: a matéria sai sem anúncio no meio do texto.</span>';
 }
 function salvarCfgIA(){
   const c=getCfg();
@@ -1229,8 +1261,12 @@ function carregarCfgWP(){
   if(c.url)document.getElementById('cfg-url').value=c.url;
   if(c.user)document.getElementById('cfg-user').value=c.user;
   if(c.pass)document.getElementById('cfg-pass').value=c.pass;
-  if(c.banner)document.getElementById('cfg-banner').value=c.banner;
+  if(c.publiLink)document.getElementById('cfg-publi-link').value=c.publiLink;
+  if(c.publiTitulo)document.getElementById('cfg-publi-titulo').value=c.publiTitulo;
+  if(c.publiTexto)document.getElementById('cfg-publi-texto').value=c.publiTexto;
+  if(c.publiBotao)document.getElementById('cfg-publi-botao').value=c.publiBotao;
   if(c.anthropicKey)document.getElementById('cfg-anthropic').value=c.anthropicKey;
+  renderPubliPreview();
 }
 async function testarWP(){
   salvarCfgWP();
@@ -1797,10 +1833,36 @@ function inserirLeia(corpo,blocoLeia){
   return ok?novo:corpo+blocoLeia;
 }
 
-function montarConteudo(dados,leiaLink,igLink,banner,leiaTitulo){
+// Publicidade do meio da matéria. Entra no lugar da marcação LINK_WHATSAPP_AQUI,
+// que antes recebia o botão verde do WhatsApp (ele passou para o fim do texto).
+// Os textos e o link vêm da aba Config, para trocar de anunciante sem mexer no código.
+// Sem link configurado o bloco não sai: nenhuma matéria fica com anúncio vazio.
+// Estilo em linha de propósito: a matéria vira blocos no editor do WordPress e
+// classe de CSS pode se perder; assim o bloco se desenha sozinho em qualquer tela.
+function blocoPublicidade(){
+  const c=getCfg();
+  const link=(c.publiLink||'').trim();
+  if(!link)return '';
+  const titulo=(c.publiTitulo||'').trim()||'Conta global Nomad';
+  const apoio=(c.publiTexto||'').trim();
+  const botao=(c.publiBotao||'').trim()||'Saiba mais';
+  const cx='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;'
+    +'padding:16px 20px;border:1px solid #bfd0e3;border-radius:10px;'
+    +'background:linear-gradient(110deg,#e5edf8,#ffffff);text-decoration:none';
+  return '\n<p style="text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7b8794;margin:28px 0 6px">Publicidade</p>\n'
+    +'<p class="ft-publi" style="margin:0 0 28px"><a href="'+esc(link)+'" target="_blank" rel="sponsored nofollow noopener" style="'+cx+'">'
+    +'<span style="flex:1 1 230px;min-width:0">'
+    +'<strong style="display:block;font-family:Lora,Georgia,serif;font-size:21px;line-height:1.25;color:#0E4E96">'+esc(titulo)+'</strong>'
+    +(apoio?'<span style="display:block;font-size:13px;line-height:1.45;color:#5b6b7f;margin-top:5px">'+esc(apoio)+'</span>':'')
+    +'</span>'
+    +'<b style="flex:0 0 auto;padding:10px 16px;border-radius:6px;background:#0E4E96;color:#ffffff;font-size:13px;font-weight:700;white-space:nowrap">'+esc(botao)+' ↗</b>'
+    +'</a></p>\n';
+}
+function montarConteudo(dados,leiaLink,igLink,leiaTitulo){
   let corpo=dados.corpo_html||'';
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
-  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoWA);
+  const blocoPubli=blocoPublicidade();
+  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoPubli);
   corpo=inserirLeia(corpo,blocoLeiaTambem(dados,leiaLink,leiaTitulo));
   // Remove marcações que sobraram, para não vazarem no post publicado.
   corpo=corpo.replace('LEIA_TAMBEM_AQUI','').replace('LINK_WHATSAPP_AQUI','');
@@ -1810,7 +1872,8 @@ function montarConteudo(dados,leiaLink,igLink,banner,leiaTitulo){
   // real do post — assim a hora de atualização muda a cada edição.
   // Ver 02-WORDPRESS/snippets/wpcode-snippet-byline-redacao.php
   let conteudo='<h2>'+(dados.subtitulo||'')+'</h2>\n'+corpo;
-  if(banner)conteudo+='\n\n<p><a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><img src="'+banner+'" alt="Canal WhatsApp Felipe Tommy" /></a></p>';
+  // O GIF do canal saiu do fim da matéria: no lugar dele entra o botão verde.
+  conteudo+='\n'+blocoWA;
   if(igLink)conteudo+='\n\n<p>'+igLink+'</p>';
   return conteudo;
 }
@@ -1880,7 +1943,7 @@ async function publicar(){
   const leiaLink=document.getElementById('wp-leia').value.trim();
   const leiaTitulo=(document.getElementById('wp-leia-titulo')||{value:''}).value.trim();
   const igLink=document.getElementById('wp-ig').value.trim();
-  const conteudo=montarConteudo(dados,leiaLink,igLink,c.banner,leiaTitulo);
+  const conteudo=montarConteudo(dados,leiaLink,igLink,leiaTitulo);
   const tagNomes=(document.getElementById('wp-tags').value||'').split(',');
   const creds=btoa(c.user+':'+c.pass.replace(/\s/g,''));
   try{
@@ -2027,11 +2090,11 @@ async function gerarColunaIA(){
 function montarConteudoColuna(dados,leiaLink,leiaTitulo){
   let corpo=dados.corpo_html||'';
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
-  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoWA);
+  if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoPublicidade());
   corpo=inserirLeia(corpo,blocoLeiaTambem(dados,leiaLink,leiaTitulo));
   // Remove marcadores que não foram substituídos, para não vazarem no post.
   corpo=corpo.replace('LEIA_TAMBEM_AQUI','').replace('LINK_WHATSAPP_AQUI','');
-  return (dados.subtitulo?'<h2>'+dados.subtitulo+'</h2>\n':'')+corpo;
+  return (dados.subtitulo?'<h2>'+dados.subtitulo+'</h2>\n':'')+corpo+blocoWA;
 }
 async function garantirCategoria(nome,c,creds){
   try{
@@ -2586,9 +2649,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.8.13';
-const PAINEL_DATA='02/10/2026';
+const PAINEL_VERSAO='2.9.0';
+const PAINEL_DATA='14/10/2026';
 const PAINEL_CHANGELOG=[
+  ['2.9.0','14/10/2026','O GIF do canal do WhatsApp saiu do fim da matéria. No lugar dele entra o botão verde do canal, que antes ficava no meio do texto. E o meio do texto passa a ser espaço de publicidade: um cartão com etiqueta Publicidade, título, uma linha de apoio e botão, configurado na aba Config. Sem link preenchido, nenhuma matéria sai com anúncio.'],
   ['2.8.13','02/10/2026','Auto-envio: campo de busca na lista de grupos. Digite parte do nome para filtrar e use Marcar os encontrados / Desmarcar os encontrados para incluir ou tirar só aqueles do disparo. O filtro é só visual: grupo marcado continua marcado e continua indo no envio mesmo escondido pela busca. Esc ou Limpar busca mostra a lista inteira de novo.'],
   ['2.8.12','22/09/2026','Teleprompter com dois modos de tela: fundo preto com letras brancas (padrão) ou fundo branco com letras pretas. Botão ☀️/🌙 na barra alterna e a escolha fica salva no aparelho.'],
   ['2.8.11','21/09/2026','Palavras-chave escolhidas por grupo: mínimo de quatro letras, sem sílabas, números ou emojis. Prioriza a primeira palavra útil (mobiliza, equipe, braz, darci). Buscas extensas são limitadas e passam à próxima palavra sem perder marcados nem abortar a rodada. Relatório inclui plano de busca e termos limitados. Envios anteriores preservados.'],
