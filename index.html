@@ -1067,10 +1067,18 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
   <div class="card">
     <div class="card-title">💼 Publicidade dentro da matéria</div>
     <p class="hint" style="margin-top:0">Este bloco entra <strong>no meio do texto</strong>, onde antes ficava o botão verde do WhatsApp (o botão passou para o fim da matéria). Sai com a etiqueta "Publicidade" por cima, como manda a regra: leitor tem que saber que é anúncio. <strong>Sem o link preenchido, nenhum anúncio é publicado.</strong></p>
-    <label>Link do anunciante (deixe vazio para não publicar anúncio)</label><input type="url" id="cfg-publi-link" placeholder="https://...">
-    <label>Título</label><input type="text" id="cfg-publi-titulo" placeholder="Conta global Nomad">
-    <label>Linha de apoio</label><input type="text" id="cfg-publi-texto" placeholder="Conta e cartão em dólar, direto do celular.">
-    <label>Texto do botão</label><input type="text" id="cfg-publi-botao" placeholder="Abrir conta">
+    <label>Link do anunciante (deixe vazio para não publicar anúncio)</label><input type="url" id="cfg-publi-link" placeholder="https://..." oninput="renderPubliPreview()">
+    <label>Tema (a cara do anunciante)</label>
+    <select id="cfg-publi-tema" onchange="renderPubliPreview()">
+      <option value="nomad-azul">Nomad: fundo azul, título amarelo</option>
+      <option value="nomad-amarelo">Nomad: fundo amarelo, título preto</option>
+      <option value="portal">Portal: azul claro (para outros anunciantes)</option>
+    </select>
+    <label>Título</label><input type="text" id="cfg-publi-titulo" placeholder="Conta global Nomad" oninput="renderPubliPreview()">
+    <label>Linha de apoio</label><input type="text" id="cfg-publi-texto" placeholder="Conta e cartão em dólar, direto do celular." oninput="renderPubliPreview()">
+    <label>Texto do botão</label><input type="text" id="cfg-publi-botao" placeholder="Abrir conta" oninput="renderPubliPreview()">
+    <label>URL do logo (opcional)</label><input type="url" id="cfg-publi-logo" placeholder="vazio = usa o logo da Nomad que já vem no painel" oninput="renderPubliPreview()">
+    <label>URL da foto quadrada (opcional)</label><input type="url" id="cfg-publi-img" placeholder="https://felipetommy.com.br/wp-content/uploads/..." oninput="renderPubliPreview()">
     <button class="btn btn-primary" onclick="salvarCfgPubli()" style="width:100%">💾 Salvar publicidade</button>
     <div id="st-cfg-publi" class="status" style="margin-top:10px;display:none"></div>
     <div class="ob" style="margin-top:12px">
@@ -1237,17 +1245,27 @@ function salvarCfgPubli(){
   c.publiTitulo=document.getElementById('cfg-publi-titulo').value.trim();
   c.publiTexto=document.getElementById('cfg-publi-texto').value.trim();
   c.publiBotao=document.getElementById('cfg-publi-botao').value.trim();
+  c.publiTema=document.getElementById('cfg-publi-tema').value;
+  c.publiLogo=document.getElementById('cfg-publi-logo').value.trim();
+  c.publiImg=document.getElementById('cfg-publi-img').value.trim();
   localStorage.setItem('ft_cfg',JSON.stringify(c));
   renderPubliPreview();
   showSt('st-cfg-publi','ok',c.publiLink
     ?'✅ Publicidade salva. Ela entra no meio das próximas matérias publicadas.'
     :'✅ Publicidade desligada. As matérias saem sem anúncio no meio do texto.');
 }
-// Mostra na aba Config o mesmo bloco que vai para dentro da matéria.
+// Mostra na aba Config o mesmo bloco que vai para dentro da matéria. Lê o que
+// está digitado na tela, e não o que já foi salvo, para a prévia andar junto
+// com a digitação mesmo antes de clicar em Salvar.
 function renderPubliPreview(){
   const el=document.getElementById('publi-preview');
   if(!el)return;
-  const html=blocoPublicidade();
+  const v=id=>{const i=document.getElementById(id);return i?(i.value||'').trim():'';};
+  const html=blocoPublicidade({
+    publiLink:v('cfg-publi-link'),publiTitulo:v('cfg-publi-titulo'),
+    publiTexto:v('cfg-publi-texto'),publiBotao:v('cfg-publi-botao'),
+    publiTema:v('cfg-publi-tema'),publiLogo:v('cfg-publi-logo'),publiImg:v('cfg-publi-img')
+  });
   el.innerHTML=html||'<span style="opacity:.7">Sem link preenchido: a matéria sai sem anúncio no meio do texto.</span>';
 }
 function salvarCfgIA(){
@@ -1265,6 +1283,9 @@ function carregarCfgWP(){
   if(c.publiTitulo)document.getElementById('cfg-publi-titulo').value=c.publiTitulo;
   if(c.publiTexto)document.getElementById('cfg-publi-texto').value=c.publiTexto;
   if(c.publiBotao)document.getElementById('cfg-publi-botao').value=c.publiBotao;
+  if(c.publiTema)document.getElementById('cfg-publi-tema').value=c.publiTema;
+  if(c.publiLogo)document.getElementById('cfg-publi-logo').value=c.publiLogo;
+  if(c.publiImg)document.getElementById('cfg-publi-img').value=c.publiImg;
   if(c.anthropicKey)document.getElementById('cfg-anthropic').value=c.anthropicKey;
   renderPubliPreview();
 }
@@ -1833,29 +1854,64 @@ function inserirLeia(corpo,blocoLeia){
   return ok?novo:corpo+blocoLeia;
 }
 
+// Logo da Nomad em PNG de um tom só, embutido aqui dentro. Fica no painel para a
+// matéria não depender de arquivo hospedado: se a aba Config trouxer uma URL de
+// logo, ela ganha da versão embutida e o post publicado fica mais leve.
+const LOGO_NOMAD_BRANCO='data:image/png;base64,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';
+const LOGO_NOMAD_ESCURO='data:image/png;base64,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';
+
+// Cada anunciante tem a cara dele. O tema escolhido na aba Config pinta o bloco.
+// Azul e amarelo saem das cores oficiais da Nomad (#001779 a #00428F e #FFCE00);
+// "portal" é o visual neutro da casa, para quando o anunciante for outro.
+const TEMAS_PUBLI={
+  'nomad-azul':{
+    fundo:'linear-gradient(100deg,#001779 0%,#00328A 55%,#00428F 100%)',borda:'',
+    titulo:'#FFCE00',apoio:'rgba(255,255,255,.84)',
+    botaoFundo:'#FFCE00',botaoTexto:'#001779',
+    fonte:'Nunito,Helvetica,Arial,sans-serif',logo:LOGO_NOMAD_BRANCO
+  },
+  'nomad-amarelo':{
+    fundo:'#FFCE00',borda:'',
+    titulo:'#1A1A1A',apoio:'rgba(26,26,26,.74)',
+    botaoFundo:'#1A1A1A',botaoTexto:'#FFCE00',
+    fonte:'Nunito,Helvetica,Arial,sans-serif',logo:LOGO_NOMAD_ESCURO
+  },
+  'portal':{
+    fundo:'linear-gradient(110deg,#e5edf8,#ffffff)',borda:'border:1px solid #bfd0e3;',
+    titulo:'#0E4E96',apoio:'#5b6b7f',
+    botaoFundo:'#0E4E96',botaoTexto:'#ffffff',
+    fonte:'Lora,Georgia,serif',logo:''
+  }
+};
+
 // Publicidade do meio da matéria. Entra no lugar da marcação LINK_WHATSAPP_AQUI,
 // que antes recebia o botão verde do WhatsApp (ele passou para o fim do texto).
-// Os textos e o link vêm da aba Config, para trocar de anunciante sem mexer no código.
-// Sem link configurado o bloco não sai: nenhuma matéria fica com anúncio vazio.
+// Os textos, o link e o tema vêm da aba Config, para trocar de anunciante sem
+// mexer no código. Sem link configurado o bloco não sai: nenhuma matéria fica
+// com anúncio vazio.
 // Estilo em linha de propósito: a matéria vira blocos no editor do WordPress e
 // classe de CSS pode se perder; assim o bloco se desenha sozinho em qualquer tela.
-function blocoPublicidade(){
-  const c=getCfg();
+function blocoPublicidade(cfg){
+  const c=cfg||getCfg();
   const link=(c.publiLink||'').trim();
   if(!link)return '';
-  const titulo=(c.publiTitulo||'').trim()||'Conta global Nomad';
+  const t=TEMAS_PUBLI[c.publiTema]||TEMAS_PUBLI['nomad-azul'];
+  const titulo=(c.publiTitulo||'').trim()||'Conta e cartão em dólar';
   const apoio=(c.publiTexto||'').trim();
-  const botao=(c.publiBotao||'').trim()||'Saiba mais';
-  const cx='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;'
-    +'padding:16px 20px;border:1px solid #bfd0e3;border-radius:10px;'
-    +'background:linear-gradient(110deg,#e5edf8,#ffffff);text-decoration:none';
+  const botao=(c.publiBotao||'').trim()||'Abrir conta';
+  const logo=(c.publiLogo||'').trim()||t.logo;
+  const foto=(c.publiImg||'').trim();
+  const cx='display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 22px;'
+    +'border-radius:12px;text-decoration:none;background:'+t.fundo+';'+t.borda;
   return '\n<p style="text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7b8794;margin:28px 0 6px">Publicidade</p>\n'
     +'<p class="ft-publi" style="margin:0 0 28px"><a href="'+esc(link)+'" target="_blank" rel="sponsored nofollow noopener" style="'+cx+'">'
-    +'<span style="flex:1 1 230px;min-width:0">'
-    +'<strong style="display:block;font-family:Lora,Georgia,serif;font-size:21px;line-height:1.25;color:#0E4E96">'+esc(titulo)+'</strong>'
-    +(apoio?'<span style="display:block;font-size:13px;line-height:1.45;color:#5b6b7f;margin-top:5px">'+esc(apoio)+'</span>':'')
+    +'<span style="flex:1 1 240px;min-width:0">'
+    +(logo?'<img src="'+esc(logo)+'" alt="" loading="lazy" style="display:block;height:24px;width:auto;margin:0 0 10px" />':'')
+    +'<strong style="display:block;font-family:'+t.fonte+';font-size:21px;line-height:1.22;font-weight:700;color:'+t.titulo+'">'+esc(titulo)+'</strong>'
+    +(apoio?'<span style="display:block;font-size:13px;line-height:1.45;color:'+t.apoio+';margin-top:6px">'+esc(apoio)+'</span>':'')
+    +'<b style="display:inline-block;margin-top:13px;padding:10px 18px;border-radius:999px;background:'+t.botaoFundo+';color:'+t.botaoTexto+';font-size:13px;font-weight:700;white-space:nowrap">'+esc(botao)+' \u2197</b>'
     +'</span>'
-    +'<b style="flex:0 0 auto;padding:10px 16px;border-radius:6px;background:#0E4E96;color:#ffffff;font-size:13px;font-weight:700;white-space:nowrap">'+esc(botao)+' ↗</b>'
+    +(foto?'<img src="'+esc(foto)+'" alt="" loading="lazy" style="flex:0 0 104px;display:block;width:104px;height:104px;border-radius:10px;object-fit:cover;margin:0 auto" />':'')
     +'</a></p>\n';
 }
 function montarConteudo(dados,leiaLink,igLink,leiaTitulo){
@@ -2649,9 +2705,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.9.0';
+const PAINEL_VERSAO='2.9.1';
 const PAINEL_DATA='14/10/2026';
 const PAINEL_CHANGELOG=[
+  ['2.9.1','14/10/2026','O anuncio do meio da materia ganhou a cara do anunciante. Tres temas na aba Config: Nomad azul (fundo azul, titulo amarelo), Nomad amarelo e Portal azul claro para outros clientes. O logo da Nomad ja vem embutido no painel, nao precisa hospedar nada. Campos novos para URL de logo e de foto quadrada, e previa ao vivo que muda enquanto voce digita.'],
   ['2.9.0','14/10/2026','O GIF do canal do WhatsApp saiu do fim da matéria. No lugar dele entra o botão verde do canal, que antes ficava no meio do texto. E o meio do texto passa a ser espaço de publicidade: um cartão com etiqueta Publicidade, título, uma linha de apoio e botão, configurado na aba Config. Sem link preenchido, nenhuma matéria sai com anúncio.'],
   ['2.8.13','02/10/2026','Auto-envio: campo de busca na lista de grupos. Digite parte do nome para filtrar e use Marcar os encontrados / Desmarcar os encontrados para incluir ou tirar só aqueles do disparo. O filtro é só visual: grupo marcado continua marcado e continua indo no envio mesmo escondido pela busca. Esc ou Limpar busca mostra a lista inteira de novo.'],
   ['2.8.12','22/09/2026','Teleprompter com dois modos de tela: fundo preto com letras brancas (padrão) ou fundo branco com letras pretas. Botão ☀️/🌙 na barra alterna e a escolha fica salva no aparelho.'],
