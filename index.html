@@ -2713,9 +2713,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.9.3';
-const PAINEL_DATA='14/10/2026';
+const PAINEL_VERSAO='2.9.4';
+const PAINEL_DATA='15/10/2026';
 const PAINEL_CHANGELOG=[
+  ['2.9.4','15/10/2026','Encaminhador: reconhece as enquetes no formato atual do WhatsApp, que mudou os identificadores das opções. Corrige a espera por matéria já carregada e mantém a compatibilidade com o formato anterior, a seleção de matéria + enquete e o controle de grupos já enviados.'],
   ['2.9.3','14/10/2026','Conserto no anuncio do meio da materia, visto na primeira materia de teste. O botao estourava a largura da tela no celular quando o texto dele era longo: agora ele quebra em duas linhas dentro da pilula. A foto do cartao era um quadrado, e cartao nao e quadrado: virou o cartao inteiro em pe, na proporcao real. O bloco tambem ficou mais estreito para caber lado a lado no celular, e linha de apoio igual ao titulo nao sai repetida.'],
   ['2.9.2','14/10/2026','A foto do cartao da Nomad tambem passou a vir embutida no painel, junto com o logo. Nos temas da Nomad o anuncio ja sai completo, sem precisar subir nada na biblioteca de midia. Quem quiser trocar a imagem continua podendo colar uma URL no campo da aba Config, que ganha da versao embutida.'],
   ['2.9.1','14/10/2026','O anuncio do meio da materia ganhou a cara do anunciante. Tres temas na aba Config: Nomad azul (fundo azul, titulo amarelo), Nomad amarelo e Portal azul claro para outros clientes. O logo da Nomad ja vem embutido no painel, nao precisa hospedar nada. Campos novos para URL de logo e de foto quadrada, e previa ao vivo que muda enquanto voce digita.'],
@@ -2938,6 +2939,14 @@ function ftWhatsAppRunner(P){
   const selectedBox=m=>m?all('input[type="checkbox"]',m).find(e=>/^caixa de selecao|^select (message|update)/.test(norm(e.getAttribute('aria-label')))):null;
   const checked=e=>!!e&&(e.checked===true||e.getAttribute('aria-checked')==='true');
   const messages=()=>all('[data-id][data-testid^="conv-msg-"]',main()||document);
+  // WhatsApp 15/10/2026 usa IDs React (_r_...), sem "-option-".
+  // Reconhecer a enquete pela estrutura, nunca pelo texto ou por checkbox genérico.
+  const isPoll=el=>!!el?.querySelector('[data-testid="poll-bubble"],input[id*="-option-"]');
+  const pollReady=el=>{
+    const bubble=el?.querySelector('[data-testid="poll-bubble"]');
+    if(bubble)return all('[data-testid^="poll-option-row-label-"]',bubble).length>=2;
+    return !!el?.querySelector('input[id*="-option-"]');
+  };
   const modal=()=>all('[role="dialog"]').find(d=>visible(d)&&all('h2,[role="heading"]',d).some(h=>norm(h.textContent)==='encaminhar atualizacoes para'));
   const rows=m=>all('[data-testid="checkbox-selectable-wrapper"][role="checkbox"]',m);
   const rowName=r=>{const t=r.querySelector('[data-testid="cell-frame-title"] [title]');return t?.getAttribute('title')||'';};
@@ -2996,6 +3005,7 @@ function ftWhatsAppRunner(P){
     await sleep(600);
   };
   const pinSource=async()=>{
+    status('Identificando a última matéria e a enquete no canal…');
     // Chega ao fim antes de escolher a dupla. Mantém os IDs em todos os lotes.
     for(let i=0;i<8;i++){
       const ms=messages(),last=ms.at(-1);
@@ -3007,10 +3017,9 @@ function ftWhatsAppRunner(P){
     }
     await wait(()=>{
       const ms=messages(),a=ms.at(-2),p=ms.at(-1);
-      return a&&p&&a.textContent.trim()&&p.textContent.trim()&&(P.autoSource||a.querySelector('a[href]'))&&p.querySelector('input[id*="-option-"]');
-    },'Aguarde carregar a matéria e a enquete completas no canal.',30000);
+      return a&&p&&a.textContent.trim()&&p.textContent.trim()&&(P.autoSource||a.querySelector('a[href]'))&&pollReady(p);
+    },'Não reconheci uma enquete completa na última atualização do canal. Confira se a matéria e a enquete são as duas últimas publicações; se já aparecem, atualize o painel e gere um novo código.',30000);
     const ms=messages(),poll=ms.at(-1),article=ms.at(-2);
-    const isPoll=el=>!!el.querySelector('input[id*="-option-"]');
     const links=all('a[href]',article).map(a=>a.href).filter(h=>{try{return new URL(h).hostname==='felipetommy.com.br';}catch{return false;}});
     if(!isPoll(poll)||isPoll(article)||(!P.autoSource&&!links.length))throw Error('As duas últimas atualizações não são matéria + enquete. Confira o canal.');
     if(P.articleLinks?.length&&!P.articleLinks.some(h=>links.some(l=>l.replace(/\/$/,'')===h.replace(/\/$/,'')))){
