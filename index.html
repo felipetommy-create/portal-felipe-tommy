@@ -2260,9 +2260,19 @@ function renderGrupos(){
   renderProblemasGrupos();
 }
 
+function pedirNomeGrupo(nomeAtual){
+  return new Promise(resolve=>{
+    const dialog=document.createElement('dialog');
+    dialog.style.cssText='width:min(560px,90vw);padding:24px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:12px';
+    dialog.innerHTML='<form method="dialog"><h3>Editar nome do grupo</h3><p>Use o nome completo como aparece no WhatsApp. O histórico será mantido.</p><label for="editarGrupoNome">Nome do grupo</label><input id="editarGrupoNome" style="width:100%;margin:12px 0" autocomplete="off"><div style="display:flex;gap:12px"><button class="btn-primary" value="salvar">Salvar nome</button><button class="btn-sm" value="cancelar" formnovalidate>Cancelar</button></div></form>';
+    dialog.querySelector('input').value=nomeAtual;
+    dialog.addEventListener('close',()=>{const nome=dialog.returnValue==='salvar'?dialog.querySelector('input').value:null;dialog.remove();resolve(nome);},{once:true});
+    document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('input').focus();
+  });
+}
 async function editarNomeGrupo(id){
   const grupo=grupos.find(g=>g.id===id);if(!grupo)return;
-  const resposta=prompt('Nome completo como aparece no WhatsApp. O histórico deste cadastro será mantido:',grupo.nome);
+  const resposta=await pedirNomeGrupo(grupo.nome);
   if(resposta===null)return;
   const nome=resposta.trim();
   if(!ftNormNome(nome)){alert('Informe um nome de grupo.');return;}
@@ -2713,9 +2723,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.9.4';
+const PAINEL_VERSAO='2.9.5';
 const PAINEL_DATA='15/10/2026';
 const PAINEL_CHANGELOG=[
+  ['2.9.5','15/10/2026','Grupos: edição de nome dentro do painel, preservando o histórico. Encaminhador: busca nomes com letras estilizadas e mantém a conferência exata do nome completo antes de selecionar qualquer destino.'],
   ['2.9.4','15/10/2026','Encaminhador: reconhece as enquetes no formato atual do WhatsApp, que mudou os identificadores das opções. Corrige a espera por matéria já carregada e mantém a compatibilidade com o formato anterior, a seleção de matéria + enquete e o controle de grupos já enviados.'],
   ['2.9.3','14/10/2026','Conserto no anuncio do meio da materia, visto na primeira materia de teste. O botao estourava a largura da tela no celular quando o texto dele era longo: agora ele quebra em duas linhas dentro da pilula. A foto do cartao era um quadrado, e cartao nao e quadrado: virou o cartao inteiro em pe, na proporcao real. O bloco tambem ficou mais estreito para caber lado a lado no celular, e linha de apoio igual ao titulo nao sai repetida.'],
   ['2.9.2','14/10/2026','A foto do cartao da Nomad tambem passou a vir embutida no painel, junto com o logo. Nos temas da Nomad o anuncio ja sai completo, sem precisar subir nada na biblioteca de midia. Quem quiser trocar a imagem continua podendo colar uma URL no campo da aba Config, que ganha da versao embutida.'],
@@ -3102,8 +3113,8 @@ function ftWhatsAppRunner(P){
         if(seen.size>=200)break;
         await checkpoint();
         const n=norm(rowName(candidate));
-        if(n.includes(norm(keyword)))observedNames.add(rowName(candidate));
-        if(!n.includes(norm(keyword)))continue; // Não consumir resultados da busca anterior.
+        if(searchText(rowName(candidate)).includes(searchText(keyword)))observedNames.add(rowName(candidate));
+        if(!searchText(rowName(candidate)).includes(searchText(keyword)))continue; // Não consumir resultados da busca anterior.
         if(!n||seen.has(n))continue;seen.add(n);
         const row=rows(modal()||m).find(r=>norm(rowName(r))===n);
         const g=remaining.get(n);
@@ -3118,7 +3129,7 @@ function ftWhatsAppRunner(P){
         if(marks.length===5)break;
       }
       if(marks.length===5)break;
-      if(![...remaining.values()].some(g=>norm(g.nome).includes(norm(keyword))&&!marks.some(x=>x.id===g.id)))break;
+      if(![...remaining.values()].some(g=>searchText(g.nome).includes(searchText(keyword))&&!marks.some(x=>x.id===g.id)))break;
       const sc=scrollParent(rows(modal()||m).at(-1),m);
       if(seen.size>=200||(page===19&&sc&&sc.scrollTop+sc.clientHeight<sc.scrollHeight-3)){
         limitedSearches.add(keyword);
@@ -3132,7 +3143,7 @@ function ftWhatsAppRunner(P){
     }
     if(marks.length&&selectionCount()!==marks.length)throw Error('Número de destinos não corresponde ao lote.');
     if(marks.length===already.length){
-      const expected=[...remaining.values()].filter(g=>norm(g.nome).includes(norm(keyword)));
+      const expected=[...remaining.values()].filter(g=>searchText(g.nome).includes(searchText(keyword)));
       if(expected.length&&observedNames.size){
         log('Confira os nomes na aba Grupos. Cadastro: '+expected.slice(0,5).map(g=>g.nome).join(' | ')+'. WhatsApp: '+[...observedNames].slice(0,5).join(' | ')+'. Nenhum destino escolhido por semelhança.');
       }
@@ -3142,7 +3153,9 @@ function ftWhatsAppRunner(P){
   // Busca e identidade são coisas diferentes: pesquisa curta, nome completo
   // conferido no resultado. Não transforma um nome parecido em destino autorizado.
   const commonWords=new Set(['para','pelo','pela','pelos','pelas','grupo','grupos','todos','todas','somos']);
-  const searchWords=name=>[...new Set((norm(name).match(/[a-z]+/g)||[]).filter(w=>w.length>=4&&!commonWords.has(w)))];
+  const searchText=name=>norm(String(name||'').normalize('NFKD'));
+  // Letras em quadrados não são convertidas pelo WhatsApp: pesquisar o token original.
+  const searchWords=name=>[...new Set((searchText(name).match(/[a-z]+|[\u{1F170}-\u{1F189}]+/gu)||[]).filter(w=>Array.from(w).length>=4&&!commonWords.has(w)))];
   // Uma palavra principal por grupo antes das alternativas. Nunca "to", "br",
   // "vs", números ou fragmentos de emojis. "la vai" é uma expressão explícita.
   const groupSearchPlan=groups.map(g=>({id:g.id,nome:g.nome,palavras:searchWords(g.nome).slice(0,3)}));
