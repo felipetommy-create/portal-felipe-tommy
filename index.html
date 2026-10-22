@@ -299,6 +299,9 @@ Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAME
   "corpo_html": "texto completo em HTML seguindo TODAS as regras de legibilidade abaixo",
   "leia_tambem": "bloco HTML pronto do Leia também, com 3 links REAIS de matérias já publicadas em felipetommy.com.br relacionadas ao tema e aos nomes citados. Formato exato: &lt;p&gt;&lt;strong&gt;Leia também:&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href=\"URL\"&gt;Título da matéria&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;. NUNCA invente URL: só entra link confirmado no site (busque em felipetommy.com.br pelos nomes próprios da matéria). Se não achar nada relacionado, devolva string vazia.",
   "email_ascom": "e-mail formal para ASCOM informando a publicação, solicitando contraditório e com perguntas pontuais",
+  "imprensa_destinatarios": "e-mails das redações que recebem esta matéria como sugestão de pauta, separados por vírgula e espaço, numa linha só. Só endereços reais e conhecidos de redação. String vazia se a matéria for morna, coluna ou editorial.",
+  "imprensa_assunto": "Sugestão de pauta: [manchete curta] (Portal Felipe Tommy, Parauapebas/PA)",
+  "imprensa_email": "corpo do e-mail de sugestão de pauta para outras redações, texto puro, sem HTML e sem travessão, 150 a 220 palavras: apresentação do portal, manchete, 2 a 4 linhas com o fato (quem, onde, quando, número, órgão, fase da apuração), a linha 'Leia na íntegra: LINK_MATERIA_AQUI' com a marcação literal, e as três condições numeradas: 1) crédito ao Portal Felipe Tommy com hiperlink para a matéria original, 2) preservação dos links contidos no texto, 3) envio do link da publicação. Fecha com assinatura de Felipe Tommy, diretor, felipetommy.com.br, diretoria@felipetommy.com.br. String vazia se a matéria for morna, coluna ou editorial.",
   "roteiro_video": "roteiro para narração de vídeo de 1 minuto (Reels/TikTok/Shorts), sem travessão",
   "legenda_social": "legenda LONGA, para postagem em CARD/foto no Instagram/Facebook, em BLOCOS (ver REGRAS DA LEGENDA SOCIAL abaixo), terminando com CTA para seguir @felipetommyreal, pergunta que expõe a contradição do fato e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
   "legenda_video": "legenda CURTA, para postagem em VÍDEO (Reels, TikTok, Shorts), no padrão CNN Brasil: chapéu em caixa alta, 2 ou 3 parágrafos curtos e hashtags. SEM emoji. Ver REGRAS DA LEGENDA DE VÍDEO abaixo.",
@@ -500,6 +503,17 @@ TEXTO DA MATÉRIA:
       <button class="acc-btn" onclick="toggleAcc('acc-email','ic-email')">📧 E-mail ASCOM <span id="ic-email">▼</span></button>
       <div class="acc-body" id="acc-email" style="max-height:0">
         <div class="ob" style="margin-top:8px"><div class="ob-text" id="r-email" style="max-height:200px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-email')">📋 Copiar</button></div>
+      </div>
+      <button class="acc-btn" onclick="toggleAcc('acc-imprensa','ic-imprensa')">📨 Sugestão de pauta para a imprensa <span id="ic-imprensa">▼</span></button>
+      <div class="acc-body" id="acc-imprensa" style="max-height:0">
+        <p class="hint" style="margin-top:8px">Oferta da matéria a outras redações, de graça, com <strong>crédito ao portal e link preservado</strong>. O link entra sozinho quando a matéria é publicada aqui; se ela já está no ar, cole abaixo.</p>
+        <label>Link da matéria publicada</label>
+        <input type="url" id="imp-link" placeholder="https://felipetommy.com.br/r/123" oninput="montarImprensa()">
+        <div class="ob" style="margin-top:8px"><div class="ob-label">Destinatários (colar em Cco)</div><div class="ob-text" id="r-imp-dest"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-imp-dest')">📋 Copiar</button></div>
+        <div class="ob" style="margin-top:8px"><div class="ob-label">Assunto</div><div class="ob-text" id="r-imp-assunto"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-imp-assunto')">📋 Copiar</button></div>
+        <div class="ob" style="margin-top:8px"><div class="ob-label">Corpo do e-mail</div><div class="ob-text" id="r-imp-email" style="max-height:260px"></div><button class="btn-copy" style="margin-top:6px" onclick="cp('r-imp-email')">📋 Copiar</button></div>
+        <button class="btn-copy" style="margin-top:6px" onclick="abrirEmailImprensa()">✉️ Abrir no cliente de e-mail</button>
+        <p class="hint" id="hint-imprensa" style="margin-top:6px"></p>
       </div>
     </div>
 
@@ -1443,6 +1457,8 @@ function aplicarDados(j){
   s('r-frase',j.frase_chave);s('r-slug',j.slug);s('r-titulo',j.titulo_seo);
   s('r-sub',j.subtitulo);s('r-meta',j.meta_descricao);
   s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
+  const il=document.getElementById('imp-link');if(il)il.value='';
+  montarImprensa();
   s('r-video',j.roteiro_video);s('r-legenda',j.legenda_social);s('r-stories',j.enquete_stories);
   s('r-leia',j.leia_tambem);
   const hl=document.getElementById('hint-leia');
@@ -1463,6 +1479,38 @@ function aplicarDados(j){
   const wt=document.getElementById('wp-tags');if(wt)wt.value=j.tags||'';
   const ad=document.getElementById('area-dados');if(ad)ad.style.display='block';
   preencherWhatsapp(j);
+}
+// ──────────────── SUGESTÃO DE PAUTA PARA A IMPRENSA ────────────────
+// Oferta da matéria a outras redações: material de graça, com crédito ao portal e os
+// links do texto preservados. O corpo vem do JSON com a marcação LINK_MATERIA_AQUI;
+// aqui ela vira o link real, igual ao que o painel faz no corpo da matéria.
+function montarImprensa(){
+  const dest=(dados&&dados.imprensa_destinatarios)||'';
+  const assunto=(dados&&dados.imprensa_assunto)||'';
+  let corpo=(dados&&dados.imprensa_email)||'';
+  const el=document.getElementById('imp-link');
+  const link=el?el.value.trim():'';
+  if(corpo&&link)corpo=corpo.split('LINK_MATERIA_AQUI').join(link);
+  function s(id,v){const e=document.getElementById(id);if(e)e.textContent=v||'';}
+  s('r-imp-dest',dest);s('r-imp-assunto',assunto);s('r-imp-email',corpo);
+  const h=document.getElementById('hint-imprensa');
+  if(!h)return;
+  if(!corpo)h.textContent='⚠️ O JSON veio sem o e-mail de imprensa. Matéria morna, coluna e editorial ficam fora da distribuição de propósito; se esta é quente, peça o bloco ao Claude.';
+  else if(!link)h.textContent='⚠️ Falta o link: o corpo ainda está com a marcação LINK_MATERIA_AQUI. Publique a matéria ou cole o link acima antes de enviar.';
+  else h.textContent='✅ Pronto. Envie pelo Titan (diretoria@felipetommy.com.br), com os destinatários em Cco.';
+}
+function abrirEmailImprensa(){
+  const corpo=(document.getElementById('r-imp-email')||{}).textContent||'';
+  if(!corpo){alert('Sem e-mail de imprensa para esta matéria.');return;}
+  if(corpo.indexOf('LINK_MATERIA_AQUI')!==-1){alert('Cole o link da matéria antes de enviar: o corpo ainda está com a marcação.');return;}
+  const assunto=(document.getElementById('r-imp-assunto')||{}).textContent||'';
+  const dest=(document.getElementById('r-imp-dest')||{}).textContent||'';
+  // destinatários em Cco: uma redação não precisa ver que a pauta foi para a concorrência
+  window.location.href='mailto:?bcc='+encodeURIComponent(dest)+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+}
+function setLinkImprensa(link){
+  const el=document.getElementById('imp-link');
+  if(el&&!el.value){el.value=link;montarImprensa();}
 }
 // ───────────────────── LEGENDA DE VÍDEO (curta, padrão CNN) ─────────────────────
 // Card = legenda longa (legenda_social). Reels/TikTok/Shorts = esta versão curta.
@@ -2040,6 +2088,7 @@ async function publicar(){
       const linkBranded=c.url+'/r/'+post.id;
       const lm=document.getElementById('linkMateria');
       if(lm&&!lm.value)lm.value=linkBranded;
+      setLinkImprensa(linkBranded);
       if(postId){
         const wpi=document.getElementById('wp-post-id');if(wpi){wpi.value=String(post.id);atualizarBotaoPub();}
         showSt('st-pub','ok','♻️ Matéria #'+post.id+' atualizada! A URL continua a mesma: '+link+'\n🔗 Link curto p/ WhatsApp: '+linkBranded);
