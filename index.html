@@ -2772,9 +2772,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.9.5';
-const PAINEL_DATA='15/10/2026';
+const PAINEL_VERSAO='2.9.6';
+const PAINEL_DATA='22/10/2026';
 const PAINEL_CHANGELOG=[
+  ['2.9.6','22/10/2026','Aba Publicar: bloco novo de sugestao de pauta para a imprensa. Monta o e-mail que oferece a materia a outras redacoes, de graca, exigindo credito ao portal com link e a preservacao dos links do texto. Destinatarios, assunto e corpo saem prontos do JSON, e o link da materia entra sozinho na hora da publicacao. Os e-mails de contraditorio e de imprensa deixaram de sair com assinatura no fim, que o webmail ja coloca sozinho.'],
   ['2.9.5','15/10/2026','Grupos: edição de nome dentro do painel, preservando o histórico. Encaminhador: busca nomes com letras estilizadas e mantém a conferência exata do nome completo antes de selecionar qualquer destino.'],
   ['2.9.4','15/10/2026','Encaminhador: reconhece as enquetes no formato atual do WhatsApp, que mudou os identificadores das opções. Corrige a espera por matéria já carregada e mantém a compatibilidade com o formato anterior, a seleção de matéria + enquete e o controle de grupos já enviados.'],
   ['2.9.3','14/10/2026','Conserto no anuncio do meio da materia, visto na primeira materia de teste. O botao estourava a largura da tela no celular quando o texto dele era longo: agora ele quebra em duas linhas dentro da pilula. A foto do cartao era um quadrado, e cartao nao e quadrado: virou o cartao inteiro em pe, na proporcao real. O bloco tambem ficou mais estreito para caber lado a lado no celular, e linha de apoio igual ao titulo nao sai repetida.'],
