@@ -303,7 +303,7 @@ Com base no texto/tema abaixo, gere OBRIGATORIAMENTE um JSON válido com EXATAME
   "imprensa_assunto": "Sugestão de pauta: [manchete curta] (Portal Felipe Tommy, Parauapebas/PA)",
   "imprensa_email": "corpo do e-mail de sugestão de pauta para outras redações, texto puro, sem HTML e sem travessão, 150 a 220 palavras: apresentação do portal, manchete, 2 a 4 linhas com o fato (quem, onde, quando, número, órgão, fase da apuração), a linha 'Leia na íntegra: LINK_MATERIA_AQUI' com a marcação literal, e as três condições numeradas: 1) crédito ao Portal Felipe Tommy com hiperlink para a matéria original, 2) preservação dos links contidos no texto, 3) envio do link da publicação. Termina no parágrafo que apresenta a cobertura do portal: SEM bloco de assinatura no fim (sem Atenciosamente, sem nome, cargo, site ou telefone), porque o webmail já assina sozinho. String vazia se a matéria for morna, coluna ou editorial.",
   "roteiro_video": "roteiro para narração de vídeo de 1 minuto (Reels/TikTok/Shorts), sem travessão",
-  "legenda_social": "legenda LONGA, para postagem em CARD/foto no Instagram/Facebook, em BLOCOS (ver REGRAS DA LEGENDA SOCIAL abaixo), terminando com CTA para seguir @felipetommyreal, pergunta que expõe a contradição do fato e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará",
+  "legenda_social": "legenda LONGA, para postagem em CARD/foto no Instagram/Facebook, em BLOCOS (ver REGRAS DA LEGENDA SOCIAL abaixo), terminando com CTA para seguir @felipetommyreal, pergunta que expõe a contradição do fato e hashtags terminando com #Parauapebas #CanaadosCarajas #Maraba #Pará. SEM emoji nos blocos do corpo: só 📲 no CTA de seguir e ❓ na pergunta final.",
   "legenda_video": "legenda CURTA, para postagem em VÍDEO (Reels, TikTok, Shorts), no padrão CNN Brasil: chapéu em caixa alta, 2 ou 3 parágrafos curtos e hashtags. SEM emoji. Ver REGRAS DA LEGENDA DE VÍDEO abaixo.",
   "enquete_stories": "enquete para Stories (ver REGRAS DA ENQUETE abaixo)",
   "wa_canal": "📹 *Veja o vídeo:* [Link inserido manualmente]\n🔥 *[título impactante até 67 caracteres, voz ativa, primeira letra maiúscula]*\n👉 *Leia mais:* [Link inserido manualmente]\n🕵️ _*Portal Felipe Tommy: Informação é poder e transparência é fundamental.*_",
@@ -338,8 +338,8 @@ REGRAS DO LEIA TAMBÉM (campo leia_tambem):
 
 REGRAS DA LEGENDA SOCIAL (legenda_social) — o texto NAO pode parecer feito por IA:
 
-1. Escreva de 5 a 8 BLOCOS. Cada bloco = 1 emoji + 2 a 3 FRASES INTEIRAS.
-   PROIBIDO 1 emoji por frase curta. Esse padrao denuncia IA na hora.
+1. Escreva de 5 a 8 BLOCOS de 2 a 3 FRASES INTEIRAS cada, SEM emoji nenhum.
+   PROIBIDO emoji na frente de frase curta. Esse padrao denuncia IA na hora.
 2. As REGRAS DE LEGIBILIDADE do Yoast valem SO para o corpo_html. Na legenda social
    frase longa e permitida e desejavel. Varie o tamanho das frases.
 3. TODO bloco precisa de fato concreto: numero, data, nome proprio, orgao, valor ou cargo.
@@ -348,11 +348,13 @@ REGRAS DA LEGENDA SOCIAL (legenda_social) — o texto NAO pode parecer feito por
    repercutindo", "acompanhe os proximos capitulos", "o nome ganha forca".
 5. Feche com forca: contraste, construcao em tres tempos, ou pergunta que expoe a
    contradicao do fato. Nunca feche com frase morna.
-6. Use de 6 a 9 emojis no total, um por bloco. Nunca emoji dentro da frase.
+6. EMOJI SO EM DOIS LUGARES, um em cada: 📲 abrindo o bloco "Siga @felipetommyreal" e
+   ❓ abrindo a pergunta final. Do primeiro bloco ate o ultimo do corpo, nenhum emoji,
+   nem na frente nem dentro da frase.
 7. Se o material for FINO, entregue 3 ou 4 blocos e pare. NUNCA estique ate 8.
 
-EXEMPLO DO PADRAO CORRETO (bloco denso, com fato concreto):
-"⚖️ O TRF1, em novembro de 2025, reconheceu que Herlon Soares da Silva cometeu crime ao
+EXEMPLO DO PADRAO CORRETO (bloco denso, com fato concreto e sem emoji):
+"O TRF1, em novembro de 2025, reconheceu que Herlon Soares da Silva cometeu crime ao
 atestar obra federal que nunca existiu em Sao Domingos do Araguaia. A punicao foi extinta
 por prescricao. Isso nao e absolvicao."
 
@@ -1459,7 +1461,7 @@ function aplicarDados(j){
   s('r-resumo',j.resumo);s('r-tags',j.tags);s('r-corpo',j.corpo_html);s('r-email',j.email_ascom);
   const il=document.getElementById('imp-link');if(il)il.value='';
   montarImprensa();
-  s('r-video',j.roteiro_video);s('r-legenda',j.legenda_social);s('r-stories',j.enquete_stories);
+  s('r-video',j.roteiro_video);s('r-legenda',legendaCardPadrao(j.legenda_social));s('r-stories',j.enquete_stories);
   s('r-leia',j.leia_tambem);
   const hl=document.getElementById('hint-leia');
   if(hl)hl.textContent=(j.leia_tambem&&j.leia_tambem.trim())
@@ -1609,6 +1611,27 @@ function ytTitulo(j){
 
 // A legenda de vídeo já vem no formato certo (chapéu, 2-3 parágrafos, hashtags no fim).
 // Aqui só sai o bloco de hashtags, que volta depois do link.
+// Emoji em legenda, padrao fechado em 30/10/2026: na legenda do card o emoji so entra
+// no bloco "Siga @felipetommyreal" e na pergunta final. No post da Comunidade do
+// YouTube nao entra nenhum. O painel limpa o que vier fora disso, inclusive de JSON antigo.
+const RE_EMOJI=/[\u{1F000}-\u{1FAFF}\u{2190}-\u{21FF}\u{2300}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
+function semEmoji(t){
+  return String(t||'').replace(RE_EMOJI,'').replace(/[ \t]{2,}/g,' ').replace(/^[ \t]+/gm,'').trim();
+}
+function legendaCardPadrao(txt){
+  const blocos=String(txt||'').split(/\n\s*\n/);
+  // a pergunta final e o ultimo bloco terminado em "?" (o de hashtags fecha o texto)
+  let iPergunta=-1;
+  blocos.forEach((b,i)=>{if(b.trim().slice(-1)==='?')iPergunta=i;});
+  return blocos.map((b,i)=>{
+    const t=b.trim();
+    if(!t)return '';
+    if(/@felipetommyreal/i.test(t))return t;
+    if(i===iPergunta)return t;
+    return semEmoji(t);
+  }).filter(Boolean).join('\n\n').trim();
+}
+
 function ytCorpoDoShort(j){
   const blocos=String(j.legenda_video||'').trim().split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
   if(blocos.length&&blocos[blocos.length-1].charAt(0)==='#')blocos.pop();
@@ -1624,13 +1647,15 @@ function ytDescricaoShort(j,link){
 }
 
 function ytComunidade(j,link){
-  const titulo=String(j.titulo_seo||'').trim();
+  const titulo=semEmoji(j.titulo_seo);
   const fonte=String(j.legenda_coluna||j.legenda_social||'').trim();
   let corpo=fonte?fonte.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean):[];
   if(corpo.length&&corpo[corpo.length-1].charAt(0)==='#')corpo.pop();
   // o "siga @felipetommyreal" é do Instagram; no canal quem faz esse papel é o link da matéria
   corpo=corpo.filter(b=>!/@felipetommyreal/i.test(b));
   if(!corpo.length)corpo=[String(j.subtitulo||''),String(j.resumo||'')].map(t=>t.trim()).filter(Boolean);
+  // no YouTube o texto sai limpo: titulo, blocos e pergunta sem nenhum emoji
+  corpo=corpo.map(semEmoji).filter(Boolean);
   if(!titulo&&!corpo.length)return '';
   const fim=['Matéria completa: '+link,ytHashtags(j).join(' ')];
   const montar=()=>[titulo].concat(corpo,fim).filter(Boolean).join('\n\n');
@@ -1970,6 +1995,21 @@ function blocoPublicidade(cfg){
     +(foto?'<img src="'+esc(foto)+'" alt="" loading="lazy" style="flex:0 0 100px;display:block;width:100px;height:125px;border-radius:9px;object-fit:cover;margin:0 auto" />':'')
     +'</a></p>\n';
 }
+// Perfil do portal na Pesquisa do Google. Entra em TODA materia publicada, no fim do
+// texto, junto com o botao do canal: e por ele que o leitor segue o veiculo e passa a
+// receber as materias no Discover. Estilo em linha pelo mesmo motivo do anuncio: a
+// materia vira blocos no editor do WordPress e classe de CSS pode se perder.
+const GOOGLE_PERFIL_URL='https://profile.google.com/@felipetommyreal';
+const LOGO_GOOGLE_G='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iI0VBNDMzNSIgZD0iTTI0IDkuNWMzLjU0IDAgNi43MSAxLjIyIDkuMjEgMy42bDYuODUtNi44NUMzNS45IDIuMzggMzAuNDcgMCAyNCAwIDE0LjYyIDAgNi41MSA1LjM4IDIuNTYgMTMuMjJsNy45OCA2LjE5QzEyLjQzIDEzLjcyIDE3Ljc0IDkuNSAyNCA5LjV6Ii8+PHBhdGggZmlsbD0iIzQyODVGNCIgZD0iTTQ2Ljk4IDI0LjU1YzAtMS41Ny0uMTUtMy4wOS0uMzgtNC41NUgyNHY5LjAyaDEyLjk0Yy0uNTggMi45Ni0yLjI2IDUuNDgtNC43OCA3LjE4bDcuNzMgNmM0LjUxLTQuMTggNy4wOS0xMC4zNiA3LjA5LTE3LjY1eiIvPjxwYXRoIGZpbGw9IiNGQkJDMDUiIGQ9Ik0xMC41MyAyOC41OWMtLjQ4LTEuNDUtLjc2LTIuOTktLjc2LTQuNTlzLjI3LTMuMTQuNzYtNC41OWwtNy45OC02LjE5Qy45MiAxNi40NiAwIDIwLjEyIDAgMjRjMCAzLjg4LjkyIDcuNTQgMi41NiAxMC43OGw3Ljk3LTYuMTl6Ii8+PHBhdGggZmlsbD0iIzM0QTg1MyIgZD0iTTI0IDQ4YzYuNDggMCAxMS45My0yLjEzIDE1Ljg5LTUuODFsLTcuNzMtNmMtMi4xNSAxLjQ1LTQuOTIgMi4zLTguMTYgMi4zLTYuMjYgMC0xMS41Ny00LjIyLTEzLjQ3LTkuOTFsLTcuOTggNi4xOUM2LjUxIDQyLjYyIDE0LjYyIDQ4IDI0IDQ4eiIvPjwvc3ZnPg==';
+function blocoSeguirGoogle(){
+  const cx='display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px 16px;'
+    +'border:2px solid #CC2027;border-radius:10px;background:#ffffff;text-decoration:none';
+  return '\n<p class="ft-google" style="margin:28px 0"><a href="'+GOOGLE_PERFIL_URL+'" target="_blank" rel="noopener" style="'+cx+'">'
+    +'<img src="'+LOGO_GOOGLE_G+'" alt="" width="34" height="34" loading="lazy" style="flex:0 0 34px;display:block;width:34px;height:34px" />'
+    +'<strong style="flex:1 1 200px;min-width:0;font-family:Lora,Georgia,serif;font-size:17px;line-height:1.35;font-weight:700;color:#12212f">Siga o Portal Felipe Tommy no Google e receba as principais notícias de Parauapebas e do Pará</strong>'
+    +'<b style="flex:0 0 auto;padding:10px 18px;border-radius:22px;background:#0E4E96;color:#ffffff;font-family:Nunito,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;line-height:1.3">Seguir no Google</b>'
+    +'</a></p>\n';
+}
 function montarConteudo(dados,leiaLink,igLink,leiaTitulo){
   let corpo=dados.corpo_html||'';
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
@@ -1985,6 +2025,7 @@ function montarConteudo(dados,leiaLink,igLink,leiaTitulo){
   // Ver 02-WORDPRESS/snippets/wpcode-snippet-byline-redacao.php
   let conteudo='<h2>'+(dados.subtitulo||'')+'</h2>\n'+corpo;
   // O GIF do canal saiu do fim da matéria: no lugar dele entra o botão verde.
+  conteudo+='\n'+blocoSeguirGoogle();
   conteudo+='\n'+blocoWA;
   if(igLink)conteudo+='\n\n<p>'+igLink+'</p>';
   return conteudo;
@@ -2207,7 +2248,7 @@ function montarConteudoColuna(dados,leiaLink,leiaTitulo){
   corpo=inserirLeia(corpo,blocoLeiaTambem(dados,leiaLink,leiaTitulo));
   // Remove marcadores que não foram substituídos, para não vazarem no post.
   corpo=corpo.replace('LEIA_TAMBEM_AQUI','').replace('LINK_WHATSAPP_AQUI','');
-  return (dados.subtitulo?'<h2>'+dados.subtitulo+'</h2>\n':'')+corpo+blocoWA;
+  return (dados.subtitulo?'<h2>'+dados.subtitulo+'</h2>\n':'')+corpo+blocoSeguirGoogle()+blocoWA;
 }
 async function garantirCategoria(nome,c,creds){
   try{
@@ -2772,9 +2813,10 @@ document.addEventListener('keydown',e=>{
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.9.6';
+const PAINEL_VERSAO='2.9.7';
 const PAINEL_DATA='22/10/2026';
 const PAINEL_CHANGELOG=[
+  ['2.9.7','30/10/2026','Toda materia publicada passa a sair com o bloco "Siga o Portal Felipe Tommy no Google", que leva ao perfil do portal na Pesquisa do Google. Entra no fim do texto, antes do botao do canal, e vale tambem para coluna de colunista. A legenda do card mudou de padrao: o corpo sai sem emoji, e o emoji so fica no bloco "Siga @felipetommyreal" e na pergunta final. O post da Comunidade do YouTube sai sem emoji nenhum. O painel limpa o que vier fora disso, inclusive de JSON gerado antes desta versao.'],
   ['2.9.6','22/10/2026','Aba Publicar: bloco novo de sugestao de pauta para a imprensa. Monta o e-mail que oferece a materia a outras redacoes, de graca, exigindo credito ao portal com link e a preservacao dos links do texto. Destinatarios, assunto e corpo saem prontos do JSON, e o link da materia entra sozinho na hora da publicacao. Os e-mails de contraditorio e de imprensa deixaram de sair com assinatura no fim, que o webmail ja coloca sozinho.'],
   ['2.9.5','15/10/2026','Grupos: edição de nome dentro do painel, preservando o histórico. Encaminhador: busca nomes com letras estilizadas e mantém a conferência exata do nome completo antes de selecionar qualquer destino.'],
   ['2.9.4','15/10/2026','Encaminhador: reconhece as enquetes no formato atual do WhatsApp, que mudou os identificadores das opções. Corrige a espera por matéria já carregada e mantém a compatibilidade com o formato anterior, a seleção de matéria + enquete e o controle de grupos já enviados.'],
