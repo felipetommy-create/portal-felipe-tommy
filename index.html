@@ -1197,10 +1197,16 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
     <input type="text" id="pub-meta-appid" placeholder="Ex: 1234567890123456">
     <label>Chave secreta do aplicativo <span class="hint" style="font-weight:400">(serve para transformar o token de 2 horas em token permanente da página)</span></label>
     <input type="password" id="pub-meta-secret" placeholder="opcional, mas sem ela o token vence em 2 horas">
-    <label>Token de usuário do Explorador de API</label>
-    <textarea id="pub-meta-usertoken" rows="3" placeholder="Cole aqui o token gerado em developers.facebook.com/tools/explorer"></textarea>
-    <p class="hint" style="margin:6px 0 10px">Permissões que o token tem que ter: <strong>pages_show_list</strong>, <strong>pages_manage_posts</strong>, <strong>pages_read_engagement</strong>, <strong>instagram_basic</strong>, <strong>instagram_content_publish</strong> e <strong>instagram_manage_comments</strong>.</p>
-    <button class="btn btn-primary" onclick="metaConectar()" style="width:100%"><span class="spin" id="sp-meta" style="display:none"></span>🔌 Conectar Facebook e Instagram</button>
+    <p class="hint" style="margin:6px 0 10px">O botão abaixo abre a autorização do Facebook já com as permissões certas: <strong>pages_show_list</strong>, <strong>pages_manage_posts</strong>, <strong>pages_read_engagement</strong>, <strong>pages_manage_engagement</strong>, <strong>instagram_basic</strong>, <strong>instagram_content_publish</strong> e <strong>instagram_manage_comments</strong>. Você sai do painel, autoriza no Facebook e volta para cá com a conexão pronta. <strong>Salve o ID e a chave antes.</strong></p>
+    <div class="row" style="grid-template-columns:1fr 1fr">
+      <button class="btn btn-secondary" onclick="salvarPubCfg()">💾 Salvar ID e chave</button>
+      <button class="btn btn-primary" onclick="metaLoginDireto()">🔌 Entrar com o Facebook</button>
+    </div>
+    <details style="margin-top:12px">
+      <summary class="hint" style="cursor:pointer">Não deu certo? Colar um token à mão</summary>
+      <textarea id="pub-meta-usertoken" rows="3" placeholder="Cole aqui um token de usuário gerado no Explorador de API" style="margin-top:8px"></textarea>
+      <button class="btn btn-secondary" onclick="metaConectar()" style="width:100%"><span class="spin" id="sp-meta" style="display:none"></span>Conectar com este token</button>
+    </details>
     <div id="pub-meta-paginas" style="margin-top:12px"></div>
     <div id="st-pub-meta" class="status" style="margin-top:10px;display:none"></div>
 
@@ -2966,7 +2972,9 @@ document.addEventListener('keydown',e=>{
 const PUB_GRAPH='v26.0';
 const LS_PUB='ft_pub_cfg';
 const LS_PUB_HIST='ft_pub_hist';
-const PUB_ESCOPOS=['pages_show_list','pages_manage_posts','pages_read_engagement','instagram_basic','instagram_content_publish','instagram_manage_comments'];
+// pages_manage_engagement é o que permite comentar como a página: sem ela o
+// link não entra no 1º comentário, que é regra fixa do Facebook aqui.
+const PUB_ESCOPOS=['pages_show_list','pages_manage_posts','pages_read_engagement','pages_manage_engagement','instagram_basic','instagram_content_publish','instagram_manage_comments'];
 let YT_TOKEN=null,YT_TOKEN_EXP=0;   // acesso do YouTube: vive só nesta aba, cerca de 1 hora
 
 function getPubCfg(){try{return JSON.parse(localStorage.getItem(LS_PUB)||'{}');}catch(e){return{};}}
@@ -3019,6 +3027,43 @@ async function gFetch(path,params,token,method){
 }
 const gGet=(p,params,tk)=>gFetch(p,params,tk,'GET');
 const gPost=(p,params,tk)=>gFetch(p,params,tk,'POST');
+
+// Pede a autorização direto ao Facebook, com a lista de permissões que o
+// painel realmente usa. É mais confiável que o Explorador de API, que monta a
+// lista sozinho e às vezes inclui permissão desativada, derrubando a janela
+// com "Invalid Scopes". O endereço do painel precisa estar cadastrado em
+// Login do Facebook → Configurações → URIs de redirecionamento válidos.
+function metaLoginDireto(){
+  const c=getPubCfg();
+  const appId=(document.getElementById('pub-meta-appid').value.trim())||c.appId||'';
+  if(!appId){showSt('st-pub-meta','err','⚠️ Informe o ID do aplicativo antes.');return;}
+  salvarPubCfg();
+  const volta=location.origin+location.pathname;
+  const u='https://www.facebook.com/'+PUB_GRAPH+'/dialog/oauth'
+    +'?client_id='+encodeURIComponent(appId)
+    +'&redirect_uri='+encodeURIComponent(volta)
+    +'&response_type=token'
+    +'&scope='+encodeURIComponent(PUB_ESCOPOS.join(','));
+  location.href=u;
+}
+
+// Na volta do Facebook o token vem no fim do endereço. Captura, limpa a barra
+// de endereço para o token não ficar no histórico e já conecta.
+function pubCapturarTokenHash(){
+  const h=location.hash||'';
+  if(h.indexOf('access_token=')<0&&h.indexOf('error')<0)return;
+  const p=new URLSearchParams(h.replace(/^#/,''));
+  history.replaceState(null,'',location.pathname);
+  const btnCfg=document.querySelector('nav button[onclick*="config"]');
+  showTab('config',btnCfg);
+  const erro=p.get('error_description')||p.get('error');
+  if(erro){showSt('st-pub-meta','err','❌ O Facebook recusou a autorização: '+erro);return;}
+  const tk=p.get('access_token');
+  if(!tk)return;
+  const campo=document.getElementById('pub-meta-usertoken');
+  if(campo)campo.value=tk;
+  metaConectar();
+}
 
 async function metaConectar(){
   const sp=document.getElementById('sp-meta');
@@ -3468,9 +3513,10 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.10.0';
+const PAINEL_VERSAO='2.10.1';
 const PAINEL_DATA='02/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.10.1','02/11/2026','A conexao com o Facebook passou a ser feita por um botao no proprio painel, que pede a autorizacao direto ao Facebook com a lista exata de permissoes. O Explorador de API montava a lista sozinho e incluia pages_read_user_content, desativada na v26, o que derrubava a janela com Invalid Scopes. Entrou tambem pages_manage_engagement, sem a qual o link nao vai para o 1o comentario do Facebook.'],
   ['2.10.0','02/11/2026','Aba nova “Publicador”: um texto, uma arte e um vídeo saem de uma vez para a página do Facebook (card e vídeo), para o Instagram (card e Reel) e para o YouTube (Short), pelas APIs oficiais, com o link indo no 1º comentário do Facebook. O card é convertido para JPEG e hospedado na biblioteca do WordPress antes de ir para o Instagram, porque a Meta só lê imagem em endereço público e só aceita JPEG. As conexões ficam na Config e valem só neste aparelho. X e post na Comunidade do YouTube continuam na mão: o X cobra por post desde fevereiro de 2026 e a Comunidade não tem API.'],
   ['2.9.7','30/10/2026','Toda materia publicada passa a sair com o bloco "Siga o Portal Felipe Tommy no Google", que leva ao perfil do portal na Pesquisa do Google. Entra no fim do texto, antes do botao do canal, e vale tambem para coluna de colunista. A legenda do card mudou de padrao: o corpo sai sem emoji, e o emoji so fica no bloco "Siga @felipetommyreal" e na pergunta final. O post da Comunidade do YouTube sai sem emoji nenhum. O painel limpa o que vier fora disso, inclusive de JSON gerado antes desta versao.'],
   ['2.9.6','22/10/2026','Aba Publicar: bloco novo de sugestao de pauta para a imprensa. Monta o e-mail que oferece a materia a outras redacoes, de graca, exigindo credito ao portal com link e a preservacao dos links do texto. Destinatarios, assunto e corpo saem prontos do JSON, e o link da materia entra sozinho na hora da publicacao. Os e-mails de contraditorio e de imprensa deixaram de sair com assinatura no fim, que o webmail ja coloca sozinho.'],
@@ -4097,6 +4143,7 @@ function autoCopiarCodigo(btn,dryRun=false,reviewOnly=false,testBatch=false){
 
 (function init(){
   renderVersao();
+  try{pubCapturarTokenHash();}catch(e){}
   const qn=localStorage.getItem('ft_quadro_nome');
   if(qn)document.getElementById('an-quadro').value=qn;
   const raw=localStorage.getItem(LS_SB);
