@@ -1203,8 +1203,9 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
       <button class="btn btn-primary" onclick="metaLoginDireto()">🔌 Entrar com o Facebook</button>
     </div>
     <details style="margin-top:12px">
-      <summary class="hint" style="cursor:pointer">Não deu certo? Colar um token à mão</summary>
-      <textarea id="pub-meta-usertoken" rows="3" placeholder="Cole aqui um token de usuário gerado no Explorador de API" style="margin-top:8px"></textarea>
+      <summary class="hint" style="cursor:pointer">Não deu certo? Colar um token à mão (usuário do sistema)</summary>
+      <div class="hint" style="margin-top:8px">Em business.facebook.com/settings → Usuários → Usuários do sistema: crie um usuário do sistema, dê a ele controle total da página e do Instagram, gere o token escolhendo este aplicativo e marque as sete permissões. Esse token não vence.</div>
+      <textarea id="pub-meta-usertoken" rows="3" placeholder="Cole aqui o token do usuário do sistema" style="margin-top:8px"></textarea>
       <button class="btn btn-secondary" onclick="metaConectar()" style="width:100%"><span class="spin" id="sp-meta" style="display:none"></span>Conectar com este token</button>
     </details>
     <div id="pub-meta-paginas" style="margin-top:12px"></div>
@@ -3071,7 +3072,7 @@ async function metaConectar(){
   const appId=document.getElementById('pub-meta-appid').value.trim();
   const secret=document.getElementById('pub-meta-secret').value.trim()||c.appSecret||'';
   const userToken=document.getElementById('pub-meta-usertoken').value.trim();
-  if(!userToken){showSt('st-pub-meta','err','⚠️ Cole o token de usuário gerado no Explorador de API da Meta.');return;}
+  if(!userToken){showSt('st-pub-meta','err','⚠️ Cole aqui o token: o do usuário do sistema, gerado nas configurações do portfólio empresarial, ou o do seu usuário, vindo da janela de autorização.');return;}
   sp.style.display='inline-block';
   showSt('st-pub-meta','loading','⏳ Falando com a Meta...');
   try{
@@ -3087,8 +3088,10 @@ async function metaConectar(){
       u.searchParams.set('fb_exchange_token',userToken);
       const r=await fetch(u.toString());
       const j=await r.json();
-      if(j.error)throw new Error('Falhou a troca pelo token longo: '+(j.error.message||''));
-      token=j.access_token;
+      // Token de usuário do sistema já nasce sem prazo e não aceita essa troca.
+      // Nesse caso a recusa não é problema: seguimos com o token original.
+      if(j.error)aviso=' A Meta recusou a troca pelo token longo ('+(j.error.message||'sem detalhe')+'). Se este é um token de usuário do sistema, tudo bem: ele já não vence.';
+      else token=j.access_token;
     }else{
       aviso=' Sem o ID e a chave secreta do aplicativo, este token vence em cerca de 2 horas.';
     }
@@ -3519,9 +3522,10 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.10.2';
+const PAINEL_VERSAO='2.10.3';
 const PAINEL_DATA='02/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.10.3','02/11/2026','Conexao da Meta: o painel passou a aceitar token de usuario do sistema, gerado nas configuracoes do portfolio empresarial. Esse token nao vence e nao depende da janela de autorizacao, que o aplicativo novo recusa por ser do tipo Empresa. Quando a Meta recusa a troca pelo token longo, o painel segue com o token original em vez de parar.'],
   ['2.10.2','02/11/2026','Publicador: a arte e o video passaram a subir para a biblioteca do WordPress como formulario, e nao como corpo cru. Do jeito antigo o envio exigia o cabecalho Content-Disposition, que o servidor nao libera na checagem de origem do navegador: a resposta nem chegava e o painel parava com "Failed to fetch" antes de falar com a Meta.'],
   ['2.10.1','02/11/2026','A conexao com o Facebook passou a ser feita por um botao no proprio painel, que pede a autorizacao direto ao Facebook com a lista exata de permissoes. O Explorador de API montava a lista sozinho e incluia pages_read_user_content, desativada na v26, o que derrubava a janela com Invalid Scopes. Entrou tambem pages_manage_engagement, sem a qual o link nao vai para o 1o comentario do Facebook.'],
   ['2.10.0','02/11/2026','Aba nova “Publicador”: um texto, uma arte e um vídeo saem de uma vez para a página do Facebook (card e vídeo), para o Instagram (card e Reel) e para o YouTube (Short), pelas APIs oficiais, com o link indo no 1º comentário do Facebook. O card é convertido para JPEG e hospedado na biblioteca do WordPress antes de ir para o Instagram, porque a Meta só lê imagem em endereço público e só aceita JPEG. As conexões ficam na Config e valem só neste aparelho. X e post na Comunidade do YouTube continuam na mão: o X cobra por post desde fevereiro de 2026 e a Comunidade não tem API.'],
