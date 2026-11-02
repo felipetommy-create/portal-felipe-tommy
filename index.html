@@ -3280,10 +3280,16 @@ async function pubParaJPEG(file,log){
 async function pubHospedar(file,log){
   const w=pubCredWP();
   log('… subindo '+file.name+' ('+Math.round(file.size/1024)+' KB) para a biblioteca do WordPress');
+  // O arquivo vai como formulário, não como corpo cru. O corpo cru exige o cabeçalho
+  // Content-Disposition, que o servidor não libera na checagem de origem do navegador:
+  // a resposta nem chega, o painel só vê "Failed to fetch". Com FormData o único
+  // cabeçalho fora do comum é o Authorization, que o servidor já aceita.
+  const fd=new FormData();
+  fd.append('file',file,pubNomeArquivo(file.name));
   const r=await fetch(w.url+'/wp-json/wp/v2/media',{
     method:'POST',
-    headers:{'Authorization':w.auth,'Content-Disposition':'attachment; filename="'+pubNomeArquivo(file.name)+'"','Content-Type':file.type||'application/octet-stream'},
-    body:file
+    headers:{'Authorization':w.auth},
+    body:fd
   });
   if(!r.ok){
     const t=await r.text();
@@ -3513,9 +3519,10 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.10.1';
+const PAINEL_VERSAO='2.10.2';
 const PAINEL_DATA='02/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.10.2','02/11/2026','Publicador: a arte e o video passaram a subir para a biblioteca do WordPress como formulario, e nao como corpo cru. Do jeito antigo o envio exigia o cabecalho Content-Disposition, que o servidor nao libera na checagem de origem do navegador: a resposta nem chegava e o painel parava com "Failed to fetch" antes de falar com a Meta.'],
   ['2.10.1','02/11/2026','A conexao com o Facebook passou a ser feita por um botao no proprio painel, que pede a autorizacao direto ao Facebook com a lista exata de permissoes. O Explorador de API montava a lista sozinho e incluia pages_read_user_content, desativada na v26, o que derrubava a janela com Invalid Scopes. Entrou tambem pages_manage_engagement, sem a qual o link nao vai para o 1o comentario do Facebook.'],
   ['2.10.0','02/11/2026','Aba nova “Publicador”: um texto, uma arte e um vídeo saem de uma vez para a página do Facebook (card e vídeo), para o Instagram (card e Reel) e para o YouTube (Short), pelas APIs oficiais, com o link indo no 1º comentário do Facebook. O card é convertido para JPEG e hospedado na biblioteca do WordPress antes de ir para o Instagram, porque a Meta só lê imagem em endereço público e só aceita JPEG. As conexões ficam na Config e valem só neste aparelho. X e post na Comunidade do YouTube continuam na mão: o X cobra por post desde fevereiro de 2026 e a Comunidade não tem API.'],
   ['2.9.7','30/10/2026','Toda materia publicada passa a sair com o bloco "Siga o Portal Felipe Tommy no Google", que leva ao perfil do portal na Pesquisa do Google. Entra no fim do texto, antes do botao do canal, e vale tambem para coluna de colunista. A legenda do card mudou de padrao: o corpo sai sem emoji, e o emoji so fica no bloco "Siga @felipetommyreal" e na pergunta final. O post da Comunidade do YouTube sai sem emoji nenhum. O painel limpa o que vier fora disso, inclusive de JSON gerado antes desta versao.'],
