@@ -108,6 +108,16 @@
   .cat-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
   .cat-grid label{display:flex;align-items:center;gap:5px;margin:0;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;cursor:pointer;font-weight:400;text-transform:none;}
   .cat-grid input[type=checkbox]{accent-color:var(--accent);}
+  .status.warn{background:rgba(245,158,11,.15);color:var(--warn);}
+  .dest-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;}
+  .dest{display:flex;align-items:flex-start;gap:10px;margin:0;font-weight:400;text-transform:none;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;}
+  .dest input[type=checkbox]{accent-color:var(--accent);margin-top:2px;flex:none;}
+  .dest strong{font-size:13px;}
+  .dest em{display:block;font-style:normal;color:var(--muted);font-size:12px;margin-top:2px;line-height:1.5;}
+  .dest-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .dest-chip{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:var(--bg);}
+  .dest-chip.on{border-color:var(--accent);color:var(--accent);}
+  .dest-chip.off{color:var(--muted);}
   .passo{display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;}
   .passo-texto{font-size:13px;line-height:1.6;}
   .passo-texto strong{color:var(--accent);}
@@ -172,6 +182,7 @@
   <button class="tab" onclick="showTab('colunistas',this)">✍️ Colunistas</button>
   <button class="tab" onclick="showTab('redes',this)">🎬 Redes Sociais</button>
   <div class="nav-label">Distribuição</div>
+  <button class="tab" onclick="showTab('publicador',this)">📡 Publicador</button>
   <button class="tab" onclick="showTab('whatsapp',this)">📤 WhatsApp</button>
   <button class="tab" onclick="showTab('grupos',this)">👥 Grupos</button>
   <button class="tab" onclick="showTab('encaminhar',this)">🚀 Encaminhar</button>
@@ -1052,6 +1063,96 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
 </div>
 
 <!-- CONFIG -->
+<!-- PUBLICADOR MULTI-REDE -->
+<div class="page" id="tab-publicador">
+  <div class="card">
+    <div class="card-title" style="justify-content:flex-start">📡 Publicador — Facebook, Instagram e YouTube de uma vez</div>
+    <p class="hint" style="margin-top:0">Escolhe o texto, a arte e o vídeo uma única vez e dispara para as redes que têm API de publicação. O card vira JPEG e sobe para a biblioteca do WordPress antes de ir para o Instagram, porque a API da Meta só aceita imagem hospedada em endereço público.<br><strong>X e post na Comunidade do YouTube continuam na mão</strong>, no fim desta aba, e o motivo está escrito lá.</p>
+    <div id="pub-chips" class="dest-chips"></div>
+    <p class="hint" style="margin:10px 0 0">Sem conexão configurada? Vá em <strong>⚙️ Config → Conexões das redes</strong>.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span> Texto</div>
+    <button class="btn-sm" style="margin-bottom:12px" onclick="pubPuxarDaMateria()">↙ Puxar da matéria carregada</button>
+    <label>Legenda do card (Facebook e Instagram) <span id="cont-pub-legenda" class="hint" style="font-weight:400;text-transform:none"></span></label>
+    <textarea id="pub-legenda" rows="7" placeholder="A legenda longa do card, igual à da aba Redes Sociais." oninput="pubContar()"></textarea>
+    <label>Legenda do vídeo (Reel e Short) <span id="cont-pub-legenda-video" class="hint" style="font-weight:400;text-transform:none"></span></label>
+    <textarea id="pub-legenda-video" rows="4" placeholder="A legenda curta, usada no Reel do Instagram e no vídeo do Facebook." oninput="pubContar()"></textarea>
+    <label>Link da matéria <span class="hint" style="font-weight:400;text-transform:none">(entra no 1º comentário do Facebook e na descrição do Short)</span></label>
+    <input type="url" id="pub-link" placeholder="https://felipetommy.com.br/...">
+    <label>Título do Short <span id="cont-pub-yt-titulo" class="hint" style="font-weight:400;text-transform:none"></span></label>
+    <input type="text" id="pub-yt-titulo" placeholder="O título do YouTube é busca: cidade na frente, até 100 caracteres." oninput="pubContar()">
+    <label>Descrição do Short</label>
+    <textarea id="pub-yt-desc" rows="3" placeholder="Fato na frente, link da matéria logo depois."></textarea>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">2</span> Arte e vídeo</div>
+    <label>Card do feed (1080x1350)</label>
+    <input type="file" id="pub-img" accept="image/*" onchange="pubArquivoEscolhido('img')">
+    <p class="hint" id="pub-img-info" style="margin:6px 0 12px">Pegue o PNG em 05-REDACAO/cards. O painel converte para JPEG sozinho.</p>
+    <label>Vídeo vertical do Reel e do Short (9:16)</label>
+    <input type="file" id="pub-video" accept="video/*" onchange="pubArquivoEscolhido('video')">
+    <p class="hint" id="pub-video-info" style="margin:6px 0 12px">MP4 de 1080x1920. O Instagram e o Facebook leem o vídeo por endereço público, então ele sobe primeiro para o WordPress: acima de 40 MB o servidor costuma recusar.</p>
+    <div class="ob">
+      <div class="ob-label">Já hospedado? Cole o endereço e o painel não sobe nada</div>
+      <input type="url" id="pub-img-url" placeholder="Endereço público do card (JPEG)" style="margin-bottom:8px">
+      <input type="url" id="pub-video-url" placeholder="Endereço público do vídeo (MP4)">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">3</span> Para onde vai</div>
+    <div class="dest-grid">
+      <label class="dest"><input type="checkbox" id="pub-d-fbfoto" checked><span><strong>Facebook: card no feed</strong><em>O formato que rende 83% do alcance da página. O link vai no 1º comentário, nunca no post.</em></span></label>
+      <label class="dest"><input type="checkbox" id="pub-d-igfoto"><span><strong>Instagram: card no feed</strong><em>Só para fato local que a pessoa repassa no WhatsApp. Institucional vai só para o Facebook.</em></span></label>
+      <label class="dest"><input type="checkbox" id="pub-d-igreel"><span><strong>Instagram: Reel</strong><em>O único formato que alcança quem não segue o perfil.</em></span></label>
+      <label class="dest"><input type="checkbox" id="pub-d-fbvideo"><span><strong>Facebook: vídeo</strong><em>Vídeo 9:16 entra na página como Reel.</em></span></label>
+      <label class="dest"><input type="checkbox" id="pub-d-ytshort"><span><strong>YouTube: Short</strong><em>Mesmo arquivo do Reel, menor concorrência local das cinco redes.</em></span></label>
+    </div>
+    <div class="dest-grid" style="margin-top:4px">
+      <label class="dest"><input type="checkbox" id="pub-c-fb" checked><span><strong>Link no 1º comentário do Facebook</strong></span></label>
+      <label class="dest"><input type="checkbox" id="pub-c-ig"><span><strong>Link no 1º comentário do Instagram</strong><em>No Instagram o link do comentário não é clicável; serve de referência.</em></span></label>
+      <label class="dest"><input type="checkbox" id="pub-yt-privado"><span><strong>Short como "não listado"</strong><em>Para testar o envio sem gastar uma publicação.</em></span></label>
+    </div>
+    <button class="btn btn-primary" onclick="pubPublicar()" style="width:100%;margin-top:14px"><span class="spin" id="sp-pub" style="display:none"></span>🚀 Publicar nas redes marcadas</button>
+    <div id="st-pub" class="status" style="margin-top:10px;display:none"></div>
+    <div class="ob" id="pub-log-box" style="display:none;margin-top:12px">
+      <div class="ob-label">O que está acontecendo</div>
+      <div class="ob-text" id="pub-log" style="max-height:300px;white-space:pre-wrap"></div>
+    </div>
+    <div id="pub-resultados" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-badge">4</span> O que ainda vai na mão</div>
+    <p class="hint" style="margin-top:0"><strong>X:</strong> desde 6 de fevereiro de 2026 não existe mais camada gratuita. A publicação por API passou a ser cobrada por post, e post com link sai mais caro que post sem link. Para um perfil que entrega 3,5 mil impressões por semana, não se paga. <strong>Post na Comunidade do YouTube:</strong> o YouTube não tem endpoint público para isso, nem o Buffer publica lá.</p>
+    <div class="ob">
+      <div class="ob-label">Texto do X (copie e publique)</div>
+      <div class="ob-text" id="pub-x-texto" style="max-height:220px"></div>
+      <div class="row" style="grid-template-columns:1fr 1fr;margin-top:8px">
+        <button class="btn-copy" onclick="cp('pub-x-texto')">📋 Copiar</button>
+        <a class="btn btn-secondary" href="https://x.com/compose/post" target="_blank" rel="noopener" style="text-decoration:none;justify-content:center">🔗 Abrir o X</a>
+      </div>
+    </div>
+    <div class="ob">
+      <div class="ob-label">Post na Comunidade do YouTube</div>
+      <div class="ob-text" id="pub-yt-comunidade" style="max-height:220px"></div>
+      <div class="row" style="grid-template-columns:1fr 1fr;margin-top:8px">
+        <button class="btn-copy" onclick="cp('pub-yt-comunidade')">📋 Copiar</button>
+        <a class="btn btn-secondary" href="https://studio.youtube.com" target="_blank" rel="noopener" style="text-decoration:none;justify-content:center">🔗 Abrir o Studio</a>
+      </div>
+    </div>
+    <p class="hint">O TikTok também tem API de publicação, mas ela só libera postagem direta depois de uma auditoria da ByteDance; sem isso o vídeo chega como rascunho na caixa de entrada do aplicativo. Fica para depois.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between"><span>🕘 Histórico de publicações</span><button class="btn-danger-sm" onclick="pubLimparHist()">Limpar</button></div>
+    <div id="pub-hist"><div class="empty-state">Nada publicado por aqui ainda.</div></div>
+  </div>
+</div>
+
 <div class="page" id="tab-config">
   <div class="card">
     <div class="card-title">🧾 Versão do painel</div>
@@ -1080,6 +1181,43 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
       <button class="btn btn-primary" onclick="salvarCfgWP()" style="flex:1">💾 Salvar credenciais WordPress</button>
     </div>
     <div id="st-cfg" class="status" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔗 Conexões das redes (publicação direta)</div>
+    <p class="hint" style="margin-top:0">É daqui que a aba <strong>Publicador</strong> tira permissão para postar sozinha no Facebook, no Instagram e no YouTube. Tudo fica salvo <strong>só neste navegador</strong>, igual à senha do WordPress. O passo a passo de como criar o aplicativo da Meta e o do Google está em <strong>01-PAINEL/COMO-CONECTAR-AS-REDES.md</strong>.</p>
+
+    <div class="ob" style="margin-bottom:14px">
+      <div class="ob-label">Situação agora</div>
+      <div class="ob-text" id="pub-cfg-status" style="max-height:none">—</div>
+    </div>
+
+    <div class="card-title" style="font-size:14px;margin-bottom:8px">Meta (Facebook + Instagram)</div>
+    <label>ID do aplicativo</label>
+    <input type="text" id="pub-meta-appid" placeholder="Ex: 1234567890123456">
+    <label>Chave secreta do aplicativo <span class="hint" style="font-weight:400">(serve para transformar o token de 2 horas em token permanente da página)</span></label>
+    <input type="password" id="pub-meta-secret" placeholder="opcional, mas sem ela o token vence em 2 horas">
+    <label>Token de usuário do Explorador de API</label>
+    <textarea id="pub-meta-usertoken" rows="3" placeholder="Cole aqui o token gerado em developers.facebook.com/tools/explorer"></textarea>
+    <p class="hint" style="margin:6px 0 10px">Permissões que o token tem que ter: <strong>pages_show_list</strong>, <strong>pages_manage_posts</strong>, <strong>pages_read_engagement</strong>, <strong>instagram_basic</strong>, <strong>instagram_content_publish</strong> e <strong>instagram_manage_comments</strong>.</p>
+    <button class="btn btn-primary" onclick="metaConectar()" style="width:100%"><span class="spin" id="sp-meta" style="display:none"></span>🔌 Conectar Facebook e Instagram</button>
+    <div id="pub-meta-paginas" style="margin-top:12px"></div>
+    <div id="st-pub-meta" class="status" style="margin-top:10px;display:none"></div>
+
+    <div class="card-title" style="font-size:14px;margin:18px 0 8px">YouTube (Shorts)</div>
+    <label>ID do cliente OAuth (termina em .apps.googleusercontent.com)</label>
+    <input type="text" id="pub-yt-clientid" placeholder="1234-abcd.apps.googleusercontent.com">
+    <p class="hint" style="margin:6px 0 10px">O YouTube só autoriza pela página publicada (<strong>felipetommy-create.github.io</strong>), não pelo arquivo aberto do computador. O acesso dura cerca de 1 hora: ao enviar um Short depois disso, o painel pede a autorização de novo em dois cliques.</p>
+    <div class="row" style="grid-template-columns:1fr 1fr">
+      <button class="btn btn-secondary" onclick="salvarPubCfg()">💾 Salvar</button>
+      <button class="btn btn-primary" onclick="ytConectarBotao()"><span class="spin" id="sp-yt" style="display:none"></span>▶️ Autorizar YouTube</button>
+    </div>
+    <div id="st-pub-yt" class="status" style="margin-top:10px;display:none"></div>
+
+    <div class="row" style="grid-template-columns:1fr 1fr;margin-top:16px">
+      <button class="btn-sm" onclick="pubDiagnostico()">🩺 Conferir permissões e validade</button>
+      <button class="btn-danger-sm" onclick="pubEsquecer()">🗑 Apagar conexões deste aparelho</button>
+    </div>
   </div>
 
   <div class="card">
@@ -2810,12 +2948,530 @@ document.addEventListener('keydown',e=>{
 });
 
 // ───────────────────────── VERSÃO DO PAINEL ─────────────────────────
+// ───────────────────── PUBLICADOR MULTI-REDE ─────────────────────
+// Publica direto pelas APIs oficiais: página do Facebook (card e vídeo),
+// Instagram (card e Reel) e YouTube (Short). É o mesmo caminho que o Buffer
+// usa; o que o Buffer também não consegue publicar continua na mão aqui
+// (X, por custo por post desde fev/2026, e Comunidade do YouTube, sem API).
+//
+// Três detalhes que fazem a coisa funcionar e que não são óbvios:
+//  1. A Meta não aceita arquivo enviado do navegador para foto do Instagram:
+//     ela busca a imagem num endereço público. Por isso o card sobe primeiro
+//     para a biblioteca de mídia do WordPress, que já está autenticada aqui.
+//  2. O Instagram só aceita JPEG. O card sai em PNG, então o painel converte
+//     no próprio navegador antes de subir.
+//  3. Token de página da Meta derivado de token de usuário de longa duração
+//     não vence. Por isso a troca pelo token de 60 dias é feita antes de
+//     pegar o token da página.
+const PUB_GRAPH='v26.0';
+const LS_PUB='ft_pub_cfg';
+const LS_PUB_HIST='ft_pub_hist';
+const PUB_ESCOPOS=['pages_show_list','pages_manage_posts','pages_read_engagement','instagram_basic','instagram_content_publish','instagram_manage_comments'];
+let YT_TOKEN=null,YT_TOKEN_EXP=0;   // acesso do YouTube: vive só nesta aba, cerca de 1 hora
+
+function getPubCfg(){try{return JSON.parse(localStorage.getItem(LS_PUB)||'{}');}catch(e){return{};}}
+function setPubCfg(o){localStorage.setItem(LS_PUB,JSON.stringify(o));}
+
+function salvarPubCfg(){
+  const c=getPubCfg();
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  c.appId=g('pub-meta-appid');
+  const sec=g('pub-meta-secret');
+  if(sec)c.appSecret=sec;
+  c.ytClientId=g('pub-yt-clientid');
+  setPubCfg(c);
+  renderPubCfg();
+  showSt('st-pub-yt','ok','✅ Salvo neste aparelho.');
+}
+
+function pubEsquecer(){
+  if(!confirm('Apagar as conexões do Facebook, do Instagram e do YouTube deste aparelho?\n\nAs publicações já feitas não são afetadas.'))return;
+  localStorage.removeItem(LS_PUB);
+  YT_TOKEN=null;YT_TOKEN_EXP=0;
+  renderPubCfg();
+  showSt('st-pub-meta','ok','✅ Conexões apagadas deste aparelho.');
+}
+
+// ── Graph API ──────────────────────────────────────────────────────
+// Token vai no cabeçalho, nunca na barra de endereço. A única exceção é a
+// troca pelo token de 60 dias, que a Meta só aceita por parâmetro.
+async function gFetch(path,params,token,method){
+  const url='https://graph.facebook.com/'+PUB_GRAPH+'/'+path.replace(/^\//,'');
+  const opt={method:method||'GET',headers:{'Authorization':'Bearer '+token}};
+  let final=url;
+  if(method==='POST'){
+    const body=new URLSearchParams();
+    Object.keys(params||{}).forEach(k=>{if(params[k]!=null&&params[k]!=='')body.set(k,params[k]);});
+    opt.body=body;
+  }else{
+    const u=new URL(url);
+    Object.keys(params||{}).forEach(k=>{if(params[k]!=null&&params[k]!=='')u.searchParams.set(k,params[k]);});
+    final=u.toString();
+  }
+  const r=await fetch(final,opt);
+  let j={};
+  try{j=await r.json();}catch(e){throw new Error('A Meta respondeu algo que não é JSON (HTTP '+r.status+').');}
+  if(j.error){
+    const e=j.error;
+    throw new Error((e.error_user_msg||e.message||'erro desconhecido')+' [código '+(e.code||'?')+(e.error_subcode?'/'+e.error_subcode:'')+']');
+  }
+  return j;
+}
+const gGet=(p,params,tk)=>gFetch(p,params,tk,'GET');
+const gPost=(p,params,tk)=>gFetch(p,params,tk,'POST');
+
+async function metaConectar(){
+  const sp=document.getElementById('sp-meta');
+  const c=getPubCfg();
+  const appId=document.getElementById('pub-meta-appid').value.trim();
+  const secret=document.getElementById('pub-meta-secret').value.trim()||c.appSecret||'';
+  const userToken=document.getElementById('pub-meta-usertoken').value.trim();
+  if(!userToken){showSt('st-pub-meta','err','⚠️ Cole o token de usuário gerado no Explorador de API da Meta.');return;}
+  sp.style.display='inline-block';
+  showSt('st-pub-meta','loading','⏳ Falando com a Meta...');
+  try{
+    let token=userToken;
+    let aviso='';
+    if(appId&&secret){
+      // Token de 2 horas vira token de 60 dias. O token de página tirado dele
+      // não vence, que é o que interessa para não reconectar toda semana.
+      const u=new URL('https://graph.facebook.com/'+PUB_GRAPH+'/oauth/access_token');
+      u.searchParams.set('grant_type','fb_exchange_token');
+      u.searchParams.set('client_id',appId);
+      u.searchParams.set('client_secret',secret);
+      u.searchParams.set('fb_exchange_token',userToken);
+      const r=await fetch(u.toString());
+      const j=await r.json();
+      if(j.error)throw new Error('Falhou a troca pelo token longo: '+(j.error.message||''));
+      token=j.access_token;
+    }else{
+      aviso=' Sem o ID e a chave secreta do aplicativo, este token vence em cerca de 2 horas.';
+    }
+    const res=await gGet('me/accounts',{fields:'name,id,access_token,instagram_business_account{id,username}',limit:50},token);
+    const paginas=(res.data||[]);
+    if(!paginas.length)throw new Error('O token não enxerga nenhuma página. Confirme a permissão pages_show_list e se você administra a página.');
+    c.appId=appId;
+    if(secret)c.appSecret=secret;
+    c.userToken=token;
+    setPubCfg(c);
+    renderPaginasMeta(paginas);
+    showSt('st-pub-meta','ok','✅ '+paginas.length+' página(s) encontrada(s). Escolha qual é a do portal.'+aviso);
+  }catch(e){
+    showSt('st-pub-meta','err','❌ '+e.message);
+  }finally{sp.style.display='none';}
+}
+
+let PUB_PAGINAS=[];
+function renderPaginasMeta(paginas){
+  PUB_PAGINAS=paginas;
+  const el=document.getElementById('pub-meta-paginas');
+  el.innerHTML='<div class="ob"><div class="ob-label">Páginas que o token alcança</div>'+paginas.map((p,i)=>{
+    const ig=p.instagram_business_account;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="flex:1"><strong>'+esc(p.name)+'</strong><br><span class="hint">'
+      +(ig?'Instagram vinculado: @'+esc(ig.username||'?'):'⚠️ sem Instagram profissional vinculado')+'</span></div>'
+      +'<button class="btn-sm" onclick="metaEscolherPagina('+i+')">Usar esta</button></div>';
+  }).join('')+'</div>';
+}
+
+function metaEscolherPagina(i){
+  const p=PUB_PAGINAS[i];
+  const c=getPubCfg();
+  c.pageId=p.id;c.pageNome=p.name;c.pageToken=p.access_token;
+  const ig=p.instagram_business_account;
+  c.igId=ig?ig.id:'';c.igUser=ig?ig.username:'';
+  setPubCfg(c);
+  renderPubCfg();
+  document.getElementById('pub-meta-usertoken').value='';
+  showSt('st-pub-meta','ok','✅ Conectado: '+p.name+(c.igUser?' + @'+c.igUser:' (sem Instagram vinculado)')+'.');
+}
+
+async function pubDiagnostico(){
+  const c=getPubCfg();
+  if(!c.pageToken){showSt('st-pub-meta','err','⚠️ Conecte o Facebook primeiro.');return;}
+  showSt('st-pub-meta','loading','⏳ Conferindo...');
+  try{
+    const d=await gGet('debug_token',{input_token:c.pageToken},c.pageToken);
+    const dt=d.data||{};
+    const venc=dt.expires_at?new Date(dt.expires_at*1000).toLocaleString('pt-BR'):'não vence';
+    const faltando=PUB_ESCOPOS.filter(s=>!(dt.scopes||[]).includes(s));
+    let msg='Token da página: validade '+venc+'. Permissões: '+((dt.scopes||[]).join(', ')||'nenhuma lida')+'.';
+    if(faltando.length)msg+=' ⚠️ Faltando: '+faltando.join(', ')+'.';
+    // Confere também se o Instagram responde
+    if(c.igId){
+      const ig=await gGet(c.igId,{fields:'username,followers_count'},c.pageToken);
+      msg+=' Instagram @'+ig.username+' respondendo.';
+    }
+    showSt('st-pub-meta',faltando.length?'warn':'ok',(faltando.length?'⚠️ ':'✅ ')+msg);
+  }catch(e){showSt('st-pub-meta','err','❌ '+e.message);}
+}
+
+function renderPubCfg(){
+  const c=getPubCfg();
+  const ai=document.getElementById('pub-meta-appid');if(ai&&!ai.value)ai.value=c.appId||'';
+  const yc=document.getElementById('pub-yt-clientid');if(yc&&!yc.value)yc.value=c.ytClientId||'';
+  const el=document.getElementById('pub-cfg-status');
+  if(el){
+    const linhas=[];
+    linhas.push(c.pageId?'✅ Facebook: '+esc(c.pageNome||c.pageId):'⬜ Facebook: não conectado');
+    linhas.push(c.igId?'✅ Instagram: @'+esc(c.igUser||c.igId):'⬜ Instagram: não conectado');
+    linhas.push(c.ytClientId?(YT_TOKEN&&Date.now()<YT_TOKEN_EXP?'✅ YouTube: autorizado nesta sessão':'🟡 YouTube: ID salvo, falta autorizar nesta sessão'):'⬜ YouTube: sem ID de cliente');
+    el.innerHTML=linhas.join('<br>');
+  }
+  renderPubChips();
+}
+
+function renderPubChips(){
+  const el=document.getElementById('pub-chips');
+  if(!el)return;
+  const c=getPubCfg();
+  const chip=(ok,txt)=>'<span class="dest-chip '+(ok?'on':'off')+'">'+(ok?'✅':'⬜')+' '+txt+'</span>';
+  el.innerHTML=chip(!!c.pageId,'Facebook')+chip(!!c.igId,'Instagram')+chip(!!(YT_TOKEN&&Date.now()<YT_TOKEN_EXP),'YouTube')+'<span class="dest-chip off">✋ X (na mão)</span>';
+}
+
+// ── YouTube ────────────────────────────────────────────────────────
+function ytCarregarGIS(){
+  return new Promise((ok,err)=>{
+    if(window.google&&window.google.accounts&&window.google.accounts.oauth2)return ok();
+    const s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client';
+    s.onload=()=>ok();
+    s.onerror=()=>err(new Error('Não foi possível carregar o login do Google. Confira a internet.'));
+    document.head.appendChild(s);
+  });
+}
+
+async function ytConectar(){
+  const c=getPubCfg();
+  const id=c.ytClientId||(document.getElementById('pub-yt-clientid')||{}).value;
+  if(!id)throw new Error('Falta o ID do cliente OAuth do Google na aba Config.');
+  if(location.protocol==='file:')throw new Error('O Google não autoriza arquivo aberto do computador. Use o painel publicado (felipetommy-create.github.io).');
+  await ytCarregarGIS();
+  return new Promise((ok,err)=>{
+    const tc=google.accounts.oauth2.initTokenClient({
+      client_id:id.trim(),
+      scope:'https://www.googleapis.com/auth/youtube.upload',
+      callback:resp=>{
+        if(resp.error)return err(new Error('O Google recusou: '+resp.error+(resp.error_description?' ('+resp.error_description+')':'')));
+        YT_TOKEN=resp.access_token;
+        YT_TOKEN_EXP=Date.now()+((resp.expires_in||3600)*1000);
+        renderPubCfg();
+        ok(resp);
+      }
+    });
+    tc.requestAccessToken();
+  });
+}
+
+async function ytConectarBotao(){
+  const sp=document.getElementById('sp-yt');
+  sp.style.display='inline-block';
+  try{
+    salvarPubCfg();
+    await ytConectar();
+    showSt('st-pub-yt','ok','✅ YouTube autorizado. Vale por cerca de 1 hora nesta aba.');
+  }catch(e){showSt('st-pub-yt','err','❌ '+e.message);}
+  finally{sp.style.display='none';}
+}
+
+async function ytSubirShort(file,titulo,desc,naoListado,log){
+  if(!YT_TOKEN||Date.now()>YT_TOKEN_EXP-60000){log('… pedindo autorização do YouTube');await ytConectar();}
+  const meta={
+    snippet:{title:(titulo||'Portal Felipe Tommy').slice(0,100),description:desc||'',categoryId:'25'},
+    status:{privacyStatus:naoListado?'unlisted':'public',selfDeclaredMadeForKids:false}
+  };
+  const init=await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+YT_TOKEN,'Content-Type':'application/json; charset=UTF-8','X-Upload-Content-Type':file.type||'video/mp4','X-Upload-Content-Length':String(file.size)},
+    body:JSON.stringify(meta)
+  });
+  if(!init.ok){const t=await init.text();throw new Error('O YouTube recusou o início do envio: '+t.slice(0,300));}
+  const loc=init.headers.get('location')||init.headers.get('Location');
+  if(!loc)throw new Error('O YouTube não devolveu o endereço de envio. Isso acontece quando o navegador bloqueia o cabeçalho Location.');
+  const id=await new Promise((ok,err)=>{
+    const x=new XMLHttpRequest();
+    x.open('PUT',loc,true);
+    x.setRequestHeader('Content-Type',file.type||'video/mp4');
+    x.upload.onprogress=e=>{if(e.lengthComputable)log('… enviando o Short: '+Math.round(e.loaded/e.total*100)+'%');};
+    x.onload=()=>{
+      if(x.status>=200&&x.status<300){
+        try{ok(JSON.parse(x.responseText).id);}catch(e){err(new Error('O YouTube respondeu algo inesperado no fim do envio.'));}
+      }else err(new Error('O YouTube recusou o arquivo (HTTP '+x.status+'): '+String(x.responseText).slice(0,200)));
+    };
+    x.onerror=()=>err(new Error('A conexão caiu durante o envio do Short.'));
+    x.send(file);
+  });
+  return id;
+}
+
+// ── WordPress como hospedagem da mídia ─────────────────────────────
+function pubCredWP(){
+  const c=getCfg();
+  if(!c.url||!c.user||!c.pass)throw new Error('Faltam as credenciais do WordPress na aba Config: é lá que a arte fica hospedada antes de ir para o Instagram.');
+  return {url:c.url,auth:'Basic '+btoa(c.user+':'+c.pass.replace(/\s/g,''))};
+}
+
+function pubNomeArquivo(nome){
+  return (nome||'arquivo')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-zA-Z0-9._-]/g,'-').replace(/-+/g,'-').slice(-80)||'arquivo';
+}
+
+// A API da Meta só aceita JPEG na publicação de foto. O card sai em PNG.
+async function pubParaJPEG(file,log){
+  if(/jpe?g/i.test(file.type))return file;
+  log('… convertendo a arte de PNG para JPEG (exigência da Meta)');
+  const bmp=await createImageBitmap(file);
+  const cv=document.createElement('canvas');
+  cv.width=bmp.width;cv.height=bmp.height;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.drawImage(bmp,0,0);
+  const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.92));
+  if(!blob)throw new Error('Não foi possível converter a arte para JPEG neste navegador.');
+  return new File([blob],pubNomeArquivo(file.name.replace(/\.[^.]+$/,''))+'.jpg',{type:'image/jpeg'});
+}
+
+async function pubHospedar(file,log){
+  const w=pubCredWP();
+  log('… subindo '+file.name+' ('+Math.round(file.size/1024)+' KB) para a biblioteca do WordPress');
+  const r=await fetch(w.url+'/wp-json/wp/v2/media',{
+    method:'POST',
+    headers:{'Authorization':w.auth,'Content-Disposition':'attachment; filename="'+pubNomeArquivo(file.name)+'"','Content-Type':file.type||'application/octet-stream'},
+    body:file
+  });
+  if(!r.ok){
+    const t=await r.text();
+    throw new Error('O WordPress recusou o arquivo (HTTP '+r.status+'): '+t.slice(0,220));
+  }
+  const j=await r.json();
+  if(!j.source_url)throw new Error('O WordPress não devolveu o endereço do arquivo.');
+  log('✔ hospedado: '+j.source_url);
+  return j.source_url;
+}
+
+// ── Instagram ──────────────────────────────────────────────────────
+async function igEsperarContainer(id,tk,log){
+  for(let i=0;i<60;i++){
+    const s=await gGet(id,{fields:'status_code,status'},tk);
+    if(s.status_code==='FINISHED')return;
+    if(s.status_code==='ERROR')throw new Error('O Instagram recusou o vídeo: '+(s.status||'sem detalhe'));
+    await new Promise(r=>setTimeout(r,5000));
+    if(i%3===2)log('… o Instagram ainda está processando o vídeo ('+((i+1)*5)+'s)');
+  }
+  throw new Error('O Instagram não terminou de processar em 5 minutos. O Reel pode aparecer sozinho depois; confira o perfil antes de repetir.');
+}
+
+async function igPublicar(tipo,midiaUrl,legenda,link,comentar,log){
+  const c=getPubCfg();
+  if(!c.igId)throw new Error('Nenhuma conta do Instagram vinculada à página conectada.');
+  const params=tipo==='reel'
+    ?{media_type:'REELS',video_url:midiaUrl,caption:legenda,share_to_feed:'true'}
+    :{image_url:midiaUrl,caption:legenda};
+  log('… criando o contêiner no Instagram');
+  const cont=await gPost(c.igId+'/media',params,c.pageToken);
+  if(tipo==='reel')await igEsperarContainer(cont.id,c.pageToken,log);
+  log('… publicando');
+  const pub=await gPost(c.igId+'/media_publish',{creation_id:cont.id},c.pageToken);
+  if(comentar&&link){
+    try{
+      await gPost(pub.id+'/comments',{message:'Matéria completa: '+link},c.pageToken);
+      log('✔ link posto no 1º comentário');
+    }catch(e){log('⚠️ o post saiu, mas o comentário falhou: '+e.message);}
+  }
+  let url='https://www.instagram.com/'+(c.igUser||'')+'/';
+  try{const p=await gGet(pub.id,{fields:'permalink'},c.pageToken);if(p.permalink)url=p.permalink;}catch(e){}
+  return url;
+}
+
+// ── Facebook ───────────────────────────────────────────────────────
+async function fbPublicarFoto(imgUrl,legenda,link,comentar,log){
+  const c=getPubCfg();
+  if(!c.pageId)throw new Error('Página do Facebook não conectada.');
+  log('… publicando o card na página');
+  const r=await gPost(c.pageId+'/photos',{url:imgUrl,message:legenda,published:'true'},c.pageToken);
+  const postId=r.post_id||r.id;
+  if(comentar&&link){
+    try{
+      await gPost(postId+'/comments',{message:'Matéria completa: '+link},c.pageToken);
+      log('✔ link posto no 1º comentário');
+    }catch(e){log('⚠️ o card saiu, mas o comentário falhou: '+e.message);}
+  }
+  let url='https://www.facebook.com/'+postId;
+  try{const p=await gGet(postId,{fields:'permalink_url'},c.pageToken);if(p.permalink_url)url='https://www.facebook.com'+p.permalink_url;}catch(e){}
+  return url;
+}
+
+async function fbPublicarVideo(videoUrl,legenda,log){
+  const c=getPubCfg();
+  if(!c.pageId)throw new Error('Página do Facebook não conectada.');
+  log('… mandando o vídeo para a página (9:16 entra como Reel)');
+  const r=await gPost(c.pageId+'/videos',{file_url:videoUrl,description:legenda},c.pageToken);
+  return 'https://www.facebook.com/'+(r.id||c.pageId);
+}
+
+// ── Composição e disparo ───────────────────────────────────────────
+let PUB_ARQ={img:null,video:null};
+
+function pubArquivoEscolhido(qual){
+  const el=document.getElementById('pub-'+qual);
+  const f=el.files&&el.files[0];
+  PUB_ARQ[qual]=f||null;
+  const info=document.getElementById('pub-'+qual+'-info');
+  if(!f){info.textContent='Nenhum arquivo escolhido.';return;}
+  const mb=f.size/1048576;
+  let txt=f.name+' — '+(mb<1?Math.round(f.size/1024)+' KB':mb.toFixed(1)+' MB');
+  if(qual==='video'&&mb>40)txt+=' ⚠️ acima de 40 MB o WordPress costuma recusar; comprima antes.';
+  if(qual==='img'&&mb>8)txt+=' ⚠️ a Meta recusa imagem acima de 8 MB.';
+  info.textContent=txt;
+}
+
+function pubPuxarDaMateria(){
+  const t=id=>{const el=document.getElementById(id);return el?(el.textContent||'').trim():'';};
+  const v=id=>{const el=document.getElementById(id);return el?(el.value||'').trim():'';};
+  const set=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
+  set('pub-legenda',t('r-legenda')||t('r-legenda-coluna'));
+  set('pub-legenda-video',t('r-legenda-video'));
+  set('pub-link',v('linkMateria')||v('yt-link'));
+  set('pub-yt-titulo',t('yt-titulo'));
+  set('pub-yt-desc',t('yt-desc'));
+  const x=document.getElementById('pub-x-texto');
+  if(x)x.textContent=t('x-post')||t('r-legenda-video')||t('r-legenda');
+  const com=document.getElementById('pub-yt-comunidade');
+  if(com)com.textContent=t('yt-comunidade');
+  pubContar();
+  showSt('st-pub','ok','✅ Texto puxado da matéria carregada. Revise antes de disparar.');
+}
+
+function pubContar(){
+  const par=[['pub-legenda','cont-pub-legenda',2200],['pub-legenda-video','cont-pub-legenda-video',2200],['pub-yt-titulo','cont-pub-yt-titulo',100]];
+  par.forEach(([src,alvo,max])=>{
+    const el=document.getElementById(src),c=document.getElementById(alvo);
+    if(!el||!c)return;
+    const n=[...(el.value||'')].length;
+    c.textContent=n+' / '+max;
+    c.style.color=n>max?'#ff6b6b':'';
+  });
+}
+
+function pubLog(txt){
+  const box=document.getElementById('pub-log-box');
+  const el=document.getElementById('pub-log');
+  box.style.display='block';
+  el.textContent+=(el.textContent?'\n':'')+txt;
+  el.scrollTop=el.scrollHeight;
+}
+
+async function pubPublicar(){
+  const sp=document.getElementById('sp-pub');
+  const marcado=id=>{const el=document.getElementById(id);return !!(el&&el.checked);};
+  const destinos=[
+    {id:'pub-d-fbfoto',nome:'Facebook: card no feed',rede:'fb',midia:'img'},
+    {id:'pub-d-igfoto',nome:'Instagram: card no feed',rede:'igfoto',midia:'img'},
+    {id:'pub-d-igreel',nome:'Instagram: Reel',rede:'igreel',midia:'video'},
+    {id:'pub-d-fbvideo',nome:'Facebook: vídeo',rede:'fbvideo',midia:'video'},
+    {id:'pub-d-ytshort',nome:'YouTube: Short',rede:'yt',midia:'video'}
+  ].filter(d=>marcado(d.id));
+  if(!destinos.length){showSt('st-pub','err','⚠️ Marque pelo menos uma rede.');return;}
+
+  const legenda=document.getElementById('pub-legenda').value.trim();
+  const legendaVideo=document.getElementById('pub-legenda-video').value.trim()||legenda;
+  const link=document.getElementById('pub-link').value.trim();
+  const ytTitulo=document.getElementById('pub-yt-titulo').value.trim();
+  const ytDesc=document.getElementById('pub-yt-desc').value.trim();
+  const precisaImg=destinos.some(d=>d.midia==='img');
+  const precisaVideo=destinos.some(d=>d.midia==='video');
+  let imgUrl=document.getElementById('pub-img-url').value.trim();
+  let videoUrl=document.getElementById('pub-video-url').value.trim();
+
+  if(precisaImg&&!legenda){showSt('st-pub','err','⚠️ Escreva a legenda do card.');return;}
+  if(precisaImg&&!imgUrl&&!PUB_ARQ.img){showSt('st-pub','err','⚠️ Escolha o card ou cole o endereço de uma arte já hospedada.');return;}
+  if(precisaVideo&&!videoUrl&&!PUB_ARQ.video){showSt('st-pub','err','⚠️ Escolha o vídeo ou cole o endereço de um vídeo já hospedado.');return;}
+  if(destinos.some(d=>d.rede==='yt')&&!PUB_ARQ.video){showSt('st-pub','err','⚠️ O YouTube recebe o arquivo direto: escolha o vídeo, endereço hospedado não serve.');return;}
+  if(destinos.some(d=>d.rede==='yt')&&!ytTitulo){showSt('st-pub','err','⚠️ O Short precisa de título.');return;}
+
+  const resumo=destinos.map(d=>d.nome).join('\n');
+  if(!confirm('Publicar AGORA em:\n\n'+resumo+'\n\nIsso vai ao ar de verdade nas contas do portal.'))return;
+
+  sp.style.display='inline-block';
+  document.getElementById('pub-log').textContent='';
+  document.getElementById('pub-resultados').innerHTML='';
+  showSt('st-pub','loading','⏳ Publicando...');
+  const feitos=[],falhas=[];
+  try{
+    if(precisaImg&&!imgUrl){
+      const jpg=await pubParaJPEG(PUB_ARQ.img,pubLog);
+      imgUrl=await pubHospedar(jpg,pubLog);
+    }
+    if(precisaVideo&&!videoUrl&&destinos.some(d=>d.midia==='video'&&d.rede!=='yt')){
+      videoUrl=await pubHospedar(PUB_ARQ.video,pubLog);
+    }
+    for(const d of destinos){
+      pubLog('── '+d.nome);
+      try{
+        let url='';
+        if(d.rede==='fb')url=await fbPublicarFoto(imgUrl,legenda,link,marcado('pub-c-fb'),pubLog);
+        if(d.rede==='igfoto')url=await igPublicar('foto',imgUrl,legenda,link,marcado('pub-c-ig'),pubLog);
+        if(d.rede==='igreel')url=await igPublicar('reel',videoUrl,legendaVideo,link,marcado('pub-c-ig'),pubLog);
+        if(d.rede==='fbvideo')url=await fbPublicarVideo(videoUrl,legendaVideo,pubLog);
+        if(d.rede==='yt'){
+          const vid=await ytSubirShort(PUB_ARQ.video,ytTitulo,ytDesc||(link?legendaVideo+'\n\n'+link:legendaVideo),marcado('pub-yt-privado'),pubLog);
+          url='https://www.youtube.com/watch?v='+vid;
+        }
+        pubLog('✅ no ar: '+url);
+        feitos.push({nome:d.nome,url});
+      }catch(e){
+        pubLog('❌ '+e.message);
+        falhas.push({nome:d.nome,erro:e.message});
+      }
+    }
+  }catch(e){
+    pubLog('❌ '+e.message);
+    falhas.push({nome:'Preparação da mídia',erro:e.message});
+  }finally{sp.style.display='none';}
+
+  const html=[];
+  if(feitos.length)html.push('<div class="ob"><div class="ob-label">No ar</div>'+feitos.map(f=>'<div style="padding:4px 0">✅ '+esc(f.nome)+' — <a href="'+esc(f.url)+'" target="_blank" rel="noopener" style="color:var(--accent)">abrir</a></div>').join('')+'</div>');
+  if(falhas.length)html.push('<div class="ob" style="border-color:var(--danger)"><div class="ob-label">Não saiu</div>'+falhas.map(f=>'<div style="padding:4px 0">❌ <strong>'+esc(f.nome)+'</strong>: '+esc(f.erro)+'</div>').join('')+'</div>');
+  document.getElementById('pub-resultados').innerHTML=html.join('');
+  showSt('st-pub',falhas.length?(feitos.length?'warn':'err'):'ok',
+    (falhas.length?(feitos.length?'⚠️ Saiu em parte: ':'❌ Nada saiu: '):'✅ Publicado: ')
+    +feitos.length+' de '+destinos.length+' destino(s).');
+  if(feitos.length)pubSalvarHist(feitos,falhas,legenda);
+}
+
+// ── Histórico ──────────────────────────────────────────────────────
+function getPubHist(){try{return JSON.parse(localStorage.getItem(LS_PUB_HIST)||'[]');}catch(e){return[];}}
+function pubSalvarHist(feitos,falhas,legenda){
+  const h=getPubHist();
+  h.unshift({data:new Date().toISOString(),titulo:(legenda||'').split('\n')[0].slice(0,90),feitos,falhas});
+  localStorage.setItem(LS_PUB_HIST,JSON.stringify(h.slice(0,30)));
+  renderPubHist();
+}
+function pubLimparHist(){
+  if(!confirm('Limpar o histórico de publicações deste aparelho?'))return;
+  localStorage.removeItem(LS_PUB_HIST);renderPubHist();
+}
+function renderPubHist(){
+  const el=document.getElementById('pub-hist');
+  if(!el)return;
+  const h=getPubHist();
+  if(!h.length){el.innerHTML='<div class="empty-state">Nada publicado por aqui ainda.</div>';return;}
+  el.innerHTML=h.map(it=>{
+    const d=new Date(it.data).toLocaleString('pt-BR');
+    const links=(it.feitos||[]).map(f=>'<a href="'+esc(f.url)+'" target="_blank" rel="noopener" style="color:var(--accent)">'+esc(f.nome)+'</a>').join(' · ');
+    const err=(it.falhas||[]).length?'<br><span style="color:var(--danger)">falhou: '+(it.falhas).map(f=>esc(f.nome)).join(', ')+'</span>':'';
+    return '<div class="ob" style="margin-bottom:8px"><div class="ob-label">'+d+'</div><div class="ob-text" style="max-height:none">'+esc(it.titulo||'(sem título)')+'<br>'+links+err+'</div></div>';
+  }).join('');
+}
+
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.9.7';
-const PAINEL_DATA='22/10/2026';
+const PAINEL_VERSAO='2.10.0';
+const PAINEL_DATA='02/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.10.0','02/11/2026','Aba nova “Publicador”: um texto, uma arte e um vídeo saem de uma vez para a página do Facebook (card e vídeo), para o Instagram (card e Reel) e para o YouTube (Short), pelas APIs oficiais, com o link indo no 1º comentário do Facebook. O card é convertido para JPEG e hospedado na biblioteca do WordPress antes de ir para o Instagram, porque a Meta só lê imagem em endereço público e só aceita JPEG. As conexões ficam na Config e valem só neste aparelho. X e post na Comunidade do YouTube continuam na mão: o X cobra por post desde fevereiro de 2026 e a Comunidade não tem API.'],
   ['2.9.7','30/10/2026','Toda materia publicada passa a sair com o bloco "Siga o Portal Felipe Tommy no Google", que leva ao perfil do portal na Pesquisa do Google. Entra no fim do texto, antes do botao do canal, e vale tambem para coluna de colunista. A legenda do card mudou de padrao: o corpo sai sem emoji, e o emoji so fica no bloco "Siga @felipetommyreal" e na pergunta final. O post da Comunidade do YouTube sai sem emoji nenhum. O painel limpa o que vier fora disso, inclusive de JSON gerado antes desta versao.'],
   ['2.9.6','22/10/2026','Aba Publicar: bloco novo de sugestao de pauta para a imprensa. Monta o e-mail que oferece a materia a outras redacoes, de graca, exigindo credito ao portal com link e a preservacao dos links do texto. Destinatarios, assunto e corpo saem prontos do JSON, e o link da materia entra sozinho na hora da publicacao. Os e-mails de contraditorio e de imprensa deixaram de sair com assinatura no fim, que o webmail ja coloca sozinho.'],
   ['2.9.5','15/10/2026','Grupos: edição de nome dentro do painel, preservando o histórico. Encaminhador: busca nomes com letras estilizadas e mantém a conferência exata do nome completo antes de selecionar qualquer destino.'],
@@ -2855,6 +3511,7 @@ const PAINEL_CHANGELOG=[
 ];
 
 function renderVersao(){
+  try{renderPubCfg();renderPubHist();}catch(e){}
   const n=document.getElementById('ver-num');if(n)n.textContent='v'+PAINEL_VERSAO;
   const d=document.getElementById('ver-data');if(d)d.textContent=PAINEL_DATA;
   const h=document.getElementById('hd-ver');if(h)h.textContent='· v'+PAINEL_VERSAO;
