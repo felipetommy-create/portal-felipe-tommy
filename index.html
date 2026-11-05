@@ -2140,10 +2140,11 @@ function blocoPublicidade(cfg){
     +(foto?'<img src="'+esc(foto)+'" alt="" loading="lazy" style="flex:0 0 100px;display:block;width:100px;height:125px;border-radius:9px;object-fit:cover;margin:0 auto" />':'')
     +'</a></p>\n';
 }
-// Perfil do portal na Pesquisa do Google. Entra em TODA materia publicada, no fim do
-// texto, junto com o botao do canal: e por ele que o leitor segue o veiculo e passa a
-// receber as materias no Discover. Estilo em linha pelo mesmo motivo do anuncio: a
-// materia vira blocos no editor do WordPress e classe de CSS pode se perder.
+// Perfil do portal na Pesquisa do Google. Entra em TODA materia publicada, logo apos o
+// 2o paragrafo do texto: e por ele que o leitor segue o veiculo e passa a receber as
+// materias no Discover, e no fim da materia ele disputava atencao com o botao do canal.
+// Estilo em linha pelo mesmo motivo do anuncio: a materia vira blocos no editor do
+// WordPress e classe de CSS pode se perder.
 const GOOGLE_PERFIL_URL='https://profile.google.com/@felipetommyreal';
 const LOGO_GOOGLE_G='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iI0VBNDMzNSIgZD0iTTI0IDkuNWMzLjU0IDAgNi43MSAxLjIyIDkuMjEgMy42bDYuODUtNi44NUMzNS45IDIuMzggMzAuNDcgMCAyNCAwIDE0LjYyIDAgNi41MSA1LjM4IDIuNTYgMTMuMjJsNy45OCA2LjE5QzEyLjQzIDEzLjcyIDE3Ljc0IDkuNSAyNCA5LjV6Ii8+PHBhdGggZmlsbD0iIzQyODVGNCIgZD0iTTQ2Ljk4IDI0LjU1YzAtMS41Ny0uMTUtMy4wOS0uMzgtNC41NUgyNHY5LjAyaDEyLjk0Yy0uNTggMi45Ni0yLjI2IDUuNDgtNC43OCA3LjE4bDcuNzMgNmM0LjUxLTQuMTggNy4wOS0xMC4zNiA3LjA5LTE3LjY1eiIvPjxwYXRoIGZpbGw9IiNGQkJDMDUiIGQ9Ik0xMC41MyAyOC41OWMtLjQ4LTEuNDUtLjc2LTIuOTktLjc2LTQuNTlzLjI3LTMuMTQuNzYtNC41OWwtNy45OC02LjE5Qy45MiAxNi40NiAwIDIwLjEyIDAgMjRjMCAzLjg4LjkyIDcuNTQgMi41NiAxMC43OGw3Ljk3LTYuMTl6Ii8+PHBhdGggZmlsbD0iIzM0QTg1MyIgZD0iTTI0IDQ4YzYuNDggMCAxMS45My0yLjEzIDE1Ljg5LTUuODFsLTcuNzMtNmMtMi4xNSAxLjQ1LTQuOTIgMi4zLTguMTYgMi4zLTYuMjYgMC0xMS41Ny00LjIyLTEzLjQ3LTkuOTFsLTcuOTggNi4xOUM2LjUxIDQyLjYyIDE0LjYyIDQ4IDI0IDQ4eiIvPjwvc3ZnPg==';
 function blocoSeguirGoogle(){
@@ -2155,8 +2156,17 @@ function blocoSeguirGoogle(){
     +'<b style="flex:0 0 auto;padding:10px 18px;border-radius:22px;background:#0E4E96;color:#ffffff;font-family:Nunito,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;line-height:1.3">Seguir no Google</b>'
     +'</a></p>\n';
 }
+// Coloca o bloco do Google logo depois do 2o paragrafo. Roda no corpo cru, antes da
+// publicidade e do "Leia tambem", para contar so os paragrafos escritos na materia.
+// Texto com menos de 2 paragrafos cai no fim, como era antes.
+function inserirGoogle(corpo){
+  const bloco=blocoSeguirGoogle();
+  let count=0,ok=false;
+  const novo=corpo.replace(/<\/p>/gi,m=>{count++;if(count===2){ok=true;return m+bloco;}return m;});
+  return ok?novo:corpo+bloco;
+}
 function montarConteudo(dados,leiaLink,igLink,leiaTitulo){
-  let corpo=dados.corpo_html||'';
+  let corpo=inserirGoogle(dados.corpo_html||'');
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
   const blocoPubli=blocoPublicidade();
   if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoPubli);
@@ -2170,7 +2180,7 @@ function montarConteudo(dados,leiaLink,igLink,leiaTitulo){
   // Ver 02-WORDPRESS/snippets/wpcode-snippet-byline-redacao.php
   let conteudo='<h2>'+(dados.subtitulo||'')+'</h2>\n'+corpo;
   // O GIF do canal saiu do fim da matéria: no lugar dele entra o botão verde.
-  conteudo+='\n'+blocoSeguirGoogle();
+  // O bloco do Google nao entra aqui: ele ja foi colocado depois do 2o paragrafo.
   conteudo+='\n'+blocoWA;
   if(igLink)conteudo+='\n\n<p>'+igLink+'</p>';
   return conteudo;
@@ -2387,13 +2397,13 @@ async function gerarColunaIA(){
 }
 // Conteúdo de coluna: SEM byline, SEM <hr/>, SEM banner (o WordPress injeta automaticamente na categoria Colunas).
 function montarConteudoColuna(dados,leiaLink,leiaTitulo){
-  let corpo=dados.corpo_html||'';
+  let corpo=inserirGoogle(dados.corpo_html||'');
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
   if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoPublicidade());
   corpo=inserirLeia(corpo,blocoLeiaTambem(dados,leiaLink,leiaTitulo));
   // Remove marcadores que não foram substituídos, para não vazarem no post.
   corpo=corpo.replace('LEIA_TAMBEM_AQUI','').replace('LINK_WHATSAPP_AQUI','');
-  return (dados.subtitulo?'<h2>'+dados.subtitulo+'</h2>\n':'')+corpo+blocoSeguirGoogle()+blocoWA;
+  return (dados.subtitulo?'<h2>'+dados.subtitulo+'</h2>\n':'')+corpo+blocoWA;
 }
 async function garantirCategoria(nome,c,creds){
   try{
@@ -3522,9 +3532,10 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.10.3';
-const PAINEL_DATA='02/11/2026';
+const PAINEL_VERSAO='2.10.4';
+const PAINEL_DATA='05/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.10.4','05/11/2026','O bloco "Siga o Portal Felipe Tommy no Google" saiu do fim da materia e passou a entrar logo depois do 2o paragrafo, onde o leitor ainda esta lendo. No fim ele disputava atencao com o botao verde do canal do WhatsApp e quase ninguem clicava. Vale para materia e para coluna de colunista; texto com menos de 2 paragrafos continua recebendo o bloco no fim.'],
   ['2.10.3','02/11/2026','Conexao da Meta: o painel passou a aceitar token de usuario do sistema, gerado nas configuracoes do portfolio empresarial. Esse token nao vence e nao depende da janela de autorizacao, que o aplicativo novo recusa por ser do tipo Empresa. Quando a Meta recusa a troca pelo token longo, o painel segue com o token original em vez de parar.'],
   ['2.10.2','02/11/2026','Publicador: a arte e o video passaram a subir para a biblioteca do WordPress como formulario, e nao como corpo cru. Do jeito antigo o envio exigia o cabecalho Content-Disposition, que o servidor nao libera na checagem de origem do navegador: a resposta nem chegava e o painel parava com "Failed to fetch" antes de falar com a Meta.'],
   ['2.10.1','02/11/2026','A conexao com o Facebook passou a ser feita por um botao no proprio painel, que pede a autorizacao direto ao Facebook com a lista exata de permissoes. O Explorador de API montava a lista sozinho e incluia pages_read_user_content, desativada na v26, o que derrubava a janela com Invalid Scopes. Entrou tambem pages_manage_engagement, sem a qual o link nao vai para o 1o comentario do Facebook.'],
