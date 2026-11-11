@@ -836,7 +836,19 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="step-badge">1</span> Cole o robô no Console do WhatsApp Web</div>
+    <div class="card-title"><span class="step-badge">1</span> Abra o robô no WhatsApp Web</div>
+    <p class="hint" style="margin-top:0">Com a extensão do portal instalada, selecione os grupos e clique no botão abaixo. A aba do WhatsApp vem para a frente com o robô pronto. Depois, clique em <strong>▶ Iniciar</strong> no painel flutuante.</p>
+    <button class="btn btn-primary" id="autoAbrirRobo" onclick="autoAbrirNoWhatsApp(this)">🤖 Abrir robô no WhatsApp</button>
+    <p class="hint" id="autoExtStatus" role="status" aria-live="polite">Na primeira vez, instale a extensão do portal e recarregue esta aba.</p>
+    <details style="margin:12px 0"><summary style="cursor:pointer">Instalar a extensão uma única vez</summary>
+      <ol style="font-size:13px;line-height:1.7;padding-left:20px">
+        <li>No Chrome, abra <code>chrome://extensions</code> e ative <strong>Modo do desenvolvedor</strong>.</li>
+        <li>Clique em <strong>Carregar sem compactação</strong> e escolha a pasta <code>01-PAINEL/extensao-autoenvio</code> dentro da pasta PORTAL-FELIPE-TOMMY deste computador.</li>
+        <li>Recarregue o painel. Deixe o WhatsApp Web aberto e conectado no mesmo perfil do Chrome.</li>
+      </ol>
+      <p class="hint">Em outro computador: <a href="extensao-autoenvio.zip" download style="color:var(--accent)">baixar a extensão</a>, extrair o ZIP e selecionar a pasta extraída. Para atualizar uma instalação existente, substitua os arquivos na mesma pasta e clique em recarregar na extensão.</p>
+    </details>
+    <details><summary style="cursor:pointer;margin-bottom:12px">Método pelo Console e testes especiais</summary>
     <ol style="font-size:13px;line-height:1.7;padding-left:20px;margin:0 0 12px">
       <li>Abra <a href="https://web.whatsapp.com" target="_blank" rel="noopener" style="color:var(--accent)">web.whatsapp.com</a> autenticado.</li>
       <li>F12 → aba <strong>Console</strong>. Se pedir, digite <code>allow pasting</code> e Enter.</li>
@@ -854,6 +866,8 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
     <p class="hint" style="margin-top:10px">O teste prepara até dois lotes e volta ao canal sozinho, sem enviar e sem marcar progresso. Deixe a aba aberta. Use Pausar antes de mexer no WhatsApp.</p>
     <p class="hint"><strong>Ciclo para Revisão (envia):</strong> ignora a seleção dos grupos e encaminha somente para <strong>Revisão para Publicação 📲</strong>, volta ao canal e encerra. Não precisa cadastrar esse destino e não altera o progresso da distribuição. Um envio por matéria, com controle privado separado para evitar repetição ao clicar Iniciar novamente.</p>
     <p class="hint"><strong>Teste real:</strong> use Selecionar primeiros 10 abaixo, ou marque exatamente 5 ou 10 grupos. Confira os nomes ao copiar. O robô identifica a última matéria + enquete quando você clicar Iniciar, busca por palavras-chave e confere os nomes completos nos resultados. Mantém os marcados ao trocar a busca, reúne até cinco por bloco, envia e volta ao canal. Não encontrados ficam pendentes no relatório; os demais continuam. Já enviados são pulados.</p>
+    </details>
+    <p class="hint">Ao clicar em Iniciar, deixe aberta a pequena janela de sincronização do painel e volte ao WhatsApp. Ela salva o progresso de cada rodada.</p>
   </div>
 
   <div class="card">
@@ -3532,9 +3546,10 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.10.4';
-const PAINEL_DATA='05/11/2026';
+const PAINEL_VERSAO='2.10.5';
+const PAINEL_DATA='11/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.10.5','11/11/2026','Auto-envio: botão Abrir robô no WhatsApp, com extensão própria instalada uma única vez. Carrega os grupos selecionados e abre o painel flutuante sem F12 nem copiar código. O envio continua começando no botão Iniciar, com o mesmo controle de progresso e de duplicidade.'],
   ['2.10.4','05/11/2026','O bloco "Siga o Portal Felipe Tommy no Google" saiu do fim da materia e passou a entrar logo depois do 2o paragrafo, onde o leitor ainda esta lendo. No fim ele disputava atencao com o botao verde do canal do WhatsApp e quase ninguem clicava. Vale para materia e para coluna de colunista; texto com menos de 2 paragrafos continua recebendo o bloco no fim.'],
   ['2.10.3','02/11/2026','Conexao da Meta: o painel passou a aceitar token de usuario do sistema, gerado nas configuracoes do portfolio empresarial. Esse token nao vence e nao depende da janela de autorizacao, que o aplicativo novo recusa por ser do tipo Empresa. Quando a Meta recusa a troca pelo token longo, o painel segue com o token original em vez de parar.'],
   ['2.10.2','02/11/2026','Publicador: a arte e o video passaram a subir para a biblioteca do WordPress como formulario, e nao como corpo cru. Do jeito antigo o envio exigia o cabecalho Content-Disposition, que o servidor nao libera na checagem de origem do navegador: a resposta nem chegava e o painel parava com "Failed to fetch" antes de falar com a Meta.'],
@@ -4146,6 +4161,34 @@ function ftWhatsAppRunner(P){
 const AUTO_RUNNER_SRC='('+ftWhatsAppRunner.toString()+')(__FT_PAYLOAD__);';
 function autoGerarCodigo(payload){
   return AUTO_RUNNER_SRC.replace('__FT_PAYLOAD__',()=>JSON.stringify(payload));
+}
+
+function autoExtRequest(action,payload){
+  const protocol='ft-auto-extension-v1',id=crypto.randomUUID();
+  return new Promise((resolve,reject)=>{
+    const finish=()=>{clearTimeout(timer);window.removeEventListener('message',onMessage);};
+    const onMessage=event=>{
+      const m=event.data;
+      if(event.source!==window||event.origin!==location.origin||m?.protocol!==protocol||m.direction!=='response'||m.id!==id)return;
+      finish();m.ok?resolve(m):reject(Error(m.error||'A extensão não conseguiu abrir o robô.'));
+    };
+    const timer=setTimeout(()=>{finish();reject(Error(action==='ping'?'Instale a extensão do portal e recarregue esta aba. Veja as instruções abaixo do botão.':'A extensão não respondeu a tempo. Confira se o robô apareceu no WhatsApp antes de tentar novamente.'));},action==='ping'?2000:20000);
+    window.addEventListener('message',onMessage);
+    window.postMessage({protocol,direction:'request',id,action,payload},location.origin);
+  });
+}
+async function autoAbrirNoWhatsApp(btn){
+  if(btn.disabled)return;
+  const p=autoMontarPayload();if(!p)return;
+  const status=document.getElementById('autoExtStatus'),label=btn.textContent;
+  btn.disabled=true;btn.textContent='Abrindo robô…';status.textContent='Conectando à extensão do portal…';
+  try{
+    const ext=await autoExtRequest('ping');
+    if(ext.version!==PAINEL_VERSAO)throw Error('Atualize a extensão e recarregue o painel: as versões do robô são diferentes.');
+    const result=await autoExtRequest('load',p);
+    status.textContent='Robô aberto no WhatsApp com '+result.count+' grupos selecionados. Clique em Iniciar lá para começar.';
+  }catch(error){status.textContent=error.message;}
+  finally{btn.disabled=false;btn.textContent=label;}
 }
 
 function autoCopiarCodigo(btn,dryRun=false,reviewOnly=false,testBatch=false){
