@@ -3576,9 +3576,10 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.11.0';
+const PAINEL_VERSAO='2.11.1';
 const PAINEL_DATA='13/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.11.1','13/11/2026','Limpeza: recupera a busca quando o WhatsApp remove o rótulo após digitar, confirma a aba Conversas e repete somente a navegação se o clique simples não abrir o grupo. Aguarda os resultados e separa conversas de mensagens encontradas. Preserva a rodada e as limpezas já confirmadas.'],
   ['2.11.0','13/11/2026','Nova aba Limpar conversas: usa o cadastro de grupos, confere o nome na confirmação e aguarda Conversa limpa. Inclui teste sem apagar, opção de favoritas, pausa, parada, relatório e retomada da mesma rodada.'],
   ['2.10.5','11/11/2026','Auto-envio: botão Abrir robô no WhatsApp, com extensão própria instalada uma única vez. Carrega os grupos selecionados e abre o painel flutuante sem F12 nem copiar código. O envio continua começando no botão Iniciar, com o mesmo controle de progresso e de duplicidade.'],
   ['2.10.4','05/11/2026','O bloco "Siga o Portal Felipe Tommy no Google" saiu do fim da materia e passou a entrar logo depois do 2o paragrafo, onde o leitor ainda esta lendo. No fim ele disputava atencao com o botao verde do canal do WhatsApp e quase ninguem clicava. Vale para materia e para coluna de colunista; texto com menos de 2 paragrafos continua recebendo o bloco no fim.'],
@@ -3825,6 +3826,25 @@ function ftWhatsAppCleanup(P){
   const label=e=>norm(e.getAttribute('aria-label')||text(e));
   const exact=(root,name)=>{const list=all('button,[role="button"],[role="menuitem"]',root).filter(e=>visible(e)&&label(e)===name);if(list.length>1)throw Error('Controle duplicado: '+name);return list[0];};
   const click=e=>{check();if(!visible(e)||e.disabled||e.getAttribute('aria-disabled')==='true')throw Error('Controle indisponível.');if(/sair do grupo|denunciar|excluir grupo/i.test(label(e)))throw Error('Ação proibida para o robô de limpeza.');e.scrollIntoView({block:'center'});e.click();};
+  // Alguns controles do WhatsApp só respondem à sequência de ponteiro.
+  // Retentativas são exclusivas da navegação; a confirmação destrutiva nunca é repetida.
+  const navigate=async(target,ready,why)=>{
+    if(ready())return;
+    for(let attempt=0;attempt<2;attempt++){
+      check();const e=target();if(!visible(e))throw Error(why);
+      if(attempt===0)click(e);
+      else{
+        e.scrollIntoView({block:'center'});e.focus();
+        const r=e.getBoundingClientRect(),base={bubbles:true,cancelable:true,view:window,clientX:r.left+r.width/2,clientY:r.top+r.height/2,button:0};
+        e.dispatchEvent(new PointerEvent('pointerdown',{...base,pointerId:1,pointerType:'mouse',isPrimary:true,buttons:1}));
+        e.dispatchEvent(new MouseEvent('mousedown',{...base,buttons:1}));
+        e.dispatchEvent(new PointerEvent('pointerup',{...base,pointerId:1,pointerType:'mouse',isPrimary:true,buttons:0}));
+        e.dispatchEvent(new MouseEvent('mouseup',{...base,buttons:0}));e.click();
+      }
+      for(let elapsed=0;elapsed<(attempt?5000:1500);elapsed+=150){check();if(ready())return;await sleep(150);}
+    }
+    throw Error(why);
+  };
   const drawer=()=>all('[role="complementary"][aria-label="Dados do grupo"]').find(visible);
   const headerName=()=>norm(text(document.querySelector('#main [data-testid="conversation-info-header-chat-title"]')));
   const assertGroup=g=>{if(headerName()!==norm(g.nome)||!document.querySelector('#main [data-testid="conversation-info-header-button"][aria-label="Dados do grupo"]'))throw Error('A conversa aberta não corresponde ao grupo selecionado: '+g.nome);};
@@ -3834,38 +3854,55 @@ function ftWhatsAppCleanup(P){
   const assertDialog=g=>{const d=clearDialog();if(!d||norm(dialogTitle(d))!==norm('Deseja limpar a conversa "'+g.nome+'"?'))throw Error('Nome diferente na confirmação. Nada foi apagado.');assertGroup(g);return d;};
   const cancelDialog=async()=>{const d=clearDialog();if(d){click(exact(d,'Cancelar'));await wait(()=>!clearDialog(),'Não consegui cancelar a confirmação.');}};
   const closeDrawer=async()=>{const d=drawer();if(d){click(exact(d,'Fechar'));await wait(()=>!drawer(),'Não consegui fechar os dados do grupo.');}};
-  const searchInput=()=>all('#side input[aria-label="Pesquisar ou começar uma nova conversa"],#side [contenteditable="true"][role="textbox"]').find(visible);
+  // Ao preencher, o WhatsApp troca aria-label por "". data-tab/role continuam.
+  const searchInput=()=>{
+    const candidates=all('#side input[role="textbox"][data-tab="3"],#side input[aria-label="Pesquisar ou começar uma nova conversa"],#side [contenteditable="true"][role="textbox"]').filter(visible);
+    if(candidates.length>1)throw Error('Mais de um campo de busca de conversas.');return candidates[0];
+  };
   const fill=(el,value)=>{check();el.focus();if(el.tagName==='INPUT'){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}else{document.execCommand('selectAll',false,null);document.execCommand('insertText',false,value);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:value}));}};
   const findGroup=async g=>{
     await cancelDialog();await closeDrawer();
-    const conversations=all('[aria-label="Conversas"]').find(visible);if(conversations)click(conversations);
-    const input=await wait(searchInput,'Busca de conversas indisponível. Abra a aba Conversas.');
-    const filter=document.getElementById('all-filter');if(visible(filter))click(filter);
+    const conversations=()=>all('button[aria-label="Conversas"]').find(visible);
+    if(conversations())await navigate(conversations,()=>{
+      const b=conversations();return b&&(b.getAttribute('aria-pressed')==='true'||b.getAttribute('data-navbar-item-selected')==='true')&&searchInput();
+    },'Não consegui abrir a aba Conversas.');
+    await wait(searchInput,'Busca de conversas indisponível. Abra a aba Conversas.');
+    const filter=document.getElementById('all-filter');if(visible(filter)&&filter.getAttribute('aria-selected')!=='true')click(filter);
+    // O filtro pode remontar o input. Buscar de novo antes de preencher.
+    const input=await wait(searchInput,'O campo de busca mudou ao abrir Conversas.');
     // A busca só reduz resultados. O nome completo, com emojis, decide o alvo.
     const query=g.nome.normalize('NFKC').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
     fill(input,query||g.nome);await sleep(1000);check();
     const pane=await wait(()=>document.querySelector('#pane-side'),'Lista de conversas indisponível.');
     pane.scrollTop=0;await sleep(300);
+    const rowTitle=row=>row.querySelector('[data-testid="cell-frame-container"] [data-testid="cell-frame-title"] [title]');
+    const chatTitles=()=>all('[role="row"]',pane).map(rowTitle).filter(Boolean);
+    // Aguarda o resultado renderizado, não só um prazo fixo após digitar.
+    await wait(()=>chatTitles().some(e=>norm(e.title)===norm(g.nome)),'Grupo não encontrado pelo nome completo: '+g.nome);
     const matches=new Map();let finished=false;
     for(let page=0;page<80;page++){
       check();
       for(const row of all('[role="row"]',pane)){
-        const title=row.querySelector('[data-testid="cell-frame-title"] [title]');
+        const title=rowTitle(row);
         if(title&&norm(title.getAttribute('title'))===norm(g.nome)){
           const identity=row.getAttribute('data-testid')+'|'+row.style.transform+'|'+row.getAttribute('aria-rowindex');
           matches.set(identity,{top:pane.scrollTop});
         }
       }
       if(matches.size>1)throw Error('Dois resultados com o mesmo nome. Corrija o cadastro: '+g.nome);
+      // Resultados de mensagens vêm depois das conversas e não são destinos.
+      if(pane.querySelector('[data-testid^="chatlist-message-"]')){finished=true;break;}
       if(pane.scrollTop+pane.clientHeight>=pane.scrollHeight-4){finished=true;break;}
       const before=pane.scrollTop;pane.scrollTop+=Math.max(100,pane.clientHeight-80);await sleep(300);if(pane.scrollTop===before)break;
     }
     if(!finished)throw Error('Busca extensa demais para conferir duplicidades: '+g.nome);
     if(matches.size!==1)throw Error('Grupo não encontrado pelo nome completo: '+g.nome);
     pane.scrollTop=[...matches.values()][0].top;await sleep(300);
-    const targets=all('[role="row"] [data-testid="cell-frame-title"] [title]',pane).filter(e=>visible(e)&&norm(e.getAttribute('title'))===norm(g.nome));
-    if(targets.length!==1)throw Error('Resultado da busca mudou.');
-    click(targets[0]);await wait(()=>headerName()===norm(g.nome),'O grupo não abriu.');assertGroup(g);
+    const target=()=>{
+      const targets=chatTitles().filter(e=>visible(e)&&norm(e.title)===norm(g.nome));
+      if(targets.length!==1)throw Error('Resultado da busca mudou.');return targets[0];
+    };
+    await navigate(target,()=>headerName()===norm(g.nome),'O grupo não abriu: '+g.nome);assertGroup(g);
   };
   const openConfirmation=async g=>{
     assertGroup(g);
