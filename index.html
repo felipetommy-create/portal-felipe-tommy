@@ -926,7 +926,7 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
     </div>
     <p id="limpezaStatus" role="status" class="hint" style="margin-top:14px">Abrir o robô não apaga nada. A limpeza começa no botão Iniciar limpeza, dentro do WhatsApp.</p>
     <p class="hint" style="margin-top:10px">Atualização: em <code>chrome://extensions</code>, recarregue a extensão do Portal Felipe Tommy e depois esta página. No outro computador, <a href="extensao-autoenvio.zip" download>baixe o ZIP atualizado</a> e substitua os arquivos da extensão.</p>
-    <p class="hint" style="margin-top:10px">Deixe o WhatsApp aberto durante a rodada. Pausar conclui o grupo atual; Parar interrompe o avanço. Reabrir a mesma rodada pula as limpezas confirmadas. Se o WhatsApp não confirmar a limpeza, o robô para e mostra o grupo no Relatório. Para outra seleção, outras opções ou uma limpeza futura, use Nova rodada.</p>
+    <p class="hint" style="margin-top:10px">Deixe o WhatsApp aberto durante a rodada. Enquanto aparecer Limpando conversa, o robô aguarda. Ele registra Conversa limpa mesmo que o aviso suma rapidamente. Pausar conclui o grupo atual; Parar interrompe o avanço. Reabrir a mesma rodada pula as limpezas confirmadas. Se houver resultado incerto, confira o grupo: somente se você viu Conversa limpa, confirme em Relatório para continuar a mesma rodada. Para outra seleção, outras opções ou uma limpeza futura, use Nova rodada.</p>
   </div>
 </div>
 
@@ -3576,9 +3576,10 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.11.1';
+const PAINEL_VERSAO='2.11.2';
 const PAINEL_DATA='13/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.11.2','13/11/2026','Limpeza: acompanha Limpando conversa sem prazo fixo e registra Conversa limpa mesmo quando o aviso some rapidamente. Só avança após a confirmação. O Relatório permite resolver um resultado incerto após conferência manual e continuar a mesma rodada.'],
   ['2.11.1','13/11/2026','Limpeza: recupera a busca quando o WhatsApp remove o rótulo após digitar, confirma a aba Conversas e repete somente a navegação se o clique simples não abrir o grupo. Aguarda os resultados e separa conversas de mensagens encontradas. Preserva a rodada e as limpezas já confirmadas.'],
   ['2.11.0','13/11/2026','Nova aba Limpar conversas: usa o cadastro de grupos, confere o nome na confirmação e aguarda Conversa limpa. Inclui teste sem apagar, opção de favoritas, pausa, parada, relatório e retomada da mesma rodada.'],
   ['2.10.5','11/11/2026','Auto-envio: botão Abrir robô no WhatsApp, com extensão própria instalada uma única vez. Carrega os grupos selecionados e abre o painel flutuante sem F12 nem copiar código. O envio continua começando no botão Iniciar, com o mesmo controle de progresso e de duplicidade.'],
@@ -3919,26 +3920,83 @@ function ftWhatsAppCleanup(P){
     if(checked()!==P.keepStarred){click(toggle);await wait(()=>checked()===P.keepStarred,'A opção de favoritas não mudou.');}
     assertDialog(g);return modal;
   };
-  // Só aceita a notificação do aplicativo, nunca texto de mensagens ou do log.
-  const toast=()=>all('[role="alert"],[role="status"],[data-testid*="toast"]').find(e=>!box.contains(e)&&!e.closest('#main,#pane-side,[data-testid="chat-info-drawer"]')&&visible(e)&&norm(text(e))==='Conversa limpa');
+  // Só aceita notificações do aplicativo, nunca mensagens ou o log do robô.
+  const noticeState=()=>{
+    const notices=all('[role="alert"],[role="status"],[data-testid*="toast"]').filter(e=>!box.contains(e)&&!e.closest('#main,#pane-side,[data-testid="chat-info-drawer"]')&&visible(e));
+    const noticeText=e=>e.nodeType===1&&e.matches('button,[role="button"]')?'':e.nodeType===3?e.textContent:e.nodeType===1?[...e.childNodes].map(noticeText).join(''):'';
+    const has=(e,label)=>norm(noticeText(e))===label||all('span,div',e).some(n=>norm(text(n))===label);
+    return {clean:notices.some(e=>has(e,'Conversa limpa')),clearing:notices.some(e=>has(e,'Limpando conversa'))};
+  };
+  const toast=()=>noticeState().clean;
+  const watchCleanup=g=>{
+    let completed=false,seenBusy=false,lastSignal=Date.now();
+    const sample=()=>{
+      const n=noticeState();
+      if(n.clearing){seenBusy=true;lastSignal=Date.now();}
+      if(n.clean&&headerName()===norm(g.nome))completed=true;
+      return n;
+    };
+    // Armado ANTES do clique. A confirmação fica registrada mesmo após sumir.
+    const observer=new MutationObserver(sample);
+    observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['role','data-testid','class','style','hidden','aria-hidden']});
+    return {
+      close:()=>observer.disconnect(),
+      wait:async()=>{
+        const started=Date.now();let lastStatus='';
+        for(;;){
+          const n=sample();assertGroup(g);
+          if(completed&&!n.clearing&&!clearDialog())return;
+          // Sem limite enquanto o WhatsApp informa que ainda está limpando.
+          // O limite só detecta ausência de qualquer sinal de andamento/conclusão.
+          if(!n.clearing&&Date.now()-lastSignal>=120000)throw Error('A confirmação não apareceu e o WhatsApp não mostra limpeza em andamento. Resultado incerto: '+g.nome+'. Confira no WhatsApp e use Relatório para resolver a pendência.');
+          const seconds=Math.floor((Date.now()-started)/1000);
+          const message=(state==='stopped'?'Parada solicitada. ':state==='paused'?'Pausa solicitada. ':'')+(n.clearing?'WhatsApp limpando ':seenBusy?'Aguardando a confirmação de limpeza de ':'Aguardando o WhatsApp limpar ')+g.nome+' · '+seconds+'s. O próximo grupo só começa após Conversa limpa.';
+          if(message!==lastStatus){status(message);lastStatus=message;}
+          await sleep(150);
+        }
+      }
+    };
+  };
   const cleanOne=async g=>{
     await findGroup(g);await openConfirmation(g);
     if(P.dryRun){await cancelDialog();ledger.results[g.id]={status:'checked',at:new Date().toISOString()};save();log('Conferido sem apagar: '+g.nome);return;}
-    await wait(()=>!toast(),'Uma confirmação anterior ainda está na tela.');
+    await wait(()=>!toast()&&!noticeState().clearing,'Existe outra limpeza ou confirmação em andamento. Aguarde o WhatsApp concluir.');
     check();const d=assertDialog(g),button=exact(d,'Limpar conversa');
     // Grava ANTES do clique. Uma queda após o clique bloqueia repetição automática.
     ledger.results[g.id]={status:'uncertain',at:new Date().toISOString()};save();
     committing=true;ui('[data-close]').disabled=true;
+    const watcher=watchCleanup(g);
     try{
       click(button);
-      await wait(()=>!clearDialog()&&toast(),'O WhatsApp não confirmou "Conversa limpa". Resultado incerto; confira este grupo.',20000);
+      await watcher.wait();
       ledger.results[g.id]={status:'clean',at:new Date().toISOString()};save();log('Conversa limpa: '+g.nome);
-    }finally{committing=false;ui('[data-close]').disabled=false;}
+    }finally{watcher.close();committing=false;ui('[data-close]').disabled=false;}
   };
   const report=()=>{
     ui('[data-results]').hidden=false;
     const labels={clean:'LIMPA',checked:'CONFERIDA SEM APAGAR',uncertain:'INCERTA',failed:'PENDENTE'};
     ui('[data-results]').textContent='Rodada '+P.jobId+'\n'+groups.map(g=>{const r=ledger.results[g.id];return (labels[r?.status]||'PENDENTE')+' | '+g.nome+(r?.error?' | '+r.error:'');}).join('\n');
+    let pending=ui('[data-pending]');if(!pending){pending=document.createElement('div');pending.setAttribute('data-pending','');box.appendChild(pending);}pending.replaceChildren();
+    for(const g of groups.filter(g=>ledger.results[g.id]?.status==='uncertain')){
+      const b=document.createElement('button');b.textContent='Já conferi Conversa limpa: '+g.nome;b.disabled=busy;
+      b.onclick=async()=>{
+        if(busy||!confirm('Você viu "Conversa limpa" no WhatsApp para o grupo "'+g.nome+'"?\n\nIsso apenas confirma o registro da rodada. Não apaga mensagens e não inicia o próximo grupo.'))return;
+        b.disabled=true;
+        try{
+          await navigator.locks.request('ft-whatsapp-cleanup',{ifAvailable:true},async lock=>{
+            if(!lock)throw Error('Há uma limpeza em andamento em outra aba.');
+            if(noticeState().clearing)throw Error('O WhatsApp ainda está limpando. Espere aparecer Conversa limpa.');
+            const stored=JSON.parse(localStorage.getItem(key)||'null');
+            if(!stored||stored.signature!==signature)throw Error('Não consegui conferir o registro desta rodada.');
+            ledger=stored;if(ledger.results[g.id]?.status!=='uncertain')throw Error('O registro desse grupo já mudou.');
+            ledger.results[g.id]={status:'clean',at:new Date().toISOString(),verification:'user-confirmed'};save();
+            status('Pendência resolvida: '+g.nome+'. Clique em Iniciar limpeza para continuar.');progress();
+            ui('[data-start]').disabled=groups.some(g=>ledger.results[g.id]?.status==='uncertain');
+          });
+        }catch(e){status(e.message);}finally{report();}
+      };
+      pending.appendChild(b);
+    }
   };
   const run=async()=>{
     if(busy)return;busy=true;state='running';ui('[data-start]').disabled=true;ui('[data-pause]').disabled=false;ui('[data-stop]').disabled=false;
@@ -3947,7 +4005,7 @@ function ftWhatsAppCleanup(P){
       await navigator.locks.request('ft-whatsapp-cleanup',{ifAvailable:true},async lock=>{
         if(!lock)throw Error('Já há uma limpeza em outra aba.');
         const stored=JSON.parse(localStorage.getItem(key)||'null');if(stored){if(stored.signature!==signature)throw Error('Rodada divergente.');ledger=stored;}
-        if(Object.values(ledger.results).some(r=>r.status==='uncertain'))throw Error('Existe uma limpeza incerta. Abra Relatório e confira o grupo no WhatsApp antes de criar outra rodada.');
+        if(Object.values(ledger.results).some(r=>r.status==='uncertain'))throw Error('Existe uma limpeza incerta. Confira no WhatsApp; se já viu Conversa limpa para esse grupo, confirme em Relatório para continuar a mesma rodada.');
         save();
         for(const g of groups){
           if(done(g))continue;
@@ -3959,7 +4017,7 @@ function ftWhatsAppCleanup(P){
         await closeDrawer();status((P.dryRun?'Teste concluído: ':'Limpeza concluída: ')+progress()+' de '+groups.length+' grupos.');state='done';
       });
     }catch(e){state='stopped';status(e.message);log('Parou: '+e.message);report();}
-    finally{busy=false;ui('[data-start]').disabled=state==='done'||Object.values(ledger.results).some(r=>r.status==='uncertain');ui('[data-pause]').disabled=true;ui('[data-stop]').disabled=true;ui('[data-pause]').textContent='Pausar';progress();}
+    finally{busy=false;ui('[data-start]').disabled=state==='done'||Object.values(ledger.results).some(r=>r.status==='uncertain');ui('[data-pause]').disabled=true;ui('[data-stop]').disabled=true;ui('[data-pause]').textContent='Pausar';progress();if(!ui('[data-results]').hidden)report();}
   };
   ui('[data-start]').onclick=run;
   ui('[data-pause]').onclick=()=>{state=state==='paused'?'running':'paused';ui('[data-pause]').textContent=state==='paused'?'Continuar':'Pausar';if(state==='paused')status('Pausa solicitada. Concluindo o grupo atual antes de pausar.');};
