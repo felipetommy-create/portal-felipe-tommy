@@ -187,6 +187,7 @@
   <button class="tab" onclick="showTab('grupos',this)">👥 Grupos</button>
   <button class="tab" onclick="showTab('encaminhar',this)">🚀 Encaminhar</button>
   <button class="tab" onclick="showTab('autoenvio',this)">🤖 Auto-envio</button>
+  <button class="tab" onclick="showTab('limpeza',this)">🧹 Limpar conversas</button>
   <div class="nav-label">Editorial</div>
   <button class="tab" onclick="showTab('modulox',this)">𝕏 Módulo X</button>
   <button class="tab" onclick="showTab('analise',this)">🎤 Análise</button>
@@ -901,6 +902,34 @@ Responda APENAS com o JSON. Português correto. NUNCA use — (travessão). NUNC
   </div>
 </div>
 
+<div class="page" id="tab-limpeza">
+  <div class="card">
+    <div class="card-title">🧹 Limpar conversas dos grupos</div>
+    <p style="line-height:1.7">Limpa o histórico dos grupos selecionados, um por vez. O robô abre o grupo, entra em <strong>Dados do grupo</strong>, escolhe <strong>Limpar conversa</strong>, confirma o nome e aguarda <strong>Conversa limpa</strong> antes de avançar. Você continua nos grupos.</p>
+    <p class="hint" style="margin-top:12px">A limpeza remove mensagens do seu histórico. O robô não mede o espaço liberado no celular. Confira também o armazenamento no WhatsApp do aparelho.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">1 · Escolha os grupos</div>
+    <input id="limpezaBusca" type="text" placeholder="Pesquisar grupo pelo nome…" oninput="renderLimpeza()" aria-label="Pesquisar grupos para limpar">
+    <div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn-sm" onclick="limpezaMarcar(true)">Selecionar todos</button><button class="btn-sm" onclick="limpezaMarcar(false)">Nenhum</button></div>
+    <div id="limpezaLista" class="group-list" style="max-height:340px;overflow:auto"></div>
+    <p id="limpezaContagem" class="hint" style="margin-top:12px"></p>
+    <label style="display:flex;align-items:center;gap:10px;text-transform:none"><input type="checkbox" id="limpezaFavoritas"> Manter mensagens favoritas</label>
+    <p class="hint" style="margin-top:6px">Desmarcado: limpa também as mensagens favoritas.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">2 · Abra a limpeza no WhatsApp</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="limpezaAbrir(this)">🧹 Abrir robô de limpeza</button>
+      <button class="btn btn-secondary" onclick="limpezaAbrir(this,true)">Testar sem apagar</button>
+      <button class="btn-sm" onclick="limpezaNovaRodada()">Nova rodada</button>
+    </div>
+    <p id="limpezaStatus" role="status" class="hint" style="margin-top:14px">Abrir o robô não apaga nada. A limpeza começa no botão Iniciar limpeza, dentro do WhatsApp.</p>
+    <p class="hint" style="margin-top:10px">Atualização: em <code>chrome://extensions</code>, recarregue a extensão do Portal Felipe Tommy e depois esta página. No outro computador, <a href="extensao-autoenvio.zip" download>baixe o ZIP atualizado</a> e substitua os arquivos da extensão.</p>
+    <p class="hint" style="margin-top:10px">Deixe o WhatsApp aberto durante a rodada. Pausar conclui o grupo atual; Parar interrompe o avanço. Reabrir a mesma rodada pula as limpezas confirmadas. Se o WhatsApp não confirmar a limpeza, o robô para e mostra o grupo no Relatório. Para outra seleção, outras opções ou uma limpeza futura, use Nova rodada.</p>
+  </div>
+</div>
+
 <!-- MODULO X (Nacional/Global via Grok) -->
 <div class="page" id="tab-modulox">
   <div class="card">
@@ -1370,6 +1399,7 @@ function showTab(id,el){
   if(id==='grupos')renderGrupos();
   if(id==='encaminhar'){renderEncaminhar();buscarGrupos();}
   if(id==='autoenvio'){renderAutoEnvio();}
+  if(id==='limpeza'){renderLimpeza();}
   if(id==='colunistas'){const sel=document.getElementById('coluna-autor');if(sel&&sel.options.length<=1)carregarColunistas();}
   if(id==='modulox')renderHistX();
   if(id==='analise')renderHistAn();
@@ -3546,9 +3576,10 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.10.5';
-const PAINEL_DATA='11/11/2026';
+const PAINEL_VERSAO='2.11.0';
+const PAINEL_DATA='13/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.11.0','13/11/2026','Nova aba Limpar conversas: usa o cadastro de grupos, confere o nome na confirmação e aguarda Conversa limpa. Inclui teste sem apagar, opção de favoritas, pausa, parada, relatório e retomada da mesma rodada.'],
   ['2.10.5','11/11/2026','Auto-envio: botão Abrir robô no WhatsApp, com extensão própria instalada uma única vez. Carrega os grupos selecionados e abre o painel flutuante sem F12 nem copiar código. O envio continua começando no botão Iniciar, com o mesmo controle de progresso e de duplicidade.'],
   ['2.10.4','05/11/2026','O bloco "Siga o Portal Felipe Tommy no Google" saiu do fim da materia e passou a entrar logo depois do 2o paragrafo, onde o leitor ainda esta lendo. No fim ele disputava atencao com o botao verde do canal do WhatsApp e quase ninguem clicava. Vale para materia e para coluna de colunista; texto com menos de 2 paragrafos continua recebendo o bloco no fim.'],
   ['2.10.3','02/11/2026','Conexao da Meta: o painel passou a aceitar token de usuario do sistema, gerado nas configuracoes do portfolio empresarial. Esse token nao vence e nao depende da janela de autorizacao, que o aplicativo novo recusa por ser do tipo Empresa. Quando a Meta recusa a troca pelo token longo, o painel segue com o token original em vez de parar.'],
@@ -3713,6 +3744,195 @@ function autoMontarPayload(dryRun=false,reviewOnly=false){
 
 // Encaminhamento nativo. Seletores conferidos no DOM do WhatsApp em 19/09/2026.
 // A função vira texto sem uma segunda camada de escapes de regex.
+let limpezaSel=new Set(),limpezaInit=false;
+function renderLimpeza(){
+  if(!limpezaInit&&grupos.length){limpezaSel=new Set(grupos.map(g=>g.id));limpezaInit=true;}
+  limpezaSel=new Set([...limpezaSel].filter(id=>grupos.some(g=>g.id===id)));
+  const termo=ftNormNome(document.getElementById('limpezaBusca').value);
+  const lista=document.getElementById('limpezaLista');lista.replaceChildren();
+  grupos.filter(g=>!termo||ftNormNome(g.nome).includes(termo)).forEach(g=>{
+    const row=document.createElement('label');row.className='kgroup-item';
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=limpezaSel.has(g.id);
+    cb.onchange=()=>{cb.checked?limpezaSel.add(g.id):limpezaSel.delete(g.id);limpezaContar();};
+    const nome=document.createElement('span');nome.className='name';nome.textContent=g.nome;
+    row.append(cb,nome);lista.appendChild(row);
+  });
+  if(!lista.children.length)lista.textContent=grupos.length?'Nenhum grupo encontrado.':'Cadastre os grupos na aba Grupos.';
+  limpezaContar();
+}
+function limpezaContar(){document.getElementById('limpezaContagem').textContent=limpezaSel.size+' de '+grupos.length+' grupos selecionados. A busca não desmarca grupos fora da tela.';}
+function limpezaMarcar(marcar){limpezaInit=true;limpezaSel=marcar?new Set(grupos.map(g=>g.id)):new Set();renderLimpeza();}
+function limpezaPayload(dryRun){
+  const selected=grupos.filter(g=>limpezaSel.has(g.id)).map(g=>({id:g.id,nome:g.nome}));
+  if(!selected.length)throw Error('Selecione pelo menos um grupo.');
+  const names=new Set();for(const g of selected){const n=ftNormNome(g.nome);if(!g.id||!n||names.has(n))throw Error('Corrija nomes vazios ou repetidos na aba Grupos.');names.add(n);}
+  const keepStarred=document.getElementById('limpezaFavoritas').checked;
+  const signature=JSON.stringify({groups:selected,keepStarred,dryRun});
+  let job=JSON.parse(localStorage.getItem('ft_cleanup_panel_job')||'null');
+  if(job&&job.signature!==signature)throw Error('A seleção ou as opções mudaram. Clique em Nova rodada para usar esta seleção.');
+  if(!job){job={jobId:crypto.randomUUID(),signature};localStorage.setItem('ft_cleanup_panel_job',JSON.stringify(job));}
+  return {v:1,mode:'cleanup',versao:PAINEL_VERSAO,jobId:job.jobId,groups:selected,keepStarred,dryRun};
+}
+async function limpezaAbrir(btn,dryRun=false){
+  if(btn.disabled)return;const status=document.getElementById('limpezaStatus');btn.disabled=true;
+  try{
+    const payload=limpezaPayload(dryRun);status.textContent='Conectando à extensão…';
+    const ext=await autoExtRequest('ping');if(ext.version!==PAINEL_VERSAO)throw Error('Recarregue a extensão do portal em chrome://extensions e depois recarregue o painel.');
+    const result=await autoExtRequest('load-cleanup',payload);
+    status.textContent='Robô aberto com '+result.count+' grupos. Confira a lista e clique em '+(dryRun?'Iniciar teste sem apagar':'Iniciar limpeza')+' no WhatsApp.';
+  }catch(e){status.textContent=e.message;}finally{btn.disabled=false;}
+}
+function limpezaNovaRodada(){
+  if(!confirm('Criar outra rodada? Ao iniciar o novo robô, os grupos selecionados poderão ser limpos novamente. Feche o robô anterior antes de abrir o próximo.'))return;
+  localStorage.removeItem('ft_cleanup_panel_job');document.getElementById('limpezaStatus').textContent='Nova rodada pronta. Selecione os grupos e abra o robô.';
+}
+
+// FT_CLEANUP_START
+// Robô de limpeza. Incluído no painel e empacotado na extensão pelo gerador.
+function ftWhatsAppCleanup(P){
+  'use strict';
+  if(location.hostname!=='web.whatsapp.com')throw Error('Abra o WhatsApp Web.');
+  if(window.__ftAuto||document.getElementById('_ftForward')||document.getElementById('_ftCleanup'))throw Error('Feche o robô anterior pelo X.');
+  const norm=s=>String(s||'').normalize('NFC').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'').replace(/\s+/g,' ').trim();
+  // Preserva emojis, acentos, números e maiúsculas: nomes parecidos não são iguais.
+  const text=e=>!e?'':e.nodeType===3?e.textContent:e.tagName==='IMG'?(e.getAttribute('alt')||''):e.nodeType!==1||e.tagName.toLowerCase()==='svg'||e.getAttribute('aria-hidden')==='true'?'':[...e.childNodes].map(text).join('');
+  if(P.mode!=='cleanup'||!Array.isArray(P.groups)||!P.groups.length||typeof P.keepStarred!=='boolean'||typeof P.dryRun!=='boolean'||!/^[-a-f0-9]{36}$/i.test(P.jobId))throw Error('Rodada de limpeza inválida.');
+  const groups=P.groups, names=new Set(),ids=new Set();
+  for(const g of groups){if(!g.id||!norm(g.nome)||names.has(norm(g.nome))||ids.has(g.id))throw Error('Corrija nomes vazios ou repetidos no cadastro.');names.add(norm(g.nome));ids.add(g.id);}
+  const key='ft_cleanup_v1:'+P.jobId, signature=JSON.stringify({groups,keepStarred:P.keepStarred,dryRun:P.dryRun});
+  let ledger;
+  try{ledger=JSON.parse(localStorage.getItem(key)||'null')||{signature,results:{}};if(ledger.signature!==signature||!ledger.results||typeof ledger.results!=='object')throw Error();}
+  catch{throw Error('O registro desta rodada está inválido. Confira o relatório antes de abrir outra rodada.');}
+  let state='idle',busy=false,closed=false,committing=false;
+  const save=()=>localStorage.setItem(key,JSON.stringify(ledger));
+  const box=document.createElement('section');box.id='_ftCleanup';
+  box.style.cssText='position:fixed;top:16px;right:16px;width:min(390px,94vw);max-height:90vh;overflow:auto;background:#111b21;color:#e9edef;border:2px solid #f4ad53;border-radius:12px;padding:16px;font:14px Segoe UI,sans-serif;z-index:2147483647;box-shadow:0 8px 30px #0008';
+  box.innerHTML='<style>#_ftCleanup button{padding:9px 12px;margin:3px;border:0;border-radius:6px;background:#c6e5ff;color:#10202b;font:700 13px Segoe UI;cursor:pointer}#_ftCleanup button:disabled{opacity:.5;cursor:default}#_ftCleanup [data-start]{background:#ffbf75}#_ftCleanup [data-stop]{background:#ff929c}</style><b>Limpar conversas · v'+P.versao+'</b><button data-close aria-label="Fechar robô de limpeza">✕</button><p data-info></p><details><summary>Conferir grupos desta rodada</summary><ol data-groups style="max-height:150px;overflow:auto"></ol></details><p data-status role="status"></p><progress style="width:100%" value="0" max="100"></progress><div data-log style="max-height:170px;overflow:auto"></div><button data-start>Iniciar limpeza</button><button data-pause disabled>Pausar</button><button data-stop disabled>Parar</button><button data-report>Relatório</button><pre data-results hidden style="white-space:pre-wrap;max-height:240px;overflow:auto;font:12px Segoe UI"></pre>';
+  document.body.appendChild(box);window.__ftAuto=true;
+  const ui=s=>box.querySelector(s),status=t=>ui('[data-status]').textContent=t;
+  ui('[data-info]').textContent=P.dryRun?'TESTE: abre a confirmação e cancela, sem apagar mensagens.':groups.length+' grupos. Apaga o histórico das conversas selecionadas. '+(P.keepStarred?'Mantém mensagens favoritas.':'Apaga também as mensagens favoritas.')+' Confira a lista e clique em Iniciar limpeza.';
+  for(const g of groups){const li=document.createElement('li');li.textContent=g.nome;ui('[data-groups]').appendChild(li);}
+  const log=t=>{const d=document.createElement('div');d.textContent=t;ui('[data-log]').appendChild(d);d.scrollIntoView({block:'nearest'});};
+  const done=g=>ledger.results[g.id]?.status===(P.dryRun?'checked':'clean');
+  const progress=()=>{const n=groups.filter(done).length;ui('progress').value=100*n/groups.length;return n;};
+  status(progress()+' de '+groups.length+' confirmados. Pronto para iniciar.');
+  if(P.dryRun)ui('[data-start]').textContent='Iniciar teste sem apagar';
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const check=()=>{if(state==='stopped'||closed)throw Error('Interrompido. Progresso preservado.');};
+  const wait=async(fn,why,timeout=12000)=>{for(let elapsed=0;elapsed<timeout;elapsed+=150){if(!committing)check();const v=fn();if(v)return v;await sleep(150);}throw Error(why);};
+  const all=(s,r=document)=>[...r.querySelectorAll(s)];
+  const visible=e=>!!e?.isConnected&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';
+  const label=e=>norm(e.getAttribute('aria-label')||text(e));
+  const exact=(root,name)=>{const list=all('button,[role="button"],[role="menuitem"]',root).filter(e=>visible(e)&&label(e)===name);if(list.length>1)throw Error('Controle duplicado: '+name);return list[0];};
+  const click=e=>{check();if(!visible(e)||e.disabled||e.getAttribute('aria-disabled')==='true')throw Error('Controle indisponível.');if(/sair do grupo|denunciar|excluir grupo/i.test(label(e)))throw Error('Ação proibida para o robô de limpeza.');e.scrollIntoView({block:'center'});e.click();};
+  const drawer=()=>all('[role="complementary"][aria-label="Dados do grupo"]').find(visible);
+  const headerName=()=>norm(text(document.querySelector('#main [data-testid="conversation-info-header-chat-title"]')));
+  const assertGroup=g=>{if(headerName()!==norm(g.nome)||!document.querySelector('#main [data-testid="conversation-info-header-button"][aria-label="Dados do grupo"]'))throw Error('A conversa aberta não corresponde ao grupo selecionado: '+g.nome);};
+  const assertDrawer=g=>{assertGroup(g);const d=drawer();if(!d||norm(text(d.querySelector('[data-testid^="group-info-drawer-subject-input-read-only"]')))!==norm(g.nome))throw Error('Os dados do grupo não correspondem ao cadastro.');return d;};
+  const dialogTitle=d=>{const h=d.getAttribute('aria-labelledby');return h?h.split(/\s+/).map(id=>text(document.getElementById(id))).join(' '):text(d.querySelector('h1,h2,[role="heading"]'));};
+  const clearDialog=()=>{const matches=all('[role="dialog"]').filter(d=>visible(d)&&norm(dialogTitle(d)).startsWith('Deseja limpar a conversa '));if(matches.length>1)throw Error('Mais de uma confirmação de limpeza aberta.');return matches[0];};
+  const assertDialog=g=>{const d=clearDialog();if(!d||norm(dialogTitle(d))!==norm('Deseja limpar a conversa "'+g.nome+'"?'))throw Error('Nome diferente na confirmação. Nada foi apagado.');assertGroup(g);return d;};
+  const cancelDialog=async()=>{const d=clearDialog();if(d){click(exact(d,'Cancelar'));await wait(()=>!clearDialog(),'Não consegui cancelar a confirmação.');}};
+  const closeDrawer=async()=>{const d=drawer();if(d){click(exact(d,'Fechar'));await wait(()=>!drawer(),'Não consegui fechar os dados do grupo.');}};
+  const searchInput=()=>all('#side input[aria-label="Pesquisar ou começar uma nova conversa"],#side [contenteditable="true"][role="textbox"]').find(visible);
+  const fill=(el,value)=>{check();el.focus();if(el.tagName==='INPUT'){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));}else{document.execCommand('selectAll',false,null);document.execCommand('insertText',false,value);el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:value}));}};
+  const findGroup=async g=>{
+    await cancelDialog();await closeDrawer();
+    const conversations=all('[aria-label="Conversas"]').find(visible);if(conversations)click(conversations);
+    const input=await wait(searchInput,'Busca de conversas indisponível. Abra a aba Conversas.');
+    const filter=document.getElementById('all-filter');if(visible(filter))click(filter);
+    // A busca só reduz resultados. O nome completo, com emojis, decide o alvo.
+    const query=g.nome.normalize('NFKC').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+    fill(input,query||g.nome);await sleep(1000);check();
+    const pane=await wait(()=>document.querySelector('#pane-side'),'Lista de conversas indisponível.');
+    pane.scrollTop=0;await sleep(300);
+    const matches=new Map();let finished=false;
+    for(let page=0;page<80;page++){
+      check();
+      for(const row of all('[role="row"]',pane)){
+        const title=row.querySelector('[data-testid="cell-frame-title"] [title]');
+        if(title&&norm(title.getAttribute('title'))===norm(g.nome)){
+          const identity=row.getAttribute('data-testid')+'|'+row.style.transform+'|'+row.getAttribute('aria-rowindex');
+          matches.set(identity,{top:pane.scrollTop});
+        }
+      }
+      if(matches.size>1)throw Error('Dois resultados com o mesmo nome. Corrija o cadastro: '+g.nome);
+      if(pane.scrollTop+pane.clientHeight>=pane.scrollHeight-4){finished=true;break;}
+      const before=pane.scrollTop;pane.scrollTop+=Math.max(100,pane.clientHeight-80);await sleep(300);if(pane.scrollTop===before)break;
+    }
+    if(!finished)throw Error('Busca extensa demais para conferir duplicidades: '+g.nome);
+    if(matches.size!==1)throw Error('Grupo não encontrado pelo nome completo: '+g.nome);
+    pane.scrollTop=[...matches.values()][0].top;await sleep(300);
+    const targets=all('[role="row"] [data-testid="cell-frame-title"] [title]',pane).filter(e=>visible(e)&&norm(e.getAttribute('title'))===norm(g.nome));
+    if(targets.length!==1)throw Error('Resultado da busca mudou.');
+    click(targets[0]);await wait(()=>headerName()===norm(g.nome),'O grupo não abriu.');assertGroup(g);
+  };
+  const openConfirmation=async g=>{
+    assertGroup(g);
+    click(exact(document.querySelector('#main header'),'Mais opções'));
+    const menu=await wait(()=>all('[role="menu"]').find(m=>visible(m)&&exact(m,'Dados do grupo')),'Menu de dados do grupo indisponível.');
+    click(exact(menu,'Dados do grupo'));
+    await wait(drawer,'Dados do grupo não abriram.');const d=assertDrawer(g);
+    const clear=await wait(()=>d.querySelector('[data-testid="li-clear-chat"][aria-label="Limpar conversa"]'),'Botão Limpar conversa não encontrado.');
+    clear.scrollIntoView({block:'center'});await sleep(250);assertDrawer(g);click(clear);
+    await wait(clearDialog,'Confirmação de limpeza não abriu.');const modal=assertDialog(g);
+    const toggle=modal.querySelector('input[role="switch"][aria-label="Manter mensagens favoritas"],input[type="checkbox"][aria-label="Manter mensagens favoritas"]');
+    if(!toggle)throw Error('Não consegui conferir a opção de mensagens favoritas.');
+    const checked=()=>toggle.getAttribute('aria-checked')===null?toggle.checked:toggle.getAttribute('aria-checked')==='true';
+    if(checked()!==P.keepStarred){click(toggle);await wait(()=>checked()===P.keepStarred,'A opção de favoritas não mudou.');}
+    assertDialog(g);return modal;
+  };
+  // Só aceita a notificação do aplicativo, nunca texto de mensagens ou do log.
+  const toast=()=>all('[role="alert"],[role="status"],[data-testid*="toast"]').find(e=>!box.contains(e)&&!e.closest('#main,#pane-side,[data-testid="chat-info-drawer"]')&&visible(e)&&norm(text(e))==='Conversa limpa');
+  const cleanOne=async g=>{
+    await findGroup(g);await openConfirmation(g);
+    if(P.dryRun){await cancelDialog();ledger.results[g.id]={status:'checked',at:new Date().toISOString()};save();log('Conferido sem apagar: '+g.nome);return;}
+    await wait(()=>!toast(),'Uma confirmação anterior ainda está na tela.');
+    check();const d=assertDialog(g),button=exact(d,'Limpar conversa');
+    // Grava ANTES do clique. Uma queda após o clique bloqueia repetição automática.
+    ledger.results[g.id]={status:'uncertain',at:new Date().toISOString()};save();
+    committing=true;ui('[data-close]').disabled=true;
+    try{
+      click(button);
+      await wait(()=>!clearDialog()&&toast(),'O WhatsApp não confirmou "Conversa limpa". Resultado incerto; confira este grupo.',20000);
+      ledger.results[g.id]={status:'clean',at:new Date().toISOString()};save();log('Conversa limpa: '+g.nome);
+    }finally{committing=false;ui('[data-close]').disabled=false;}
+  };
+  const report=()=>{
+    ui('[data-results]').hidden=false;
+    const labels={clean:'LIMPA',checked:'CONFERIDA SEM APAGAR',uncertain:'INCERTA',failed:'PENDENTE'};
+    ui('[data-results]').textContent='Rodada '+P.jobId+'\n'+groups.map(g=>{const r=ledger.results[g.id];return (labels[r?.status]||'PENDENTE')+' | '+g.nome+(r?.error?' | '+r.error:'');}).join('\n');
+  };
+  const run=async()=>{
+    if(busy)return;busy=true;state='running';ui('[data-start]').disabled=true;ui('[data-pause]').disabled=false;ui('[data-stop]').disabled=false;
+    try{
+      if(!navigator.locks)throw Error('Atualize o Chrome para executar a limpeza com controle de rodada.');
+      await navigator.locks.request('ft-whatsapp-cleanup',{ifAvailable:true},async lock=>{
+        if(!lock)throw Error('Já há uma limpeza em outra aba.');
+        const stored=JSON.parse(localStorage.getItem(key)||'null');if(stored){if(stored.signature!==signature)throw Error('Rodada divergente.');ledger=stored;}
+        if(Object.values(ledger.results).some(r=>r.status==='uncertain'))throw Error('Existe uma limpeza incerta. Abra Relatório e confira o grupo no WhatsApp antes de criar outra rodada.');
+        save();
+        for(const g of groups){
+          if(done(g))continue;
+          while(state==='paused'){status('Pausado. Clique em Continuar.');await sleep(150);}check();
+          status('Limpando '+g.nome+' · '+progress()+'/'+groups.length);
+          try{await cleanOne(g);}catch(e){if(ledger.results[g.id]?.status!=='uncertain'){ledger.results[g.id]={status:'failed',error:e.message};save();}throw e;}
+          progress();await sleep(1000);
+        }
+        await closeDrawer();status((P.dryRun?'Teste concluído: ':'Limpeza concluída: ')+progress()+' de '+groups.length+' grupos.');state='done';
+      });
+    }catch(e){state='stopped';status(e.message);log('Parou: '+e.message);report();}
+    finally{busy=false;ui('[data-start]').disabled=state==='done'||Object.values(ledger.results).some(r=>r.status==='uncertain');ui('[data-pause]').disabled=true;ui('[data-stop]').disabled=true;ui('[data-pause]').textContent='Pausar';progress();}
+  };
+  ui('[data-start]').onclick=run;
+  ui('[data-pause]').onclick=()=>{state=state==='paused'?'running':'paused';ui('[data-pause]').textContent=state==='paused'?'Continuar':'Pausar';if(state==='paused')status('Pausa solicitada. Concluindo o grupo atual antes de pausar.');};
+  ui('[data-stop]').onclick=()=>{state='stopped';status(committing?'Parando após verificar a confirmação do grupo atual…':'Parada solicitada.');};
+  ui('[data-report]').onclick=report;
+  ui('[data-close]').onclick=()=>{if(busy){state='stopped';status('Parando. Aguarde e clique em X novamente.');return;}closed=true;box.remove();window.__ftAuto=false;};
+}
+
+// FT_CLEANUP_END
+
 function ftWhatsAppRunner(P){
   'use strict';
   if(location.hostname!=='web.whatsapp.com'){alert('Abra este código no WhatsApp Web.');return;}
