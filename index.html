@@ -2186,12 +2186,12 @@ function blocoPublicidade(cfg){
     const desktop=urlArtePubli(c.publiArteDesktop),mobile=urlArtePubli(c.publiArteMobile);
     if(!desktop)return '';
     const descricao=[c.publiTitulo,c.publiTexto,c.publiBotao].filter(Boolean).join(' ').trim()||'Conheça a oferta';
-    return '\n<p style="text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7b8794;margin:28px 0 6px">Publicidade</p>\n'
-      +'<p class="ft-publi" style="margin:0 0 28px"><a href="'+esc(link)+'" target="_blank" rel="sponsored nofollow noopener" style="display:block;text-decoration:none;border-radius:14px;overflow:hidden;line-height:0">'
+    return '\n<!-- wp:html -->\n<p style="text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7b8794;margin:28px 0 6px">Publicidade</p>\n'
+      +'<div class="ft-publi" style="margin:0 0 28px"><a href="'+esc(link)+'" target="_blank" rel="sponsored nofollow noopener" style="display:block;text-decoration:none;border-radius:14px;overflow:hidden;line-height:0">'
       +'<picture style="display:block">'
       +(mobile?'<source media="(max-width:600px)" srcset="'+esc(mobile)+'" />':'')
       +'<img src="'+esc(desktop)+'" alt="'+esc(descricao)+'" loading="lazy" decoding="async" style="display:block;width:100%;max-width:100%;height:auto;margin:0;border:0" />'
-      +'</picture></a></p>\n';
+      +'</picture></a></div>\n<!-- /wp:html -->\n';
   }
   const t=TEMAS_PUBLI[c.publiTema]||TEMAS_PUBLI['nomad-azul'];
   const titulo=(c.publiTitulo||'').trim()||'Conta e cartão em dólar';
@@ -2240,7 +2240,7 @@ function inserirGoogle(corpo){
   return ok?novo:corpo+bloco;
 }
 function montarConteudo(dados,leiaLink,igLink,leiaTitulo){
-  let corpo=inserirGoogle(dados.corpo_html||'');
+  let corpo=inserirGoogle((dados.corpo_html||'').replace(/<p\b[^>]*>\s*LINK_WHATSAPP_AQUI\s*<\/p>/gi,'LINK_WHATSAPP_AQUI'));
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
   const blocoPubli=blocoPublicidade();
   if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoPubli);
@@ -2471,7 +2471,7 @@ async function gerarColunaIA(){
 }
 // Conteúdo de coluna: SEM byline, SEM <hr/>, SEM banner (o WordPress injeta automaticamente na categoria Colunas).
 function montarConteudoColuna(dados,leiaLink,leiaTitulo){
-  let corpo=inserirGoogle(dados.corpo_html||'');
+  let corpo=inserirGoogle((dados.corpo_html||'').replace(/<p\b[^>]*>\s*LINK_WHATSAPP_AQUI\s*<\/p>/gi,'LINK_WHATSAPP_AQUI'));
   const blocoWA='\n<p>📱 <a href="'+WA_CANAL_URL+'" target="_blank" rel="noopener"><strong>Acesse ao Canal do Portal Felipe Tommy no WhatsApp</strong></a></p>\n';
   if(corpo.indexOf('LINK_WHATSAPP_AQUI')!==-1)corpo=corpo.replace('LINK_WHATSAPP_AQUI',()=>blocoPublicidade());
   corpo=inserirLeia(corpo,blocoLeiaTambem(dados,leiaLink,leiaTitulo));
@@ -3606,11 +3606,12 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.11.4';
+const PAINEL_VERSAO='2.11.5';
 // Publicidade não altera os robôs: mantém compatibilidade com a extensão instalada.
 const ROBO_VERSAO='2.11.3';
 const PAINEL_DATA='25/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.11.5','25/11/2026','Preserva o link da publicidade responsiva em bloco HTML do WordPress e remove parágrafos que envolvem o marcador do anúncio.'],
   ['2.11.4','25/11/2026','Publicidade com arte pronta: imagem horizontal no computador e imagem própria no celular, link no anúncio inteiro e identificação Publicidade acima. Preserva a extensão de encaminhamento e limpeza instalada.'],
   ['2.11.3','23/11/2026','Limpeza: pula grupos com Limpar conversa desabilitado e segue quando um grupo não é encontrado. Ao terminar a lista, permite tentar novamente só os não encontrados, preservando os grupos limpos e pulados.'],
   ['2.11.2','13/11/2026','Limpeza: acompanha Limpando conversa sem prazo fixo e registra Conversa limpa mesmo quando o aviso some rapidamente. Só avança após a confirmação. O Relatório permite resolver um resultado incerto após conferência manual e continuar a mesma rodada.'],
