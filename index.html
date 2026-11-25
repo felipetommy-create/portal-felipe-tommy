@@ -1279,7 +1279,13 @@ Responda APENAS com um JSON válido (nada fora do JSON), com EXATAMENTE estas ch
       <option value="nomad-azul">Nomad: fundo azul, título amarelo</option>
       <option value="nomad-amarelo">Nomad: fundo amarelo, título preto</option>
       <option value="portal">Portal: azul claro (para outros anunciantes)</option>
+      <option value="arte">Arte pronta: computador e celular</option>
     </select>
+    <div id="cfg-publi-artes" style="display:none">
+      <p class="hint">Use uma arte horizontal para computador e uma quadrada para celular. O anúncio inteiro será clicável e a etiqueta Publicidade continua acima. O título e a linha de apoio descrevem a imagem para leitores de tela.</p>
+      <label>URL da arte para computador</label><input type="url" id="cfg-publi-arte-desktop" placeholder="https://.../anuncio-desktop.png" oninput="renderPubliPreview()">
+      <label>URL da arte para celular (opcional)</label><input type="url" id="cfg-publi-arte-mobile" placeholder="https://.../anuncio-mobile.png" oninput="renderPubliPreview()">
+    </div>
     <label>Título</label><input type="text" id="cfg-publi-titulo" placeholder="Conta global Nomad" oninput="renderPubliPreview()">
     <label>Linha de apoio</label><input type="text" id="cfg-publi-texto" placeholder="Conta e cartão em dólar, direto do celular." oninput="renderPubliPreview()">
     <label>Texto do botão</label><input type="text" id="cfg-publi-botao" placeholder="Abrir conta" oninput="renderPubliPreview()">
@@ -1455,6 +1461,11 @@ function salvarCfgPubli(){
   c.publiTema=document.getElementById('cfg-publi-tema').value;
   c.publiLogo=document.getElementById('cfg-publi-logo').value.trim();
   c.publiImg=document.getElementById('cfg-publi-img').value.trim();
+  c.publiArteDesktop=document.getElementById('cfg-publi-arte-desktop').value.trim();
+  c.publiArteMobile=document.getElementById('cfg-publi-arte-mobile').value.trim();
+  if(c.publiLink&&c.publiTema==='arte'&&(!urlArtePubli(c.publiArteDesktop)||(c.publiArteMobile&&!urlArtePubli(c.publiArteMobile)))){
+    showSt('st-cfg-publi','err','Preencha uma URL HTTPS válida para cada arte. A arte para computador é obrigatória.');return;
+  }
   localStorage.setItem('ft_cfg',JSON.stringify(c));
   renderPubliPreview();
   showSt('st-cfg-publi','ok',c.publiLink
@@ -1468,10 +1479,13 @@ function renderPubliPreview(){
   const el=document.getElementById('publi-preview');
   if(!el)return;
   const v=id=>{const i=document.getElementById(id);return i?(i.value||'').trim():'';};
+  const artes=document.getElementById('cfg-publi-artes');
+  if(artes)artes.style.display=v('cfg-publi-tema')==='arte'?'block':'none';
   const html=blocoPublicidade({
     publiLink:v('cfg-publi-link'),publiTitulo:v('cfg-publi-titulo'),
     publiTexto:v('cfg-publi-texto'),publiBotao:v('cfg-publi-botao'),
-    publiTema:v('cfg-publi-tema'),publiLogo:v('cfg-publi-logo'),publiImg:v('cfg-publi-img')
+    publiTema:v('cfg-publi-tema'),publiLogo:v('cfg-publi-logo'),publiImg:v('cfg-publi-img'),
+    publiArteDesktop:v('cfg-publi-arte-desktop'),publiArteMobile:v('cfg-publi-arte-mobile')
   });
   el.innerHTML=html||'<span style="opacity:.7">Sem link preenchido: a matéria sai sem anúncio no meio do texto.</span>';
 }
@@ -1493,6 +1507,8 @@ function carregarCfgWP(){
   if(c.publiTema)document.getElementById('cfg-publi-tema').value=c.publiTema;
   if(c.publiLogo)document.getElementById('cfg-publi-logo').value=c.publiLogo;
   if(c.publiImg)document.getElementById('cfg-publi-img').value=c.publiImg;
+  if(c.publiArteDesktop)document.getElementById('cfg-publi-arte-desktop').value=c.publiArteDesktop;
+  if(c.publiArteMobile)document.getElementById('cfg-publi-arte-mobile').value=c.publiArteMobile;
   if(c.anthropicKey)document.getElementById('cfg-anthropic').value=c.anthropicKey;
   renderPubliPreview();
 }
@@ -2159,10 +2175,24 @@ const TEMAS_PUBLI={
 // com anúncio vazio.
 // Estilo em linha de propósito: a matéria vira blocos no editor do WordPress e
 // classe de CSS pode se perder; assim o bloco se desenha sozinho em qualquer tela.
+function urlArtePubli(value){
+  try{const url=new URL((value||'').trim());return url.protocol==='https:'&&!url.username&&!url.password?url.href:'';}catch{return '';}
+}
 function blocoPublicidade(cfg){
   const c=cfg||getCfg();
   const link=(c.publiLink||'').trim();
   if(!link)return '';
+  if(c.publiTema==='arte'){
+    const desktop=urlArtePubli(c.publiArteDesktop),mobile=urlArtePubli(c.publiArteMobile);
+    if(!desktop)return '';
+    const descricao=[c.publiTitulo,c.publiTexto,c.publiBotao].filter(Boolean).join(' ').trim()||'Conheça a oferta';
+    return '\n<p style="text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7b8794;margin:28px 0 6px">Publicidade</p>\n'
+      +'<p class="ft-publi" style="margin:0 0 28px"><a href="'+esc(link)+'" target="_blank" rel="sponsored nofollow noopener" style="display:block;text-decoration:none;border-radius:14px;overflow:hidden;line-height:0">'
+      +'<picture style="display:block">'
+      +(mobile?'<source media="(max-width:600px)" srcset="'+esc(mobile)+'" />':'')
+      +'<img src="'+esc(desktop)+'" alt="'+esc(descricao)+'" loading="lazy" decoding="async" style="display:block;width:100%;max-width:100%;height:auto;margin:0;border:0" />'
+      +'</picture></a></p>\n';
+  }
   const t=TEMAS_PUBLI[c.publiTema]||TEMAS_PUBLI['nomad-azul'];
   const titulo=(c.publiTitulo||'').trim()||'Conta e cartão em dólar';
   let apoio=(c.publiTexto||'').trim();
@@ -3576,9 +3606,12 @@ function renderPubHist(){
 // Ao mexer no painel: suba PAINEL_VERSAO, troque PAINEL_DATA e acrescente uma linha
 // no topo de PAINEL_CHANGELOG. É por aqui que o Felipe confere se o aparelho está
 // com a versão nova ou se ficou com a antiga em cache.
-const PAINEL_VERSAO='2.11.3';
-const PAINEL_DATA='23/11/2026';
+const PAINEL_VERSAO='2.11.4';
+// Publicidade não altera os robôs: mantém compatibilidade com a extensão instalada.
+const ROBO_VERSAO='2.11.3';
+const PAINEL_DATA='25/11/2026';
 const PAINEL_CHANGELOG=[
+  ['2.11.4','25/11/2026','Publicidade com arte pronta: imagem horizontal no computador e imagem própria no celular, link no anúncio inteiro e identificação Publicidade acima. Preserva a extensão de encaminhamento e limpeza instalada.'],
   ['2.11.3','23/11/2026','Limpeza: pula grupos com Limpar conversa desabilitado e segue quando um grupo não é encontrado. Ao terminar a lista, permite tentar novamente só os não encontrados, preservando os grupos limpos e pulados.'],
   ['2.11.2','13/11/2026','Limpeza: acompanha Limpando conversa sem prazo fixo e registra Conversa limpa mesmo quando o aviso some rapidamente. Só avança após a confirmação. O Relatório permite resolver um resultado incerto após conferência manual e continuar a mesma rodada.'],
   ['2.11.1','13/11/2026','Limpeza: recupera a busca quando o WhatsApp remove o rótulo após digitar, confirma a aba Conversas e repete somente a navegação se o clique simples não abrir o grupo. Aguarda os resultados e separa conversas de mensagens encontradas. Preserva a rodada e as limpezas já confirmadas.'],
@@ -3742,7 +3775,7 @@ function autoMontarPayload(dryRun=false,reviewOnly=false){
   const delayMs=Math.max(2,parseInt(document.getElementById('autoDelay').value||'4',10))*1000;
   const jitterMs=Math.max(0,parseInt(document.getElementById('autoJitter').value||'3',10))*1000;
   if(!SB?.url||!SB?.key){alert('Conecte o painel ao Supabase para carregar os grupos.');return null;}
-  return {v:5,autoSource:true,dryRun,reviewOnly,versao:PAINEL_VERSAO,bridgeUrl:new URL('encaminhador-bridge.html',location.href).href,articleTitle:'',articleLinks:[],groups:gs,keywords:reviewOnly?['Revisão para Publicação']:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,slug:'auto-canal'}};
+  return {v:5,autoSource:true,dryRun,reviewOnly,versao:ROBO_VERSAO,bridgeUrl:new URL('encaminhador-bridge.html',location.href).href,articleTitle:'',articleLinks:[],groups:gs,keywords:reviewOnly?['Revisão para Publicação']:AUTO_KEYWORDS,delayMs,jitterMs,sb:{url:SB.url,slug:'auto-canal'}};
 }
 
 // Encaminhamento nativo. Seletores conferidos no DOM do WhatsApp em 19/09/2026.
@@ -3774,13 +3807,13 @@ function limpezaPayload(dryRun){
   let job=JSON.parse(localStorage.getItem('ft_cleanup_panel_job')||'null');
   if(job&&job.signature!==signature)throw Error('A seleção ou as opções mudaram. Clique em Nova rodada para usar esta seleção.');
   if(!job){job={jobId:crypto.randomUUID(),signature};localStorage.setItem('ft_cleanup_panel_job',JSON.stringify(job));}
-  return {v:1,mode:'cleanup',versao:PAINEL_VERSAO,jobId:job.jobId,groups:selected,keepStarred,dryRun};
+  return {v:1,mode:'cleanup',versao:ROBO_VERSAO,jobId:job.jobId,groups:selected,keepStarred,dryRun};
 }
 async function limpezaAbrir(btn,dryRun=false){
   if(btn.disabled)return;const status=document.getElementById('limpezaStatus');btn.disabled=true;
   try{
     const payload=limpezaPayload(dryRun);status.textContent='Conectando à extensão…';
-    const ext=await autoExtRequest('ping');if(ext.version!==PAINEL_VERSAO)throw Error('Recarregue a extensão do portal em chrome://extensions e depois recarregue o painel.');
+    const ext=await autoExtRequest('ping');if(ext.version!==ROBO_VERSAO)throw Error('Recarregue a extensão do portal em chrome://extensions e depois recarregue o painel.');
     const result=await autoExtRequest('load-cleanup',payload);
     status.textContent='Robô aberto com '+result.count+' grupos. Confira a lista e clique em '+(dryRun?'Iniciar teste sem apagar':'Iniciar limpeza')+' no WhatsApp.';
   }catch(e){status.textContent=e.message;}finally{btn.disabled=false;}
@@ -4518,7 +4551,7 @@ async function autoAbrirNoWhatsApp(btn){
   btn.disabled=true;btn.textContent='Abrindo robô…';status.textContent='Conectando à extensão do portal…';
   try{
     const ext=await autoExtRequest('ping');
-    if(ext.version!==PAINEL_VERSAO)throw Error('Atualize a extensão e recarregue o painel: as versões do robô são diferentes.');
+    if(ext.version!==ROBO_VERSAO)throw Error('Atualize a extensão e recarregue o painel: as versões do robô são diferentes.');
     const result=await autoExtRequest('load',p);
     status.textContent='Robô aberto no WhatsApp com '+result.count+' grupos selecionados. Clique em Iniciar lá para começar.';
   }catch(error){status.textContent=error.message;}
