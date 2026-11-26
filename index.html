@@ -1533,7 +1533,12 @@ async function testarWP(){
 // ───────────────────────── CORREÇÃO DE ACENTOS / TAGS ─────────────────────────
 function corrigirAcentos(t){
   if(!t)return t;
-  const mapa=[[/Ã£/g,'ã'],[/Ã¢/g,'â'],[/Ã¡/g,'á'],[/Ã /g,'à'],[/Ã¤/g,'ä'],[/Ã‚/g,'Â'],[/Ã€/g,'À'],
+  // "à" quebrado vira "Ã" + espaço. Mas "Ã " também é texto certo em caixa alta
+  // (TALIBÃ PROÍBE, IRMÃ DE): em 26/11/2026 o post da Comunidade saiu "TALIBàPROÍBE".
+  // Por isso o "Ã " com espaço comum só é trocado quando o texto tem outro sinal
+  // de acento quebrado; o "Ã" + espaço duro (U+00A0) é sempre quebrado.
+  const quebrado=/Ã[£¢¡¤‚€©ª¨«‰Š­®¬¯ŽŒ³´²µ¶•º»¹¼š›™§‡±]/.test(t);
+  const mapa=[[/Ã£/g,'ã'],[/Ã¢/g,'â'],[/Ã¡/g,'á'],[/Ã\u00A0/g,'à'],[quebrado?/Ã /g:/(?!)/g,'à'],[/Ã¤/g,'ä'],[/Ã‚/g,'Â'],[/Ã€/g,'À'],
     [/Ã©/g,'é'],[/Ãª/g,'ê'],[/Ã¨/g,'è'],[/Ã«/g,'ë'],[/Ã‰/g,'É'],[/ÃŠ/g,'Ê'],[/Ãˆ/g,'È'],
     [/Ã­/g,'í'],[/Ã®/g,'î'],[/Ã¬/g,'ì'],[/Ã¯/g,'ï'],[/ÃŽ/g,'Î'],[/ÃŒ/g,'Ì'],
     [/Ã³/g,'ó'],[/Ã´/g,'ô'],[/Ã²/g,'ò'],[/Ãµ/g,'õ'],[/Ã¶/g,'ö'],[/Ã•/g,'Õ'],
